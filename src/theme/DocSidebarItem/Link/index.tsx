@@ -32,7 +32,7 @@ function ConnectIcon({ href, label }: { href: string; label: string }): ReactNod
   if (path.startsWith('/connect/hermes-memory')) {
     return (
       <img
-        src="/img/integrations/hermes.svg"
+        src="/img/integrations/hermes.png"
         width="15"
         height="15"
         className="sidebar-link-icon sidebar-link-icon--brand sidebar-link-icon--monochrome"

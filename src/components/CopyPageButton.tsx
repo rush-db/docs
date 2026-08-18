@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import BrowserOnly from '@docusaurus/BrowserOnly'
+import { useDoc } from '@docusaurus/plugin-content-docs/client'
 import { useLocation } from '@docusaurus/router'
 import { Check, ChevronDown, Maximize2, Minimize2, FileTextIcon } from 'lucide-react'
 
-const GITHUB_RAW = 'https://raw.githubusercontent.com/rush-db/rushdb/main/docs/docs'
+const GITHUB_RAW = 'https://raw.githubusercontent.com/rush-db/docs/main/docs'
 const DOCS_BASE = 'https://docs.rushdb.com'
+const DOCS_SOURCE_PREFIX = '@site/docs/'
 
 async function fetchMarkdownSource(url: string): Promise<string | null> {
   const response = await fetch(url)
@@ -133,65 +135,23 @@ const MENU_ITEMS: MenuItem[] = [
 function CopyPageButtonInner() {
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [resolvedMarkdownUrl, setResolvedMarkdownUrl] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
+  const { metadata } = useDoc()
 
   const slug = location.pathname.replace(/\/+$/, '').replace(/^\//, '') || 'index'
   const pageUrl = slug === 'index' ? DOCS_BASE : `${DOCS_BASE}/${slug}`
-  const localMarkdownUrl = `/raw-docs/${slug}.md`
-  const localMarkdownUrlMdx = `/raw-docs/${slug}.mdx`
-  const localIndexMarkdownUrl = `/raw-docs/${slug}/index.md`
-  const localIndexMarkdownUrlMdx = `/raw-docs/${slug}/index.mdx`
-  const githubMarkdownUrl = `${GITHUB_RAW}/${slug}.md`
-  const githubMarkdownUrlMdx = `${GITHUB_RAW}/${slug}.mdx`
-  const githubIndexMarkdownUrl = `${GITHUB_RAW}/${slug}/index.md`
-  const githubIndexMarkdownUrlMdx = `${GITHUB_RAW}/${slug}/index.mdx`
-  const markdownCandidates = [
-    localMarkdownUrl,
-    localMarkdownUrlMdx,
-    localIndexMarkdownUrl,
-    localIndexMarkdownUrlMdx,
-    githubMarkdownUrl,
-    githubMarkdownUrlMdx,
-    githubIndexMarkdownUrl,
-    githubIndexMarkdownUrlMdx
-  ]
-
-  // Resolve which extension actually exists; cache per slug
-  useEffect(() => {
-    setResolvedMarkdownUrl(null)
-    let cancelled = false
-
-    const resolveMarkdownUrl = async () => {
-      for (const candidate of markdownCandidates) {
-        try {
-          const source = await fetchMarkdownSource(candidate)
-          if (source != null) {
-            if (!cancelled) setResolvedMarkdownUrl(candidate)
-            return
-          }
-        } catch {
-          // Try the next local or GitHub source candidate.
-        }
-      }
-
-      if (!cancelled) setResolvedMarkdownUrl(localMarkdownUrlMdx)
-    }
-
-    void resolveMarkdownUrl()
-    return () => {
-      cancelled = true
-    }
-  }, [slug])
-
-  const effectiveMarkdownUrl = resolvedMarkdownUrl ?? localMarkdownUrlMdx
+  const sourcePath = metadata.source.startsWith(DOCS_SOURCE_PREFIX) ?
+    metadata.source.slice(DOCS_SOURCE_PREFIX.length)
+  : metadata.source
+  const localMarkdownUrl = `/raw-docs/${sourcePath}`
+  const githubMarkdownUrl = `${GITHUB_RAW}/${sourcePath}`
 
   const handleCopy = useCallback(async () => {
     let content: string | null = null
 
     try {
-      for (const candidate of [effectiveMarkdownUrl, ...markdownCandidates]) {
+      for (const candidate of [localMarkdownUrl, githubMarkdownUrl]) {
         try {
           const source = await fetchMarkdownSource(candidate)
           if (source != null) {
@@ -220,7 +180,7 @@ function CopyPageButtonInner() {
     }
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
-  }, [effectiveMarkdownUrl, slug])
+  }, [githubMarkdownUrl, localMarkdownUrl])
 
   useEffect(() => {
     if (!open) return
@@ -267,7 +227,7 @@ function CopyPageButtonInner() {
           {MENU_ITEMS.map((item, idx) => (
             <a
               key={item.key}
-              href={item.getHref(pageUrl, effectiveMarkdownUrl)}
+              href={item.getHref(pageUrl, localMarkdownUrl)}
               target="_blank"
               rel="noopener noreferrer"
               role="menuitem"
