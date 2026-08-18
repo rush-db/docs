@@ -1,0 +1,65 @@
+---
+title: Hermes Native Memory Provider
+description: Install RushDB as a lifecycle-aware Hermes Agent MemoryProvider.
+displayed_sidebar: docs
+---
+
+# Hermes Native Memory Provider
+
+`rushdb-hermes-memory` implements Hermes Agent's native `MemoryProvider` contract. It performs automatic recall before inference and persists completed turns without requiring the model to call an MCP tool.
+
+The MCP integration remains useful for explicit database operations, but it is not a replacement for provider lifecycle hooks such as `prefetch`, `sync_turn`, `on_pre_compress`, and `on_session_end`.
+
+## Install
+
+```bash
+pip install rushdb-hermes-memory
+hermes memory setup
+```
+
+The package registers the `rushdb` provider through the official entry-point group:
+
+```toml
+[project.entry-points."hermes_agent.memory_providers"]
+rushdb = "rushdb_hermes_memory:register"
+```
+
+Set:
+
+```bash
+export RUSHDB_API_KEY=your-project-api-key
+# Optional for self-hosting:
+export RUSHDB_API_URL=https://rushdb.example.com/api/v1
+# Recommended for non-correlatable participant hashes:
+export RUSHDB_MEMORY_SCOPE_SALT=a-long-random-secret
+```
+
+## Lifecycle behavior
+
+| Hermes method                 | RushDB behavior                                                               |
+| ----------------------------- | ----------------------------------------------------------------------------- |
+| `prefetch`                    | Time-budgeted `EPISODE.summary` and active `MEMORY_FACT.text` semantic recall |
+| `queue_prefetch`              | Background next-turn cache warmup                                             |
+| `sync_turn`                   | Profile-local durable enqueue; no network wait on the conversation path       |
+| `on_pre_compress`             | Queue the latest bounded conversational episode before compression            |
+| `on_memory_write`             | Mirror explicit add/replace operations as active memory facts                 |
+| `on_session_switch`           | Rotate session identity and clear stale prefetch state                        |
+| `on_session_end` / `shutdown` | Bounded writer flush                                                          |
+
+The provider stores its outbox under the active `HERMES_HOME/rushdb-memory/outbox`, preserving Hermes profile isolation. Failed writes stay in that directory and replay when the provider starts again.
+
+Only bounded user and assistant text leaves the device automatically. The optional `messages` argument, tool calls, command output, and complete transcripts are deliberately ignored.
+
+## Scope and degraded operation
+
+Recall always filters on the Hermes agent/profile identity, privacy scope, a salted participant hash, and sandbox eligibility before semantic ranking. Non-primary contexts such as subagents and cron/flush agents do not write memory.
+
+RushDB timeouts or errors produce empty/degraded recall rather than a failed Hermes turn. Recent locally queued episodes remain eligible for lexical fallback while managed embeddings are pending.
+
+## Verify
+
+```bash
+hermes memory setup
+```
+
+Then complete a turn, end the session, and confirm that exactly one `EPISODE` exists for its deterministic `eventId`. Repeat the same event to validate idempotent upsert behavior, and test with RushDB temporarily offline to confirm the conversation remains available.
