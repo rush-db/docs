@@ -1,6 +1,7 @@
 import React from 'react'
 import Link from '@docusaurus/Link'
 import useBaseUrl from '@docusaurus/useBaseUrl'
+import { DEFAULT_DOCS_VERSION, docsVersionHref } from '@site/docs-versioning'
 import { useThemeConfig } from '@docusaurus/theme-common'
 
 export default function Logo(): React.ReactElement {
@@ -8,7 +9,7 @@ export default function Logo(): React.ReactElement {
     navbar: { logo, title }
   } = useThemeConfig()
 
-  const logoLink = useBaseUrl((logo as any)?.href || '/get-started/quick-tutorial')
+  const logoLink = useBaseUrl((logo as any)?.href || docsVersionHref(DEFAULT_DOCS_VERSION))
 
   return (
     <Link to={logoLink} className="navbar__brand" aria-label={logo?.alt || 'RushDB Docs'}>

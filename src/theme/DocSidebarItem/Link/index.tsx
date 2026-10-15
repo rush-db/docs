@@ -8,14 +8,15 @@ import clsx from 'clsx'
 import Link from '@docusaurus/Link'
 import { ThemeClassNames } from '@docusaurus/theme-common'
 import { isActiveSidebarItem } from '@docusaurus/plugin-content-docs/client'
-import { Bot, Code2, Cpu, Sparkles } from 'lucide-react'
+import { Bot, Code2, Cpu, Database, Sparkles } from 'lucide-react'
 import * as LucideIcons from 'lucide-react'
 import type { LucideProps } from 'lucide-react'
 
 type LucideIconComponent = React.ComponentType<LucideProps>
 
 function ConnectIcon({ href, label }: { href: string; label: string }): ReactNode {
-  const path = href.toLowerCase()
+  // Match the page whichever docs version owns `/` (`/connect/...`, `/2.x/connect/...`, `/3.x/connect/...`).
+  const path = href.toLowerCase().replace(/^\/\d+\.x(?=\/)/, '')
 
   if (path.startsWith('/connect/openclaw-memory')) {
     return (
@@ -49,6 +50,12 @@ function ConnectIcon({ href, label }: { href: string; label: string }): ReactNod
   }
   if (path.startsWith('/connect/sdks')) {
     return <Code2 size={15} strokeWidth={1.75} className="sidebar-link-icon" aria-hidden="true" />
+  }
+  if (path.startsWith('/connect/sql-and-cypher')) {
+    return <Database size={15} strokeWidth={1.75} className="sidebar-link-icon" aria-hidden="true" />
+  }
+  if (path.startsWith('/connect/skills')) {
+    return <Sparkles size={15} strokeWidth={1.75} className="sidebar-link-icon" aria-hidden="true" />
   }
   if (path === '/connect/' || path === '/connect') {
     return <Sparkles size={15} strokeWidth={1.75} className="sidebar-link-icon" aria-hidden="true" />

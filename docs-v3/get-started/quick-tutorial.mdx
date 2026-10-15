@@ -1,0 +1,194 @@
+---
+title: Quick Tutorial
+description: Store connected records, query them, and search by keywords and meaning with the RushDB SDK — on RushDB Cloud or a self-hosted engine.
+sidebar_position: 2
+---
+
+import Tabs from '@site/src/components/LanguageTabs'
+import TabItem from '@theme/TabItem'
+
+# Quick Tutorial
+
+This tutorial stores a small project graph, queries it, and searches it. Every step runs unchanged on RushDB Cloud and on a self-hosted engine; only the connection differs. You need a database from [Get Started](./index.mdx).
+
+## 1. Install and connect
+
+<Tabs groupId="programming-language">
+  <TabItem value="typescript" label="TypeScript" default>
+
+```bash
+npm install @rushdb/javascript-sdk
+```
+
+```typescript
+import RushDB from '@rushdb/javascript-sdk'
+
+const db = process.env.RUSHDB_API_KEY
+  ? new RushDB(process.env.RUSHDB_API_KEY) // RushDB Cloud
+  : new RushDB(process.env.RUSHDB_TOKEN!, { direct: true, engineUrl: 'http://127.0.0.1:3000' }) // self-hosted
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```bash
+pip install rushdb
+```
+
+```python
+import os
+from rushdb import RushDB
+
+if os.environ.get("RUSHDB_API_KEY"):
+    db = RushDB(os.environ["RUSHDB_API_KEY"])  # RushDB Cloud
+else:
+    db = RushDB(os.environ["RUSHDB_TOKEN"], direct=True, engine_url="http://127.0.0.1:3000")  # self-hosted
+```
+
+  </TabItem>
+</Tabs>
+
+## 2. Push nested JSON
+
+Nested objects become their own records, linked to their parent. Keys in upper case become labels.
+
+<Tabs groupId="programming-language">
+  <TabItem value="typescript" label="TypeScript" default>
+
+```typescript
+await db.records.importJson({
+  label: 'PROJECT',
+  data: {
+    name: 'Search revamp',
+    status: 'active',
+    TASK: [
+      { title: 'Add keyword search to the docs site', status: 'done', estimate: 3 },
+      { title: 'Rank results by meaning and keywords', status: 'pending', estimate: 5 },
+      { title: 'Measure search latency', status: 'pending', estimate: 2 }
+    ]
+  }
+})
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```python
+db.records.import_json(
+    {
+        "name": "Search revamp",
+        "status": "active",
+        "TASK": [
+            {"title": "Add keyword search to the docs site", "status": "done", "estimate": 3},
+            {"title": "Rank results by meaning and keywords", "status": "pending", "estimate": 5},
+            {"title": "Measure search latency", "status": "pending", "estimate": 2},
+        ],
+    },
+    label="PROJECT",
+)
+```
+
+  </TabItem>
+</Tabs>
+
+## 3. Query across relationships
+
+Find the pending tasks of active projects, then total the remaining estimate. One SearchQuery shape filters, traverses and aggregates.
+
+<Tabs groupId="programming-language">
+  <TabItem value="typescript" label="TypeScript" default>
+
+```typescript
+const pending = await db.records.find({
+  labels: ['TASK'],
+  where: { status: 'pending', PROJECT: { status: 'active' } },
+  orderBy: { estimate: 'desc' }
+})
+console.log(pending.total, pending.data.map((task) => task.data.title))
+
+const remaining = await db.records.find({
+  labels: ['TASK'],
+  where: { status: 'pending' },
+  select: { estimate: { $sum: '$record.estimate' } }
+})
+console.log(remaining.data[0].data.estimate) // 7
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```python
+pending = db.records.find({
+    "labels": ["TASK"],
+    "where": {"status": "pending", "PROJECT": {"status": "active"}},
+    "orderBy": {"estimate": "desc"},
+})
+print(pending.total, [task.get("title") for task in pending.data])
+
+remaining = db.records.find({
+    "labels": ["TASK"],
+    "where": {"status": "pending"},
+    "select": {"estimate": {"$sum": "$record.estimate"}},
+})
+print(remaining.data[0].get("estimate"))  # 7
+```
+
+  </TabItem>
+</Tabs>
+
+## 4. Search by keywords
+
+Declare a text index once; it is built in the background and kept current on every write.
+
+<Tabs groupId="programming-language">
+  <TabItem value="typescript" label="TypeScript" default>
+
+```typescript
+await db.textIndexes.create({ label: 'TASK', property: 'title', consistency: 'immediate' })
+
+const hits = await db.records.textSearch({ labels: ['TASK'], query: 'search latency' })
+hits.data.forEach((task) => console.log(task.score, task.data.title))
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```python
+db.text_indexes.create({"label": "TASK", "property": "title", "consistency": "immediate"})
+
+hits = db.records.text_search({"labels": ["TASK"], "query": "search latency"})
+for task in hits.data:
+    print(task.score, task.get("title"))
+```
+
+  </TabItem>
+</Tabs>
+
+A search right after creating the index can report that the index is still `building`; wait until `textIndexes.find()` shows it `ready`.
+
+## 5. Search by meaning
+
+Vector search ranks records by similarity of embeddings.
+
+- **On RushDB Cloud**, create a managed index and search with plain text; Cloud embeds both the records and the query:
+
+  ```typescript
+  await db.ai.indexes.create({ label: 'TASK', propertyName: 'title' })
+  // when the index status is 'ready':
+  const similar = await db.records.vectorSearch({ labels: ['TASK'], propertyName: 'title', query: 'make search faster' })
+  ```
+
+- **On a self-hosted engine**, the engine stores and searches vectors you produce: create an external index, write vectors from your model, and search with a `queryVector`. Follow [Bring Your Own Vectors](../learn/semantic-search/bring-your-own-vectors.mdx).
+
+Add `text: { query: 'latency' }` to a vector search to make it [hybrid](../learn/semantic-search/hybrid-search.mdx): both rankings fused into one.
+
+## Next steps
+
+| Next | Guide |
+| --- | --- |
+| Model your own data | [Import Data](../learn/records-and-queries/import-data.mdx) · [Relationships](../learn/relationships/index.mdx) |
+| Learn the query language | [SearchQuery](../learn/search-query/search-query.md) · [Where Operators](../learn/search-query/where-operators.md) |
+| Search | [Keyword](../learn/semantic-search/keyword-search.mdx) · [Semantic](../learn/semantic-search/semantic-search.mdx) · [Hybrid](../learn/semantic-search/hybrid-search.mdx) |
+| Group writes atomically | [Transactions](../learn/records-and-queries/transactions.mdx) |
+| Give an agent memory | [Agent Memory Quickstart](../learn/agent-memory/quickstart.mdx) |
+| Run the engine in production | [Engine manual: Operations](../engine/operations/README.md) |

@@ -1,0 +1,223 @@
+---
+title: SQL and Cypher clients
+sidebar_label: SQL, Cypher and gRPC
+description: Query a self-hosted RushDB engine with PostgreSQL drivers (psql, node-postgres, psycopg) and Neo4j drivers over Bolt, next to the SDKs.
+---
+
+import Tabs from '@theme/Tabs'
+import TabItem from '@theme/TabItem'
+
+# SQL and Cypher clients
+
+A self-hosted engine speaks the PostgreSQL wire protocol and Bolt, the Neo4j protocol. Existing drivers and tools connect to it directly: `psql`, node-postgres or psycopg send SQL, and the Neo4j drivers send openCypher. They read and write the same records the SDKs do.
+
+:::note Self-hosted only
+RushDB Cloud is reached through the SDKs, the REST API and MCP. The PostgreSQL wire, Bolt and gRPC listeners belong to the [self-hosted engine](../deploy.mdx).
+:::
+
+| Interface | Language | Good for | Not available |
+| --- | --- | --- | --- |
+| PostgreSQL wire | SQL | Reports, SQL tools, services that already use a PostgreSQL driver | Transactions, vector and keyword search, system catalogs |
+| Bolt 5.0 | openCypher | Code and tools written for Neo4j | TLS, multitenant servers, vector and keyword search |
+| gRPC | Any enabled language, native operations | Service meshes; the full engine API over HTTP/2 | TLS, capability tokens |
+
+Search, embeddings, imports and index management go through the [SDKs](./sdks.mdx) or the engine's [HTTP API](../engine/connectivity/http-api.md).
+
+## How your data looks
+
+The examples use the records from the [Quick Tutorial](../get-started/quick-tutorial.mdx): a `PROJECT` with three `TASK` records, imported as nested JSON.
+
+| RushDB | SQL | Cypher |
+| --- | --- | --- |
+| Label `TASK` | Table `task` (names are case-insensitive) | `(:TASK)` |
+| Record ID | Column `__id` | `_id` in a returned node |
+| Property `estimate` | Column `estimate`, typed from the stored values | `t.estimate` |
+| Relationship type `KNOWS` | Table `rushdb_edges.knows` with `__source_id` and `__target_id` | `-[:KNOWS]->` |
+
+A nested import links parent and child with the default relationship type `__RUSHDB__RELATION__DEFAULT__`. In SQL that is the table `rushdb_edges."__rushdb__relation__default__"`; in Cypher, match it with an untyped arrow `-->`.
+
+## Turn the listeners on
+
+The PostgreSQL wire listener starts on port `5432` whenever SQL is enabled, which it is by default. Bolt needs a port and the `cypher` language:
+
+<Tabs groupId="engine-install">
+<TabItem value="binary" label="rushdb serve">
+
+```bash
+rushdb serve --data-dir ./rushdb-data --token "$RUSHDB_TOKEN" \
+  --languages sql,cypher --bolt-port 7687
+```
+
+</TabItem>
+<TabItem value="launcher" label="rushdb up">
+
+```bash
+rushdb up --data-dir ./rushdb-data --languages sql,cypher --bolt-port 7687
+```
+
+`rushdb up` takes every `rushdb serve` option.
+
+</TabItem>
+<TabItem value="docker" label="Docker">
+
+```bash
+docker run -d --name rushdb \
+  -p 127.0.0.1:3000:3000 -p 127.0.0.1:5432:5432 -p 127.0.0.1:7687:7687 \
+  -v rushdb-data:/data -e RUSHDB_TOKEN="$RUSHDB_TOKEN" \
+  rushdb/rushdb --languages sql,cypher --bolt-port 7687
+```
+
+</TabItem>
+</Tabs>
+
+Listing `--languages` replaces the default set, so name `sql` to keep the PostgreSQL wire listener. Add `--grpc-port 50051` for gRPC. The engine logs the ports it bound: `rushdb listening http_port=3000 pgwire_port=5432 grpc_port=0 bolt_port=7687`.
+
+## SQL over the PostgreSQL wire
+
+Connect as any user, with the engine token as the password and TLS off:
+
+<Tabs groupId="sql-client">
+<TabItem value="psql" label="psql">
+
+```bash
+PGPASSWORD="$RUSHDB_TOKEN" psql "host=127.0.0.1 port=5432 user=rushdb dbname=rushdb sslmode=disable"
+```
+
+```sql
+SELECT title, estimate FROM task WHERE status = 'pending' ORDER BY estimate DESC;
+
+-- Join tasks to their project through the nested-import relationship
+SELECT p.name, count(*) AS tasks
+FROM project p
+JOIN rushdb_edges."__rushdb__relation__default__" e ON e.__source_id = p.__id
+JOIN task t ON t.__id = e.__target_id
+GROUP BY p.name;
+```
+
+</TabItem>
+<TabItem value="node" label="node-postgres">
+
+```javascript
+import pg from 'pg'
+
+const client = new pg.Client({
+  host: '127.0.0.1',
+  port: 5432,
+  user: 'rushdb',
+  database: 'rushdb',
+  password: process.env.RUSHDB_TOKEN
+})
+await client.connect()
+
+const { rows } = await client.query(
+  'SELECT title, estimate FROM task WHERE status = $1 ORDER BY estimate DESC',
+  ['pending']
+)
+await client.query('INSERT INTO task (title, status, estimate) VALUES ($1, $2, $3)', ['Write docs', 'pending', 1])
+await client.end()
+```
+
+node-postgres returns `BIGINT` values, which RushDB integers are, as strings. Call `pg.types.setTypeParser(20, BigInt)` to get `BigInt`s.
+
+</TabItem>
+<TabItem value="python" label="psycopg">
+
+```python
+import os
+import psycopg
+
+with psycopg.connect(
+    host="127.0.0.1", port=5432, user="rushdb", dbname="rushdb",
+    password=os.environ["RUSHDB_TOKEN"],
+    autocommit=True,  # required: every statement commits on its own
+) as conn:
+    rows = conn.execute(
+        "SELECT title, estimate FROM task WHERE status = %s ORDER BY estimate DESC", ("pending",)
+    ).fetchall()
+    conn.execute("UPDATE task SET status = %s WHERE title = %s", ("done", "Write docs"))
+```
+
+</TabItem>
+</Tabs>
+
+What to know:
+
+- **Every statement commits on its own.** `BEGIN`, `COMMIT` and `ROLLBACK` fail with SQLSTATE `0A000`, so run drivers in autocommit mode (psycopg needs `autocommit=True`). Use [SDK transactions](../learn/records-and-queries/transactions.mdx) for atomic multi-step writes.
+- **One statement per query.** Multi-statement strings are not supported.
+- **No PostgreSQL catalogs.** `pg_catalog` does not exist, so `\d` in `psql` and tools that read it do not work. `information_schema.tables` and `information_schema.columns` list the tables and their columns.
+- **Supported SQL:** `SELECT` with joins, grouping and aggregates, and `INSERT`, `UPDATE` and `DELETE` on label tables. Tested with `psql`, node-postgres 8, psycopg 3 and tokio-postgres. See [SQL](../engine/languages/sql.md) for the dialect and limits, and [PostgreSQL wire protocol](../engine/connectivity/postgresql-wire.md) for error codes.
+
+## Cypher over Bolt
+
+Use a `bolt://` URL (not `neo4j://`) and the engine token as the password:
+
+<Tabs groupId="bolt-client">
+<TabItem value="python" label="Python">
+
+```python
+import os
+from neo4j import GraphDatabase
+
+driver = GraphDatabase.driver("bolt://127.0.0.1:7687", auth=("rushdb", os.environ["RUSHDB_TOKEN"]))
+with driver.session() as session:
+    pending = session.run(
+        "MATCH (p:PROJECT)-->(t:TASK) WHERE t.status = $status "
+        "RETURN p.name AS project, t.title AS title ORDER BY t.estimate DESC",
+        status="pending",
+    )
+    for record in pending:
+        print(record["project"], record["title"])
+
+    # Writes can run in a managed transaction and commit together.
+    session.execute_write(lambda tx: tx.run(
+        "CREATE (:TASK {title: $title, status: 'pending', estimate: 4})", title="Add Bolt docs"
+    ).consume())
+driver.close()
+```
+
+</TabItem>
+<TabItem value="javascript" label="JavaScript">
+
+```javascript
+import neo4j from 'neo4j-driver'
+
+const driver = neo4j.driver('bolt://127.0.0.1:7687', neo4j.auth.basic('rushdb', process.env.RUSHDB_TOKEN), {
+  disableLosslessIntegers: true
+})
+const session = driver.session()
+try {
+  const pending = await session.run(
+    'MATCH (p:PROJECT)-->(t:TASK) WHERE t.status = $status RETURN p.name AS project, t.title AS title ORDER BY t.estimate DESC',
+    { status: 'pending' }
+  )
+  console.log(pending.records.map((record) => record.toObject()))
+
+  const { records } = await driver.executeQuery('MATCH (t:TASK) RETURN count(t) AS tasks')
+  console.log(records[0].get('tasks'))
+
+  await session.executeWrite((tx) =>
+    tx.run("CREATE (:TASK {title: $title, status: 'pending', estimate: 4})", { title: 'Add Bolt docs' })
+  )
+} finally {
+  await session.close()
+  await driver.close()
+}
+```
+
+</TabItem>
+</Tabs>
+
+What to know:
+
+- **Reads see committed data.** `session.run`, `execute_read`/`executeRead` and `execute_query`/`executeQuery` all work. A read inside `execute_write`/`executeWrite` does not see that transaction's own writes until it commits.
+- **Nodes come back as maps** with `_id`, `__label` and the properties, not as driver `Node` objects. Return properties (`RETURN t.title AS title`) for typed columns.
+- **No TLS and no multitenant servers.** Keep Bolt on loopback or behind a proxy that terminates TLS.
+- Tested with the Python `neo4j` 6.4 and JavaScript `neo4j-driver` 6.2 drivers. See [openCypher](../engine/languages/cypher.md) for the supported language and [Bolt](../engine/connectivity/bolt.md) for the protocol details.
+
+## gRPC
+
+`rushdb.v1.Database/Execute` carries the same request envelope as the HTTP API, so it reaches every operation and language. The [gRPC page](../engine/connectivity/grpc.md) has the service definition and examples with `grpcurl` and Rust's `tonic`.
+
+## Security
+
+The PostgreSQL wire, Bolt and gRPC listeners are plaintext and accept only the engine's bootstrap token. They bind the `--listen` address, `127.0.0.1` by default. To reach them from another machine, put them behind a proxy that terminates TLS and authenticates callers. Binding them to a public address takes `--allow-insecure-listen`, and on a multitenant server they refuse it. See [Listener security](../engine/connectivity/README.md#listener-security) and [Security](../engine/operations/security.md).

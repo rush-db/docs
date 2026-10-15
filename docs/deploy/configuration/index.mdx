@@ -8,6 +8,7 @@ tags: [Configuration, Environment Variables, Security, Self-Hosted]
 ---
 
 import { DeployMethodRow, DeployMethodRowList, DeployCrossLinks } from '@site/src/components/DeployMethodCard'
+import { docsPathForVersion } from '@site/docs-versioning'
 
 # Configuration
 
@@ -22,7 +23,7 @@ Configure RushDB after deployment — environment variables, API key management,
     icon="ClipboardList"
     recommended
     tags={['Environment', '.env', 'Reference']}
-    href="/deploy/configuration/environment-variables"
+    href={docsPathForVersion('2.x', '/deploy/configuration/environment-variables')}
   />
   <DeployMethodRow
     title="Authorization"
@@ -32,7 +33,7 @@ Configure RushDB after deployment — environment variables, API key management,
     icon="Server"
     prerequisites={['RushDB dashboard access (cloud or self-hosted)']}
     tags={['API Key', 'JWT', 'Authentication']}
-    href="/deploy/configuration/get-api-key"
+    href={docsPathForVersion('2.x', '/deploy/configuration/get-api-key')}
   />
   <DeployMethodRow
     title="Security"
@@ -42,14 +43,14 @@ Configure RushDB after deployment — environment variables, API key management,
     icon="Layers"
     prerequisites={['Self-hosted RushDB running', 'Domain + DNS access']}
     tags={['TLS', 'HTTPS', 'Firewall', 'Secrets']}
-    href="/deploy/configuration/security"
+    href={docsPathForVersion('2.x', '/deploy/configuration/security')}
   />
 </DeployMethodRowList>
 
 <DeployCrossLinks
   prefix="Also see:"
   links={[
-    { label: 'Infrastructure', href: '/deploy/infrastructure' },
-    { label: 'Remote Hosting', href: '/deploy/remote-hosting' }
+    { label: 'Infrastructure', href: docsPathForVersion('2.x', '/deploy/infrastructure') },
+    { label: 'Remote Hosting', href: docsPathForVersion('2.x', '/deploy/remote-hosting') }
   ]}
 />

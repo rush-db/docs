@@ -8,6 +8,7 @@ tags: [Deployment, Production, Self-Hosted]
 ---
 
 import { DeployMethodRow, DeployMethodRowList, DeployCrossLinks } from '@site/src/components/DeployMethodCard'
+import { docsPathForVersion } from '@site/docs-versioning'
 
 # Remote Hosting
 
@@ -21,7 +22,7 @@ Deploy RushDB to any server. Start with the universal Docker command, or use a p
     time="~5 min"
     icon="ClipboardList"
     tags={['Checklist', 'Docker', 'Firewall']}
-    href="/deploy/remote-hosting/prerequisites"
+    href={docsPathForVersion('2.x', '/deploy/remote-hosting/prerequisites')}
   />
   <DeployMethodRow
     title="Templates"
@@ -31,7 +32,7 @@ Deploy RushDB to any server. Start with the universal Docker command, or use a p
     icon="Cloud"
     recommended
     tags={['Docker', 'Hetzner', 'Jelastic', 'Providers']}
-    href="/deploy/remote-hosting/templates"
+    href={docsPathForVersion('2.x', '/deploy/remote-hosting/templates')}
   />
   <DeployMethodRow
     title="AWS / GCP / Azure"
@@ -42,7 +43,7 @@ Deploy RushDB to any server. Start with the universal Docker command, or use a p
     prerequisites={['Cloud account', 'Linux VM (4 GB+ RAM)', 'Docker + Docker Compose']}
     commands={['curl -fsSL https://get.docker.com | sh', 'docker compose up -d']}
     tags={['AWS', 'GCP', 'Azure']}
-    href="/deploy/remote-hosting/aws-gcp-azure"
+    href={docsPathForVersion('2.x', '/deploy/remote-hosting/aws-gcp-azure')}
   />
   <DeployMethodRow
     title="Docker / Terraform / ECS"
@@ -53,15 +54,15 @@ Deploy RushDB to any server. Start with the universal Docker command, or use a p
     prerequisites={['Linux server', 'Docker + Docker Compose']}
     commands={['curl -L -o compose.yaml ...', 'curl -L -o .env ...', 'docker compose up -d']}
     tags={['Docker Compose', 'Terraform', 'ECS']}
-    href="/deploy/remote-hosting/self-hosting-rushdb"
+    href={docsPathForVersion('2.x', '/deploy/remote-hosting/self-hosting-rushdb')}
   />
 </DeployMethodRowList>
 
 <DeployCrossLinks
   prefix="Next steps after deployment:"
   links={[
-    { label: 'Templates', href: '/deploy/remote-hosting/templates' },
-    { label: 'Configuration', href: '/deploy/configuration' },
-    { label: 'Infrastructure', href: '/deploy/infrastructure' }
+    { label: 'Templates', href: docsPathForVersion('2.x', '/deploy/remote-hosting/templates') },
+    { label: 'Configuration', href: docsPathForVersion('2.x', '/deploy/configuration') },
+    { label: 'Infrastructure', href: docsPathForVersion('2.x', '/deploy/infrastructure') }
   ]}
 />

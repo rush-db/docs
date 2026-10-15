@@ -45,7 +45,7 @@ Always include `/mcp`. The root domain does not serve the MCP protocol.
 
 ---
 
-## Local MCP: API Key
+## Local MCP: RushDB Cloud API Key {#local-mcp-api-key}
 
 Get a [project API key](/deploy/configuration/get-api-key), add the relevant configuration, then restart your client.
 
@@ -104,7 +104,7 @@ Add `.vscode/mcp.json`:
 }
 ```
 
-### Self-Hosted Instance
+### Self-Hosted Platform Instance
 
 Add `RUSHDB_API_URL` to the `env` block:
 
@@ -116,6 +116,10 @@ Add `RUSHDB_API_URL` to the `env` block:
   }
 }
 ```
+
+## RushDB 3: A Self-Hosted Engine
+
+The 3.x MCP server can also connect to a self-hosted RushDB 3 engine (direct mode). See [MCP in the RushDB 3 documentation](/3.x/connect/mcp).
 
 ---
 
@@ -146,6 +150,7 @@ Clients with MCP Prompts support can fetch `rushdb.queryBuilder` at session star
 | ---------------- | -------- | ------------------------------- | ------------------------------------------------ |
 | `RUSHDB_API_KEY` | yes      | —                               | RushDB project API key                           |
 | `RUSHDB_API_URL` | no       | `https://api.rushdb.com/api/v1` | Override for self-hosted or staging environments |
+
 
 :::tip Security
 Treat `RUSHDB_API_KEY` like a password. Inject it through your MCP client or an OS keychain, and do not commit it to version control.

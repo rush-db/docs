@@ -49,11 +49,14 @@ function getTutorialFiles(dir) {
 
 /**
  * @param {string} siteDir
+ * @param {{ dir: string, routeBasePath: string }} version
  * @returns {Array<{id: string, title: string, description: string, href: string, tags: string[], time: string}>}
  */
-function loadTutorials(siteDir) {
-  const tutorialsDir = path.join(siteDir, 'docs', 'learn', 'tutorials')
+function loadTutorials(siteDir, version) {
+  const docsDir = path.join(siteDir, version.dir)
+  const tutorialsDir = path.join(docsDir, 'learn', 'tutorials')
   const tutorialFiles = getTutorialFiles(tutorialsDir)
+  const base = version.routeBasePath.replace(/\/+$/, '')
 
   const tutorials = []
 
@@ -69,7 +72,8 @@ function loadTutorials(siteDir) {
       id: slug,
       title: fm.title || slug,
       description: fm.description || '',
-      href: fm.slug || `/tutorials/${slug}`,
+      // Docs routes mirror the disk layout (trailing slash per siteConfig.trailingSlash).
+      href: `${base}/${path.relative(docsDir, filePath).split(path.sep).join('/').replace(/\.(md|mdx)$/, '')}/`,
       tags: Array.isArray(fm.tags) ? fm.tags : [],
       time: estimateReadTime(content),
       sidebar_position: fm.sidebar_position ?? 999
@@ -82,12 +86,19 @@ function loadTutorials(siteDir) {
   return tutorials
 }
 
-/** @type {import('@docusaurus/types').PluginModule} */
-module.exports = function tutorialsDataPlugin(context) {
+/**
+ * @param {import('@docusaurus/types').LoadContext} context
+ * @param {{ versions: Array<{ version: string, dir: string, routeBasePath: string }> }} options
+ * @returns {import('@docusaurus/types').Plugin<Record<string, ReturnType<typeof loadTutorials>>>}
+ */
+module.exports = function tutorialsDataPlugin(context, options) {
   return {
     name: 'tutorials-data',
     async loadContent() {
-      return loadTutorials(context.siteDir)
+      /** @type {Record<string, ReturnType<typeof loadTutorials>>} */
+      const byVersion = {}
+      for (const version of options.versions) byVersion[version.version] = loadTutorials(context.siteDir, version)
+      return byVersion
     },
     async contentLoaded({ content, actions }) {
       const { setGlobalData } = actions

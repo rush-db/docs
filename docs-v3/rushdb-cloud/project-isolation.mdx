@@ -1,0 +1,29 @@
+---
+title: Projects and Isolation
+description: How RushDB Cloud keeps each project's data separate, and how API keys map to projects.
+sidebar_position: 3
+---
+
+# Projects and Isolation
+
+A **project** is RushDB Cloud's data boundary. Every record, relationship, property, index and transaction belongs to exactly one project.
+
+## Each project is an engine tenant
+
+RushDB Cloud runs the RushDB engine in multitenant mode and maps each project to its own [tenant](../engine/data-model/tenants.md). The engine stores a tenant's data under its own key prefix, so a query can never read or write another tenant's records, and every index, counter and schema catalog is per tenant. Two projects can define a property named `email` with different types without affecting each other.
+
+## API keys are scoped to one project
+
+An API key belongs to one project. RushDB Cloud validates the key, resolves its project, and scopes every request to that project's tenant; a client never chooses the project itself. The dashboard and the hosted MCP connector let you pick a project, and that choice is still checked against your access.
+
+| Key | Can |
+| --- | --- |
+| Full access | Read and write the project. Server-side only. |
+| Read-only | Query the project; every write returns `403 Forbidden`. |
+
+## Recommendations
+
+- Use separate projects for development, staging and production.
+- Issue the minimum access a client needs: read-only keys for public read paths.
+- Rotate keys you suspect were exposed, from the project's **API Keys** tab.
+- When data must stay on infrastructure you operate, run a [self-hosted engine](../engine/getting-started/installation.md), with one tenant per customer or environment.

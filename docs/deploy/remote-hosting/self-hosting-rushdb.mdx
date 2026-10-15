@@ -8,6 +8,7 @@ tags: [Deployment, Self-Hosted, Docker]
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 import { DeployButtonGroup } from '@site/src/components/DeployMethodCard'
+import { docsPathForVersion } from '@site/docs-versioning'
 
 # Self-Hosting RushDB
 
@@ -17,7 +18,7 @@ RushDB ships as a single Docker image that includes the API server and the dashb
   buttons={[
     {
       label: 'Templates',
-      href: '/deploy/remote-hosting/templates',
+      href: docsPathForVersion('2.x', '/deploy/remote-hosting/templates'),
       variant: 'primary'
     },
     {

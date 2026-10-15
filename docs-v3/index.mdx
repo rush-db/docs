@@ -1,0 +1,46 @@
+---
+title: RushDB 3 documentation
+sidebar_label: Overview
+slug: /
+description: RushDB 3 — a graph database for apps and AI agents, on RushDB Cloud or self-hosted.
+---
+
+# RushDB 3
+
+RushDB is a graph database for apps and AI agents. Push JSON and get connected records you can filter, traverse, aggregate, and search by keywords, by meaning, or both, without designing a schema first.
+
+RushDB 3 runs on its own engine: a single Rust binary, `rushdb`, with its own storage, query planner, and vector and text indexes. You can use it two ways:
+
+| | **RushDB Cloud** | **Self-hosted engine** |
+| --- | --- | --- |
+| What it is | The managed service at [app.rushdb.com](https://app.rushdb.com): the engine plus the dashboard, managed embeddings and AI features | The Apache-2.0 engine on your own infrastructure |
+| Connect with | An API key: SDKs, REST API, MCP (local or hosted) | The engine URL and token: SDKs and MCP in direct mode, or the engine's own HTTP, PostgreSQL wire, Bolt and gRPC interfaces |
+
+The engine is the part of RushDB you can self-host. The dashboard, managed embeddings and the AI features — natural-language search, relationship-pattern suggestions — are part of RushDB Cloud.
+
+:::caution Pre-release
+RushDB 3 is being released. The JavaScript SDK, MCP server, agent skills and OpenClaw memory plugin for RushDB 3 are published; the Python SDK and Hermes provider follow. RushDB Cloud moves to the 3 engine with the platform cutover, and the engine's distribution channels open with its first release. Until then, the 2.x documentation (in the version switcher) describes RushDB Cloud as it runs today.
+:::
+
+## Start here
+
+| I want to… | Go to |
+| --- | --- |
+| Try RushDB in five minutes | [Get Started](./get-started/index.mdx) → [Quick Tutorial](./get-started/quick-tutorial.mdx) |
+| Choose between Cloud and self-hosting | [RushDB Cloud or a self-hosted engine](./learn/tutorials/use-cases/cloud-vs-self-hosted.mdx) |
+| Connect an app, an MCP client or an agent | [Connect](./connect/index.mdx) |
+| Learn records, relationships and SearchQuery | [Learn](./learn/records-and-queries/index.mdx) |
+| Add keyword, semantic or hybrid search | [Search](./learn/semantic-search/semantic-search.mdx) |
+| Install and operate the engine | [Engine manual](./engine/README.md) |
+| Upgrade from RushDB 2.x | [Migrate from 2.x](./migration/from-2x.mdx) |
+
+## What's new in RushDB 3
+
+- **A database of its own.** RushDB 2.x was an application layer over Neo4j. RushDB 3 is a standalone engine with its own storage, write-ahead log, MVCC transactions, backups and replication.
+- **Self-host the engine.** One binary or container, installed with a script, Homebrew, Docker or Cargo. The SDKs and MCP server connect to it directly.
+- **Keyword and hybrid search.** BM25 text indexes, and hybrid search that fuses vector and keyword rankings (RRF or DBSF) inside one filter.
+- **Named embedding indexes** and faster vector search: exact for small indexes, ANN for large ones, with a report of which ran.
+- **More ways in.** On a self-hosted engine: SQL over the PostgreSQL wire protocol, openCypher over Bolt, ISO GQL, Gremlin, SQL/PGQ, Mongo-style statements, and gRPC.
+- **Transactions staged in the engine,** with records named by id, and clear refusals for writes that can't be staged.
+
+See the [migration guide](./migration/from-2x.mdx) for what changed in the SDKs.

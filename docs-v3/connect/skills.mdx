@@ -1,0 +1,60 @@
+---
+sidebar_position: 3
+title: Agent Skills
+---
+
+# Agent Skills
+
+Install RushDB Agent Skills to teach compatible AI assistants how to query RushDB correctly, model graph data, build faceted search, and use RushDB as persistent memory. They work with Claude, GitHub Copilot, Cursor, Windsurf, and any [Agent Skills](https://agentskills.io)-compatible client.
+
+Skills complement the [MCP server](./mcp.mdx): MCP gives an agent runtime tools; Skills teach the agent when and how to use them. Skills themselves don't connect to anything or grant access to data.
+
+## Install
+
+For Agent Skills-compatible clients:
+
+```bash
+npx skills add rush-db/skills
+```
+
+Or install the npm package:
+
+```bash
+npm install @rushdb/skills
+```
+
+Start a new agent session after installation so the skills are discovered.
+
+## RushDB Cloud or a Self-Hosted Engine
+
+The skills work with both. Against a self-hosted engine (MCP direct mode), natural-language search, relationship-pattern suggestions and managed embeddings are not available: vector search takes a `queryVector`, and agent memory needs an embedding model of your own. The skills tell the agent to use only the tools the MCP server lists.
+
+## Included Skills
+
+| Skill                    | What it enables                                                                                               |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `rushdb-query-builder`   | Build correct filters, traversals, aggregations, and scope-safe semantic searches                             |
+| `rushdb-agent-memory`    | Route memory across native providers, MCP, and custom harnesses without duplicate writes                      |
+| `rushdb-memory-adapter`  | Build and validate secure lifecycle-aware memory plugins and providers                                        |
+| `rushdb-data-modeling`   | Design labels, properties, relationships, nested imports, and canonical memory records                        |
+| `rushdb-faceted-search`  | Build faceted filter interfaces from live property metadata                                                   |
+| `rushdb-domain-template` | Design a schema for any domain through guided conversation — entities, relationships, and a bootstrap payload |
+
+## Verify
+
+After connecting the MCP server and starting a new session, ask:
+
+> List the installed RushDB skills. Then call `getSchemaMarkdown` and summarize the labels in my RushDB project.
+
+An empty schema is valid for a new project. The important result is that the agent recognizes the RushDB skills and can call the MCP tool.
+
+## OpenClaw
+
+OpenClaw uses workspace-level skill installation. Follow the [OpenClaw walkthrough](../learn/tutorials/agent-memory/agent-skills-with-openclaw.mdx#part-2--install-the-rushdb-skills-pack) for native `openclaw` and ClawHub commands.
+
+## Next Steps
+
+- [Connect the MCP server](./mcp.mdx)
+- [Bootstrap persistent agent memory](../learn/agent-memory/quickstart.mdx)
+- [Use RushDB with AI agents](./agents.mdx)
+- [Browse the skills source](https://github.com/rush-db/skills)

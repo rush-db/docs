@@ -8,6 +8,7 @@ tags: [Infrastructure, Neo4j, PostgreSQL, SQLite]
 ---
 
 import { DeployMethodRow, DeployMethodRowList, DeployCrossLinks } from '@site/src/components/DeployMethodCard'
+import { docsPathForVersion } from '@site/docs-versioning'
 
 # Infrastructure
 
@@ -23,7 +24,7 @@ RushDB is made up of three layers: the **NestJS platform** (the API + dashboard 
     prerequisites={['Node.js 18+', 'Running Neo4j', 'Running PostgreSQL or SQLite']}
     commands={['RUSHDB_PORT=3000', 'RUSHDB_AES_256_ENCRYPTION_KEY=...']}
     tags={['NestJS', 'Node.js', 'API']}
-    href="/deploy/infrastructure/rushdb-platform"
+    href={docsPathForVersion('2.x', '/deploy/infrastructure/rushdb-platform')}
   />
   <DeployMethodRow
     title="Neo4j & Aura"
@@ -34,7 +35,7 @@ RushDB is made up of three layers: the **NestJS platform** (the API + dashboard 
     prerequisites={['Docker Compose or existing Neo4j 2026.x']}
     commands={['NEO4J_URL=bolt://...', 'NEO4J_PASSWORD=...']}
     tags={['Neo4j', 'Aura', 'BYOC']}
-    href="/deploy/infrastructure/neo4j-and-aura"
+    href={docsPathForVersion('2.x', '/deploy/infrastructure/neo4j-and-aura')}
   />
   <DeployMethodRow
     title="PostgreSQL / SQLite"
@@ -45,14 +46,14 @@ RushDB is made up of three layers: the **NestJS platform** (the API + dashboard 
     prerequisites={['Docker Compose or external PostgreSQL 14+']}
     commands={['SQL_DB_TYPE=postgres', 'SQL_DB_URL=postgresql://...']}
     tags={['PostgreSQL', 'SQLite']}
-    href="/deploy/infrastructure/postgresql-sqlite"
+    href={docsPathForVersion('2.x', '/deploy/infrastructure/postgresql-sqlite')}
   />
 </DeployMethodRowList>
 
 <DeployCrossLinks
   prefix="Looking for other configuration?"
   links={[
-    { label: 'Environment Variables', href: '/deploy/configuration/environment-variables' },
-    { label: 'Security', href: '/deploy/configuration/security' }
+    { label: 'Environment Variables', href: docsPathForVersion('2.x', '/deploy/configuration/environment-variables') },
+    { label: 'Security', href: docsPathForVersion('2.x', '/deploy/configuration/security') }
   ]}
 />

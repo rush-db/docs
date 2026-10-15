@@ -95,8 +95,9 @@ function TutorialCard({ tutorial: t }: { tutorial: TutorialEntry }) {
   )
 }
 
-export default function TutorialsIndex() {
-  const tutorials = usePluginData('tutorials-data') as TutorialEntry[]
+/** Lists the tutorials of one docs version (`2.x` by default). */
+export default function TutorialsIndex({ version = '2.x' }: { version?: string }) {
+  const tutorials = (usePluginData('tutorials-data') as Record<string, TutorialEntry[]>)[version] ?? []
   const [search, setSearch] = useState('')
   const [activeTag, setActiveTag] = useState<string | null>(null)
 

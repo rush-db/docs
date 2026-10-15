@@ -13,7 +13,12 @@
     "serve": "docusaurus serve",
     "write-translations": "docusaurus write-translations",
     "write-heading-ids": "docusaurus write-heading-ids",
-    "types:check": "tsc --noEmit"
+    "types:check": "tsc --noEmit",
+    "check:v3-content": "node scripts/check-v3-content.mjs",
+    "sync:engine-manual": "node scripts/sync-engine-manual.mjs",
+    "check:engine-manual": "node scripts/sync-engine-manual.mjs --check",
+    "verify:v3-quickstart": "node scripts/verify-v3-quickstart.mjs",
+    "verify:v3-clients": "node scripts/verify-v3-clients.mjs"
   },
   "dependencies": {
     "@docusaurus/core": "^3.8.1",
@@ -40,8 +45,11 @@
     "@docusaurus/module-type-aliases": "^3.8.1",
     "@docusaurus/tsconfig": "^3.8.1",
     "@docusaurus/types": "^3.8.1",
+    "@rushdb/javascript-sdk": "^3.0.0",
     "@types/react": "19.1.0",
     "@types/react-dom": "19.1.0",
+    "neo4j-driver": "^6.2.0",
+    "pg": "^8.23.1",
     "prettier": "^3.4.2",
     "typescript": "5.7.2"
   },

@@ -1,0 +1,68 @@
+---
+title: Agent Memory Event Contract
+description: The provider-neutral AgentMemoryEvent v1 schema used by RushDB agent integrations.
+displayed_sidebar: docs
+---
+
+# Agent Memory Event Contract
+
+`AgentMemoryEvent v1` is the provider-neutral contract shared by native agent adapters. Its JSON Schema is published by `@rushdb/agent-memory-contract/schema` and lives at `schema/agent-memory-event.v1.schema.json` in the [agent-memory-contract repository](https://github.com/rush-db/agent-memory-contract).
+
+## Canonical graph
+
+| Label         | Purpose                                         | Semantic property          |
+| ------------- | ----------------------------------------------- | -------------------------- |
+| `SESSION`     | Runtime/profile conversation boundary           | —                          |
+| `EPISODE`     | Bounded completed turn or lifecycle observation | `summary`                  |
+| `MEMORY_FACT` | Curated fact, preference, or rule               | `text`                     |
+| `ENTITY`      | Named person, service, file, or concept         | optional description       |
+| `TASK`        | Prospective work and status                     | optional title/description |
+| `ARTIFACT`    | Produced output and provenance                  | optional description       |
+
+Labels use `UPPER_CASE`, properties use `camelCase`, and timestamps use ISO 8601 UTC.
+
+## Required scope
+
+Every episode and fact carries:
+
+```text
+agentId
+profileId
+privacyScope
+participantScopeHash
+sandboxEligible
+```
+
+These fields are authorization constraints, not ranking hints. Apply them in the structured `where` prefilter before semantic similarity is calculated. Never accept these values from model-generated query text.
+
+Use separate RushDB projects for hard tenant isolation. Application properties inside one project are not equivalent to the authenticated project boundary.
+
+## Deterministic identity and idempotency
+
+An `EPISODE.eventId` is a SHA-256 digest over canonical JSON containing the schema version, runtime, agent/profile/session identity, source event, turn index, and bounded user/assistant text. `MEMORY_FACT.factId` similarly includes its scope, subject, kind, source event, and text.
+
+Adapters persist with:
+
+```typescript
+await db.records.upsert({
+  label: 'EPISODE',
+  data: event,
+  options: { mergeBy: ['eventId'], mergeStrategy: 'append' }
+})
+```
+
+The agent reply and memory projection are separate committed actions. Never keep a RushDB transaction open across an LLM turn.
+
+## Supersession
+
+Facts are not silently overwritten. A changed fact creates a new `MEMORY_FACT` with `active: true`, marks the previous fact inactive, and records `supersedesFactId`. Normal recall includes `active: true` in its structured filter, while audit/history workflows may inspect both versions.
+
+## Trust and prompt boundaries
+
+Events record `provenance`, `trustClass`, `originClass`, and `visibility`. Recalled memory must be injected as quoted contextual data with an explicit statement that it is not instructions or policy. Do not automatically persist system prompts, complete tool transcripts, secrets, command output, or local paths.
+
+## Eventual embeddings
+
+Managed embedding readiness is asynchronous. Adapters keep a bounded recent-write cache or exact structured lookup so a successful write does not depend on immediate vector-index visibility.
+
+See [OpenClaw Native Memory](../../connect/openclaw-memory.mdx) and [Hermes Native Memory Provider](../../connect/hermes-memory.mdx) for framework-specific lifecycle behavior.

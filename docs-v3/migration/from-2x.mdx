@@ -1,0 +1,82 @@
+---
+title: Migrate from RushDB 2.x
+sidebar_label: Migrate from 2.x
+description: What changes for RushDB Cloud users, self-hosted 2.x deployments, and SDK and MCP code when moving to RushDB 3.
+sidebar_position: 1
+---
+
+# Migrate from RushDB 2.x
+
+RushDB 2.x was an application platform on top of Neo4j. RushDB 3 is a database engine of its own; RushDB Cloud runs it, and it is the part of RushDB you can self-host. What you do depends on how you run RushDB today.
+
+| You run | What to do |
+| --- | --- |
+| **RushDB Cloud** | Nothing for your data: RushDB moves Cloud projects to the RushDB 3 engine. Upgrade your SDK and MCP server to 3.x (below). |
+| **A self-hosted RushDB 2.x platform** (Docker Compose, Helm, or a template, with Neo4j) | The platform is not self-hostable in RushDB 3. Either move to RushDB Cloud, or run the RushDB 3 engine and move your data: see [Upgrading from RushDB 2.x](../engine/operations/upgrading-from-2x.md) in the engine manual. |
+| **A Cloud project on your own Neo4j instance** | Projects no longer connect to an external Neo4j database; every project's data lives in the RushDB engine. |
+
+---
+
+## Upgrade the SDKs
+
+```bash
+npm install @rushdb/javascript-sdk@3
+pip install "rushdb>=3,<4"
+```
+
+Code written against the 2.x SDK keeps working on RushDB Cloud: the record, relationship, label, property, search and transaction APIs are unchanged. Review these changes:
+
+### Both SDKs
+
+| Change | What to do |
+| --- | --- |
+| **Untyped `detach` removes every type, both ways.** Without `typeOrTypes`, `records.detach` removes relationships of every type; without `direction`, in both directions. | Pass `typeOrTypes` (and `direction`) when you mean one kind of relationship. |
+| **Some writes are refused inside a transaction:** deleting by query, `detach`, `relationships.createMany` / `deleteMany`, upserts and merge imports, inline vectors, property deletes. Cloud answers `400` and rolls the transaction back. | Run them outside the transaction. See [Transactions](../learn/records-and-queries/transactions.mdx#supported-operations). |
+| **Reads inside a transaction see committed data,** not the transaction's staged writes. | Use the record a staged write returns. |
+| **`query.raw` runs openCypher in the engine** and returns rows keyed by column, in `data.records`, instead of a Neo4j driver result. | Return named columns (`RETURN p.name AS name`); check the [openCypher profile](../engine/languages/cypher.md). |
+| **`hops` without `max`** means up to 10 hops; "unbounded" traversal no longer exists. | Set `max` for deeper chains. |
+| Project settings no longer report `customDB` / `managedDB`. | Remove code that reads them. |
+
+### TypeScript
+
+| Change | What to do |
+| --- | --- |
+| Under Node, `import RushDB from '@rushdb/javascript-sdk'` now gets an ES module whose default export is the `RushDB` class (before, an ESM import received the CommonJS module object). | Drop any `.default` workaround. |
+| `records.findById([...ids])` searches by id (it used to post to the create endpoint). | — |
+
+### Python
+
+| Change | What to do |
+| --- | --- |
+| **`records.find` raises `RushDBError`** when a request fails, instead of returning an empty result. | Catch `RushDBError` where you relied on the empty result. |
+| **`ImportsAPI` is removed** (async import runs; no RushDB 3 server implements them). | Use `records.import_json` / `import_csv`, in batches. |
+| **Python 3.10 or newer**; no runtime dependencies (`requests` is no longer installed). | Upgrade Python 3.8/3.9 environments. |
+
+### New in 3.x
+
+- [Keyword search](../learn/semantic-search/keyword-search.mdx) (`records.textSearch`, `db.textIndexes`) and [hybrid search](../learn/semantic-search/hybrid-search.mdx) (`vectorSearch({ text })`, RRF or DBSF fusion).
+- [Named embedding indexes](../learn/semantic-search/manage-indexes.mdx), and `mode`, `ef` and `scoreThreshold` on vector search, with a report of how it ran.
+- [Direct mode](../connect/sdks.mdx): the same SDK against a self-hosted engine (`direct: true`, `engineUrl`, `scope`), with `CloudOnlyError` and `DirectModeError` instead of silent fallbacks.
+
+---
+
+## Upgrade the MCP server
+
+`npx -y @rushdb/mcp-server` runs 3.x. With `RUSHDB_API_KEY` it works with RushDB Cloud as before. New in 3.x:
+
+- **Direct mode** (`RUSHDB_MODE=direct`, `RUSHDB_ENGINE_URL`, `RUSHDB_ENGINE_TOKEN`) for a self-hosted engine, over stdio.
+- **New tools:** `listTextIndexes`, `createTextIndex`, `deleteTextIndex`, `textSearch`, `smartSearch`; `vectorSearch` takes `index`, `text`, `fusion` and the other hybrid options.
+- `detachRelation` no longer takes `transactionId`: a detach can't run inside a transaction.
+
+See [MCP](../connect/mcp.mdx) and [All MCP Tools](../learn/reference/mcp/tools.mdx).
+
+---
+
+## Removed with the Neo4j platform
+
+| 2.x feature | In RushDB 3 |
+| --- | --- |
+| Self-hosting the platform (Docker Compose, Helm, deploy templates, `rushdb/platform` image) | Self-host the [engine](../engine/getting-started/installation.md); the dashboard and AI features are RushDB Cloud |
+| Bring-your-own Neo4j for a Cloud project | The engine stores every project |
+| Async import runs (`/imports`, Python `ImportsAPI`) | `importJson` / `importCsv` in batches, or the engine's [nested import](../engine/data-model/nested-import.md) |
+| `RUSHDB_*` platform environment variables, `NEO4J_*` settings | The engine's [configuration](../engine/reference/configuration-reference.md) for a self-hosted engine |

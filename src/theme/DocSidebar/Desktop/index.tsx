@@ -5,6 +5,7 @@ import type { WrapperProps } from '@docusaurus/types'
 import DocSidebarDesktop from '@theme-original/DocSidebar/Desktop'
 import Logo from '@theme/Logo'
 import SidebarCommunity from '@site/src/components/SidebarCommunity'
+import DocsVersionSwitch from '@site/src/components/DocsVersionSwitch'
 import ThemeSwitch from '@site/src/components/ThemeSwitch'
 import { PanelLeftClose, PanelLeft, Search } from 'lucide-react'
 import type DocSidebarDesktopType from '@theme/DocSidebar/Desktop'
@@ -104,6 +105,8 @@ export default function DocSidebarDesktopWrapper(props: Props) {
           GET API KEY
         </Link>
       </div>
+
+      <DocsVersionSwitch />
 
       <button
         type="button"

@@ -1,0 +1,484 @@
+---
+sidebar_position: 1
+title: Semantic Search
+---
+
+import Tabs from '@site/src/components/LanguageTabs'
+import TabItem from '@theme/TabItem'
+
+# Semantic Search
+
+`db.records.vectorSearch()` / `POST /api/v1/ai/search` performs semantic vector search across records that have an associated embedding index. Candidates are narrowed by label and `where` filters first, then ranked by cosine or euclidean similarity.
+
+The search needs a `ready` embedding index, named by `index` or found from `labels` and `propertyName`. See [Manage Embedding Indexes](./manage-indexes.mdx).
+
+| | RushDB Cloud | Self-hosted engine (direct mode) |
+| --- | :---: | :---: |
+| Search by `queryVector` (an external index, or a managed one) | ✓ | ✓ |
+| Search by text `query` (managed embeddings) | ✓ | — |
+
+On a self-hosted engine, embed the query with your own model and pass `queryVector`; a text `query` throws `CloudOnlyError` before anything is sent. The Shell examples call the RushDB Cloud REST API.
+
+To combine meaning with exact keywords, add a `text` leg and the search becomes [hybrid](./hybrid-search.mdx). For keywords alone, use [keyword search](./keyword-search.mdx). To have RushDB Cloud turn a natural-language request into a `SearchQuery`, use [Smart Search](../search-query/smart-search.mdx).
+
+---
+
+## Managed Search (Query Text) [Cloud]
+
+For a **managed** index, pass a natural-language `query` string. RushDB Cloud embeds it with the same model that built the index.
+
+<Tabs groupId="programming-language">
+  <TabItem value="python" label="Python" default>
+
+```python
+response = db.records.vector_search({
+    "propertyName": "description",
+    "query": "machine learning for beginners",
+    "labels": ["Article"],
+    "limit": 5,
+})
+
+for result in response.data:
+    print(f"[{result.score:.3f}] {result.get('title')}")
+```
+
+  </TabItem>
+  <TabItem value="typescript" label="TypeScript">
+
+```typescript
+const { data: results } = await db.records.vectorSearch({
+  labels: ['Book'],
+  propertyName: 'description',
+  query: 'space exploration and interstellar travel',
+  limit: 5
+})
+
+results.forEach((r) => {
+  console.log(`[${r.score!.toFixed(4)}] ${r.data.title}`)
+})
+```
+
+  </TabItem>
+  <TabItem value="shell" label="Shell">
+
+`POST /api/v1/ai/search`
+
+```bash
+curl -X POST https://api.rushdb.com/api/v1/ai/search \
+  -H "Authorization: Bearer $RUSHDB_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "propertyName": "description",
+    "query": "fast delivery and easy returns",
+    "labels": ["Product"],
+    "limit": 5
+  }'
+```
+
+  </TabItem>
+</Tabs>
+
+---
+
+## External Search (Query Vector)
+
+For an **external** index, pass `queryVector` — a pre-computed embedding from your own model. No text is sent to any embedding model.
+
+<Tabs groupId="programming-language">
+  <TabItem value="python" label="Python" default>
+
+```python
+vec = my_embedder.embed("machine learning for beginners")
+
+response = db.records.vector_search({
+    "propertyName": "body",
+    "queryVector": vec,
+    "labels": ["Article"],
+    "limit": 10,
+})
+```
+
+  </TabItem>
+  <TabItem value="typescript" label="TypeScript">
+
+```typescript
+const myEmbedder = new MyEmbeddingModel()
+const vec = await myEmbedder.embed('space exploration')
+
+const { data: results } = await db.records.vectorSearch({
+  labels: ['Article'],
+  propertyName: 'body',
+  queryVector: vec,
+  limit: 10
+})
+```
+
+  </TabItem>
+  <TabItem value="shell" label="Shell">
+
+```bash
+curl -X POST https://api.rushdb.com/api/v1/ai/search \
+  -H "Authorization: Bearer $RUSHDB_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "propertyName": "body",
+    "queryVector": [0.1, 0.2, 0.3],
+    "labels": ["Article"],
+    "limit": 10
+  }'
+```
+
+  </TabItem>
+</Tabs>
+
+- `query` is **not allowed** with external indexes — the server has no model to embed it.
+- `queryVector` is accepted for managed indexes (bypasses server embedding).
+- When `queryVector` is supplied, `dimensions` can be omitted — the server infers it from vector length.
+
+---
+
+## Filter + Semantic Search
+
+The `where` clause acts as a **prefilter** — only records satisfying the filter are candidates for similarity ranking. All operators from [Where Operators](../search-query/where-operators.md) are available.
+
+<Tabs groupId="programming-language">
+  <TabItem value="python" label="Python" default>
+
+```python
+response = db.records.vector_search({
+    "propertyName": "description",
+    "query": "wireless headphones",
+    "labels": ["Product"],
+    "where": {
+        "category": {"$eq": "electronics"},
+        "inStock":  {"$eq": True},
+        "price":    {"$lt": 100},
+    },
+    "limit": 20,
+})
+```
+
+  </TabItem>
+  <TabItem value="typescript" label="TypeScript">
+
+```typescript
+const { data: results } = await db.records.vectorSearch({
+  labels: ['Product'],
+  propertyName: 'description',
+  query: 'wireless headphones',
+  where: {
+    category: { $eq: 'electronics' },
+    inStock: { $eq: true },
+    price: { $lt: 100 }
+  },
+  limit: 20
+})
+```
+
+  </TabItem>
+  <TabItem value="shell" label="Shell">
+
+```bash
+curl -X POST https://api.rushdb.com/api/v1/ai/search \
+  -H "Authorization: Bearer $RUSHDB_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "propertyName": "description",
+    "query": "wireless headphones",
+    "labels": ["Product"],
+    "where": {
+      "category": {"$eq": "electronics"},
+      "inStock":  {"$eq": true},
+      "price":    {"$lt": 100}
+    },
+    "limit": 20
+  }'
+```
+
+  </TabItem>
+</Tabs>
+
+---
+
+## Multi-Label Search
+
+Search across multiple entity types simultaneously. All listed labels must have an embedding index on the same `propertyName`.
+
+<Tabs groupId="programming-language">
+  <TabItem value="python" label="Python" default>
+
+```python
+response = db.records.vector_search({
+    "propertyName": "body",
+    "query": "machine learning trends",
+    "labels": ["Article", "Post", "Comment"],
+    "limit": 10,
+})
+
+for result in response.data:
+    print(result.get("__label"), f"{result.score:.3f}", result.get("title") or result.get("text"))
+```
+
+  </TabItem>
+  <TabItem value="typescript" label="TypeScript">
+
+```typescript
+const { data: results } = await db.records.vectorSearch({
+  labels: ['Article', 'Post', 'Comment'],
+  propertyName: 'body',
+  query: 'machine learning trends',
+  limit: 10
+})
+
+results.forEach((r) => console.log(r.data.__label, r.score, r.data.title ?? r.data.text))
+```
+
+  </TabItem>
+  <TabItem value="shell" label="Shell">
+
+```bash
+curl -X POST https://api.rushdb.com/api/v1/ai/search \
+  -H "Authorization: Bearer $RUSHDB_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "propertyName": "body",
+    "query": "machine learning trends",
+    "labels": ["Article", "Post", "Comment"],
+    "limit": 10
+  }'
+```
+
+  </TabItem>
+</Tabs>
+
+---
+
+## Result Shape
+
+Results are ordered by `__score` descending — closest match first.
+
+<Tabs groupId="programming-language">
+  <TabItem value="python" label="Python" default>
+
+```python
+# Sample result object (response.data[0]):
+# {
+#   "__id":          "rec_abc123",
+#   "__label":       "Product",
+#   "__score":       0.9214,
+#   "name":          "ANC Wireless Headphones",
+#   "description":   "Same-day shipping with hassle-free returns policy",
+#   "price":         89.99
+# }
+
+for result in response.data:
+    result.id                  # "rec_abc123"  — RushDB record ID
+    result.get("__label")      # "Product"     — record label
+    result.score      # 0.9214        — similarity score 0–1 (higher = more similar)
+    result.get("name")         # your fields via .get()
+    result["price"]            # or via [] — raises KeyError if missing
+```
+
+  </TabItem>
+  <TabItem value="typescript" label="TypeScript">
+
+```typescript
+// Sample result (DBRecordInstance):
+// {
+//   data: {
+//     __id:        "rec_abc123",
+//     __label:     "Product",
+//     __score:     0.9214,
+//     name:        "ANC Wireless Headphones",
+//     description: "Same-day shipping with hassle-free returns policy",
+//     price:       89.99
+//   }
+// }
+
+results.forEach((r) => {
+  r.id // "rec_abc123"  — RushDB record ID
+  r.data.__label // "Product"     — record label
+  r.data.__score // 0.9214        — similarity score 0–1 (higher = more similar)
+  r.data.name // your properties directly on r.data
+  r.data.price
+  r.score // same as r.data.__score — convenience getter
+})
+```
+
+  </TabItem>
+  <TabItem value="shell" label="Shell">
+
+```json
+{
+  "data": [
+    {
+      "__id": "rec_abc123",
+      "__label": "Product",
+      "__score": 0.9214,
+      "name": "ANC Wireless Headphones",
+      "description": "Same-day shipping with hassle-free returns policy",
+      "price": 89.99
+    }
+  ],
+  "success": true
+}
+```
+
+  </TabItem>
+</Tabs>
+
+---
+
+## Parameters Reference
+
+| Parameter            | Type                      | Required      | Description                                                                                             |
+| -------------------- | ------------------------- | ------------- | ------------------------------------------------------------------------------------------------------- |
+| `index`              | `string`                  | no            | The index to search, by name (or id). `propertyName` and `labels` then default to the index's own.      |
+| `propertyName`       | `string`                  | unless `index` | The indexed property to search against (e.g. `"description"`)                                          |
+| `labels`             | `string[]`                | unless `index` | Label(s) to search within (min 1)                                                                      |
+| `query`              | `string`                  | conditionally | Free-text query. Required for managed indexes; **not allowed** for external indexes.                    |
+| `queryVector`        | `number[]`                | conditionally | Pre-computed query vector. Required for external indexes. Also accepted for managed indexes.            |
+| `similarityFunction` | `"cosine" \| "euclidean"` | no            | Required when multiple indexes target the same `(label, propertyName)`.                                 |
+| `dimensions`         | `number`                  | no            | Disambiguates when multiple indexes match. Inferred from `queryVector.length` when `queryVector` given. |
+| `where`              | `object`                  | no            | Prefilter — applied before similarity scoring.                                                          |
+| `skip`               | `number`                  | no            | Pagination offset (default `0`)                                                                         |
+| `limit`              | `number`                  | no            | Maximum results to return (default `20`)                                                                |
+| `mode`               | `"auto" \| "exact" \| "ann"` | no          | `auto` (default) scores a small index exactly and uses the ANN graph for a large one; `exact` and `ann` force a path (`ann` needs a cosine index). |
+| `ef`                 | `number`                  | no            | ANN gather breadth, when the search runs on the ANN graph.                                              |
+| `scoreThreshold`     | `number`                  | no            | Keep only results scoring at least this much. Scores depend on the model, so a page may hold fewer than `limit` results. |
+| `text`               | `object`                  | no            | Adds a keyword leg, making the search [hybrid](./hybrid-search.mdx).                                    |
+
+### How the search ran
+
+The result reports the path the engine took: TypeScript `result.vectorSearch`, Python `result.meta["vectorSearch"]`, REST `meta.vectorSearch`.
+
+| Field      | Meaning                                                                                                  |
+| ---------- | -------------------------------------------------------------------------------------------------------- |
+| `mode`     | `exact` or `ann`: the path that produced the results.                                                    |
+| `ef`       | Gather breadth, for an ANN search.                                                                       |
+| `fallback` | Why a search that would use the ANN graph was answered exactly: `metric`, `budget`, `lowConfidence`, or `annWarming` (the graph is still being built). |
+| `pool`     | Vectors in the index.                                                                                    |
+
+---
+
+## Disambiguation
+
+When two indexes exist for the same `(label, propertyName)`, name the one you want with `index`, or specify `similarityFunction` to select it:
+
+<Tabs groupId="programming-language">
+  <TabItem value="python" label="Python" default>
+
+```python
+response = db.records.vector_search({
+    "labels": ["Product"],
+    "propertyName": "embedding",
+    "queryVector": vec,
+    "similarityFunction": "cosine",   # required — otherwise 422
+})
+```
+
+  </TabItem>
+  <TabItem value="typescript" label="TypeScript">
+
+```typescript
+await db.records.vectorSearch({
+  labels: ['Product'],
+  propertyName: 'embedding',
+  queryVector: vec,
+  similarityFunction: 'cosine' // required — otherwise 422 Unprocessable Entity
+})
+```
+
+  </TabItem>
+  <TabItem value="shell" label="Shell">
+
+```bash
+curl -X POST https://api.rushdb.com/api/v1/ai/search \
+  -H "Authorization: Bearer $RUSHDB_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "labels": ["Product"],
+    "propertyName": "embedding",
+    "queryVector": [0.1, 0.2, 0.3],
+    "similarityFunction": "cosine"
+  }'
+```
+
+  </TabItem>
+</Tabs>
+
+---
+
+## Pagination
+
+<Tabs groupId="programming-language">
+  <TabItem value="python" label="Python" default>
+
+```python
+PAGE = 20
+
+page1 = db.records.vector_search({
+    "propertyName": "description",
+    "query": "sustainable packaging",
+    "labels": ["Product"],
+    "limit": PAGE,
+    "skip": 0,
+})
+
+page2 = db.records.vector_search({
+    "propertyName": "description",
+    "query": "sustainable packaging",
+    "labels": ["Product"],
+    "limit": PAGE,
+    "skip": PAGE,
+})
+```
+
+  </TabItem>
+  <TabItem value="typescript" label="TypeScript">
+
+```typescript
+const PAGE = 20;
+
+const { data: page1 } = await db.records.vectorSearch({ ..., limit: PAGE, skip: 0 });
+const { data: page2 } = await db.records.vectorSearch({ ..., limit: PAGE, skip: PAGE });
+```
+
+  </TabItem>
+  <TabItem value="shell" label="Shell">
+
+```bash
+curl -X POST https://api.rushdb.com/api/v1/ai/search \
+  -H "Authorization: Bearer $RUSHDB_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"propertyName": "description", "query": "...", "labels": ["Product"], "limit": 20, "skip": 20}'
+```
+
+  </TabItem>
+</Tabs>
+
+---
+
+## Error Reference
+
+| HTTP                       | Cause                                                             |
+| -------------------------- | ----------------------------------------------------------------- |
+| `404 Not Found`            | No enabled embedding index found for `(label, propertyName)`      |
+| `422 Unprocessable Entity` | Multiple indexes match and `similarityFunction` was not specified |
+| `422 Unprocessable Entity` | `query` text supplied for an external index                       |
+| `422 Unprocessable Entity` | Vector length does not match index `dimensions`                   |
+| `503 Service Unavailable`  | Embedding model unavailable (managed indexes only)                |
+
+In direct mode the SDKs raise the engine's error instead of an HTTP status: `not_found` for a missing index, `invalid_request` for a vector of the wrong length.
+
+---
+
+## See also
+
+- [Manage Embedding Indexes](./manage-indexes.mdx) — create, list, delete, and monitor indexes
+- [Keyword Search](./keyword-search.mdx) — BM25 search over text indexes
+- [Hybrid Search](./hybrid-search.mdx) — fuse vector and keyword rankings in one search
+- [Write Records with Vectors](./write-with-vectors.mdx) — attach vectors when storing records
+- [Bring Your Own Vectors](./bring-your-own-vectors.mdx) — use external embedding models
+- [Smart Search](../search-query/smart-search.mdx) — generate and execute SearchQuery from natural language
+- [Find & Query](../records-and-queries/find-and-query.mdx) — keyword / graph-only search without AI

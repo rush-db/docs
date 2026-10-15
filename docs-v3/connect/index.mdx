@@ -1,0 +1,138 @@
+---
+sidebar_position: 1
+title: Connect RushDB
+---
+
+# Connect RushDB
+
+Start with the path that matches how you work. Every path below works with **RushDB Cloud** (sign in at [app.rushdb.com](https://app.rushdb.com) and use an API key) or with a **self-hosted RushDB engine** (the `rushdb` binary on your own machines, reached with its URL and token).
+
+| Goal                                                 | Fastest path                                      | Cloud | Self-hosted |
+| ---------------------------------------------------- | ------------------------------------------------- | :---: | :---------: |
+| Build an application or data pipeline                | [Use an SDK](#use-an-sdk)                         | ✓     | ✓           |
+| Give Cursor, Claude Desktop, or VS Code RushDB tools | [Local MCP server](#local-mcp-server)             | ✓     | ✓           |
+| Use RushDB from ChatGPT or Claude.ai                 | [Hosted MCP connector](#hosted-mcp-connector)     | ✓     | —           |
+| Teach an AI agent correct RushDB workflows           | [Install Agent Skills](#install-agent-skills)     | ✓     | ✓           |
+| Add persistent memory to an agent                    | [Agent memory](#agent-memory)                     | ✓     | ✓           |
+| Query with PostgreSQL or Neo4j drivers, or gRPC      | [SQL and Cypher clients](./sql-and-cypher.mdx)    | —     | ✓           |
+
+---
+
+## Use an SDK
+
+The TypeScript and Python SDKs have one API for both. On RushDB Cloud, pass an API key; for a self-hosted engine, pass its token with `direct: true` and its URL.
+
+```typescript
+import RushDB from '@rushdb/javascript-sdk'
+
+const db = new RushDB(process.env.RUSHDB_API_KEY!) // RushDB Cloud
+// const db = new RushDB(process.env.RUSHDB_TOKEN!, { direct: true, engineUrl: 'http://127.0.0.1:3000' })
+
+await db.records.importJson({
+  label: 'PROJECT',
+  data: {
+    name: 'RushDB adoption',
+    TASK: [
+      { title: 'Connect RushDB', status: 'done' },
+      { title: 'Query linked records', status: 'pending' }
+    ]
+  }
+})
+```
+
+One nested import creates the records and the relationships between them.
+
+[Connect with TypeScript or Python →](./sdks.mdx)
+
+---
+
+## Local MCP Server
+
+For Claude Desktop, Cursor, VS Code, and other local MCP clients, run the MCP server with a RushDB Cloud API key:
+
+```json
+{
+  "mcpServers": {
+    "rushdb": {
+      "command": "npx",
+      "args": ["-y", "@rushdb/mcp-server"],
+      "env": {
+        "RUSHDB_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+or point it at your own engine with `RUSHDB_MODE=direct`, `RUSHDB_ENGINE_URL` and `RUSHDB_ENGINE_TOKEN`. Restart your client, then ask:
+
+> Call `getSchemaMarkdown` and show me what labels exist in my RushDB project.
+
+[Choose your MCP client and mode →](./mcp.mdx)
+
+---
+
+## Hosted MCP Connector
+
+For ChatGPT, Claude.ai, and other web-based MCP clients, add this URL as a connector:
+
+```
+https://mcp.rushdb.com/mcp
+```
+
+Sign in with your RushDB account and choose the project to expose. No local installation or API key is required. The hosted connector is part of RushDB Cloud.
+
+[Set up a hosted MCP connector →](./mcp.mdx#hosted-oauth-no-installation)
+
+---
+
+## Install Agent Skills
+
+Install RushDB Agent Skills so your assistant knows how to query, model data, and manage persistent memory:
+
+```bash
+npx skills add rush-db/skills
+```
+
+Start a new agent session after installation so the skills are discovered.
+
+[Install and verify Agent Skills →](./skills.mdx)
+
+---
+
+## Agent Memory
+
+Give an agent durable, searchable memory through MCP, or natively in OpenClaw and Hermes:
+
+- [Agent Memory Quickstart](../learn/agent-memory/quickstart.mdx) — MCP plus skills, any agent
+- [OpenClaw Native Memory](./openclaw-memory.mdx) and [Hermes Native Memory Provider](./hermes-memory.mdx) — automatic recall and capture
+- [Agents](./agents.mdx) — the shared memory contract behind them
+
+On a self-hosted engine, recall by meaning needs an embedding model of your own; each integration explains how to supply one.
+
+---
+
+## Engine Protocols
+
+A self-hosted engine also serves its own interfaces, next to the SDKs. [SQL and Cypher clients](./sql-and-cypher.mdx) shows how to turn them on and connect `psql`, node-postgres, psycopg and the Neo4j drivers.
+
+| Interface               | Use it for                                                 |
+| ----------------------- | ---------------------------------------------------------- |
+| [Native HTTP protocol](../engine/connectivity/http-api.md) | The complete engine API, from any language |
+| [PostgreSQL wire](../engine/connectivity/postgresql-wire.md) | SQL from `psql`, drivers and BI tools |
+| [Bolt](../engine/connectivity/bolt.md)                    | openCypher from Neo4j drivers |
+| [gRPC](../engine/connectivity/grpc.md)                    | The native protocol over gRPC |
+| [CLI](../engine/connectivity/cli.md)                      | `rushdb up` and operational commands |
+
+---
+
+## Choose What to Build
+
+| Use case                          | Guide                                                                      |
+| --------------------------------- | -------------------------------------------------------------------------- |
+| Persistent agent memory           | [Agent Memory Quickstart](../learn/agent-memory/quickstart.mdx)            |
+| Keyword and hybrid search         | [Keyword Search](../learn/semantic-search/keyword-search.mdx)              |
+| Semantic search over your data    | [Semantic Search](../learn/semantic-search/semantic-search.mdx)            |
+| Natural-language search box [Cloud] | [Smart Search](../learn/search-query/smart-search.mdx)                   |
+| Graph-enriched retrieval          | [GraphRAG Tutorial](../learn/tutorials/ai-and-rag/graphrag.mdx)            |
+| Explore an unknown dataset safely | [Discovery Queries](../learn/tutorials/search-and-queries/discovery-queries.mdx) |

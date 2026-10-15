@@ -245,6 +245,34 @@ html[data-theme='dark'] .navbar__logo img {
   line-height: 1.25;
 }
 
+.rushdb-docs-version-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border-bottom: 1px solid var(--ifm-toc-border-color);
+  font-size: 0.78rem;
+}
+
+.rushdb-docs-version-switch__label {
+  color: var(--ifm-color-emphasis-600);
+  margin-right: 0.15rem;
+}
+
+.rushdb-docs-version-switch__link {
+  color: var(--ifm-color-emphasis-700);
+  text-decoration: none;
+}
+
+.rushdb-docs-version-switch__link:hover,
+.rushdb-docs-version-switch__link--active {
+  color: var(--ifm-color-primary);
+}
+
+.rushdb-docs-version-switch__link--active {
+  font-weight: 700;
+}
+
 .theme-doc-sidebar-container {
   margin-right: 1rem;
   background-color: var(--ifm-background-color);
