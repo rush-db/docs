@@ -29,7 +29,7 @@
   <a href="./LICENSE"><img alt="Apache 2.0 license" src="https://img.shields.io/badge/License-Apache--2.0-blue" /></a>
 </p>
 
-RushDB is the database for AI. It records fields, types and values on every write, so agents can read the schema before they query.
+RushDB is a self-describing, graph-native database that helps AI agents reason over data with confidence: progressively introspect what's queryable—without guesswork.
 
 This repository is the source of docs.rushdb.com. RushDB 3.x is served at the root; RushDB 2.x (legacy, Neo4j-based) is served at [`/2.x/`](https://docs.rushdb.com/2.x/get-started/quick-tutorial) and receives security fixes only until 2027-10-28.
 
