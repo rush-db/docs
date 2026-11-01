@@ -7,7 +7,7 @@
 <h1 align="center">RushDB Documentation</h1>
 
 <p align="center">
-  The source of truth for <a href="https://docs.rushdb.com">docs.rushdb.com</a>—from your first record to production graph infrastructure and durable agent memory.
+  Documentation for RushDB, the database for AI: self-hosted RushDB, RushDB Cloud, SDKs, query languages and protocols. Published at <a href="https://docs.rushdb.com">docs.rushdb.com</a>.
 </p>
 
 <p align="center">
@@ -17,7 +17,9 @@
   ·
   <a href="https://docs.rushdb.com/connect"><strong>Connect tools</strong></a>
   ·
-  <a href="https://docs.rushdb.com/deploy/local-hosting"><strong>Deploy</strong></a>
+  <a href="https://docs.rushdb.com/deploy"><strong>Deploy</strong></a>
+  ·
+  <a href="https://docs.rushdb.com/engine"><strong>Engine manual</strong></a>
 </p>
 
 <p align="center">
@@ -27,17 +29,21 @@
   <a href="./LICENSE"><img alt="Apache 2.0 license" src="https://img.shields.io/badge/License-Apache--2.0-blue" /></a>
 </p>
 
-This repository contains the official documentation for RushDB: a property-centric Labeled Meta Property Graph (LMPG) database and memory layer for modern applications and AI agents. It covers RushDB Cloud and self-hosting, TypeScript and Python SDKs, the REST API, MCP and agent integrations, records and relationships, structured queries, semantic search, and production operations.
+RushDB is a self-describing, graph-native database that helps AI agents reason over data with confidence: progressively introspect what's queryable—without guesswork.
+
+This repository is the source of docs.rushdb.com. RushDB 3.x is served at the root; RushDB 2.x (legacy, Neo4j-based) is served at [`/2.x/`](https://docs.rushdb.com/2.x/get-started/quick-tutorial) and receives security fixes only until 2027-10-28.
 
 ## Explore the documentation
 
 | Section                                                           | What you will find                                                                                                                |
 | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | [Quick start](https://docs.rushdb.com/get-started/quick-tutorial) | The shortest path from an API key to storing and querying data.                                                                   |
-| [Learn](https://docs.rushdb.com/learn/records-and-queries)        | Core graph concepts, records, relationships, SearchQuery, semantic search, agent memory, API references, and practical tutorials. |
-| [Connect](https://docs.rushdb.com/connect)                        | SDKs, REST, MCP, agent skills, and native OpenClaw and Hermes memory integrations.                                                |
-| [Deploy](https://docs.rushdb.com/deploy/local-hosting)            | Docker, source and Helm installation, cloud hosting, infrastructure, configuration, security, backup, and troubleshooting.        |
-| [RushDB Cloud](https://docs.rushdb.com/rushdb-cloud)              | Billing, project isolation, licensing, services, and managed-versus-self-hosted guidance.                                         |
+| [Learn](https://docs.rushdb.com/learn/records-and-queries)        | Records, relationships, SearchQuery, keyword, semantic and hybrid search, agent memory, SDK/MCP/REST references, and tutorials.   |
+| [Connect](https://docs.rushdb.com/connect)                        | SDKs, SQL and Cypher, MCP, agent skills, and native OpenClaw and Hermes memory integrations.                                      |
+| [Deploy](https://docs.rushdb.com/deploy)                          | RushDB Cloud or self-hosted RushDB from a script, Homebrew, Docker, Cargo or a release archive, and taking it to production.      |
+| [Engine manual](https://docs.rushdb.com/engine)                   | Install, data model, query languages, connectivity, indexes, operations, architecture and reference for self-hosted RushDB.      |
+| [RushDB Cloud](https://docs.rushdb.com/rushdb-cloud)              | What RushDB Cloud adds, API keys and projects.                                                                                    |
+| [Migrate from 2.x](https://docs.rushdb.com/migration/from-2x)     | Moving a RushDB 2.x (legacy) project to RushDB 3.                                                                                 |
 
 The site includes local full-text search, responsive navigation, Mermaid diagrams, syntax-highlighted examples, reusable MDX components, raw page sources, and machine-readable documentation indexes for agents and LLM tooling.
 
@@ -76,9 +82,10 @@ pnpm serve
 
 The repository serves both documentation generations at once. The default generation owns `/`; the other is available at `/<version>/`.
 
-- `docs/` and `sidebars.ts` contain the current 2.x, Neo4j-backed documentation.
-- `docs-v3/` and `sidebars.v3.ts` contain the 3.x documentation: RushDB on its own engine, used through RushDB Cloud or self-hosted.
-- [docs-versioning.ts](docs-versioning.ts) contains `DEFAULT_DOCS_VERSION`. Change its value from `'2.x'` to `'3.x'` when 3.x is ready to own `/`. The route base, sidebars, version switcher, legacy redirects, and generated LLMS content follow that one value.
+- `docs-v3/` and `sidebars.v3.ts` contain the 3.x documentation, served at `/`: RushDB on its own engine, used through RushDB Cloud or self-hosted.
+- `docs/` and `sidebars.ts` contain the RushDB 2.x (legacy, Neo4j-based) documentation, served at `/2.x/` with a legacy banner on every page. `sidebars.v2.ts` prefixes its root-relative links with `/2.x/`.
+- [docs-versioning.ts](docs-versioning.ts) contains `DEFAULT_DOCS_VERSION` (`'3.x'`). The route base, sidebars, version switcher, legacy redirects, and generated LLMS content follow that one value.
+- [docs-version-redirects.ts](docs-version-redirects.ts) derives redirects from the two file trees, so URLs from before 3.x owned `/` keep working: `/3.x/<path>` → `/<path>`, and an old unversioned 2.x URL with no 3.x page at the same path → `/2.x/<path>`.
 
 ### The 3.x tree
 
@@ -104,9 +111,9 @@ Keep a 2.x page self-contained. When it uses a root-relative link inside a reusa
 
 ## Authoring documentation
 
-1. Add or update a `.md` or `.mdx` file under `docs/` for 2.x or `docs-v3/` for 3.x.
+1. Add or update a `.md` or `.mdx` file under `docs-v3/` for 3.x or `docs/` for 2.x (legacy).
 2. Give the page concise `title` and `description` front matter.
-3. Register new navigation entries in `sidebars.ts` for 2.x or `sidebars.v3.ts` for 3.x; both sidebars are intentionally curated rather than autogenerated.
+3. Register new navigation entries in `sidebars.v3.ts` for 3.x or `sidebars.ts` for 2.x; both sidebars are intentionally curated rather than autogenerated.
 4. Use root-relative links for documentation routes, such as `/learn/semantic-search`, and `/img/...` paths for assets under `static/img/`.
 5. When moving a published page, add its legacy URL to `redirects-migration.ts`.
 6. Run `pnpm types:check` and `pnpm build` before submitting the change. For 3.x, also run `pnpm check:v3-content` (rejects 2.x claims in 3.x pages) and `pnpm verify:v3-quickstart` (runs the Quick Tutorial against a local engine; set `RUSHDB_BIN` to a `rushdb` binary).
@@ -117,9 +124,9 @@ Prefer a focused example that readers can run over an exhaustive abstract explan
 
 | Path                     | Purpose                                                                        |
 | ------------------------ | ------------------------------------------------------------------------------ |
-| `docs/`                  | 2.x documentation source pages, organized by public route.                     |
+| `docs/`                  | 2.x (legacy) documentation source pages, served under `/2.x/`.                 |
 | `docs-v3/`               | 3.x documentation source pages; `docs-v3/engine/` is generated.                |
-| `sidebars.ts`            | Curated 2.x navigation hierarchy and sidebar icons.                            |
+| `sidebars.ts`            | Curated 2.x (legacy) navigation hierarchy and sidebar icons.                   |
 | `sidebars.v3.ts`         | Curated 3.x navigation hierarchy.                                              |
 | `docs-versioning.ts`     | Default version, per-version paths and sidebars, unpublished pages.            |
 | `scripts/`               | Engine-manual sync, 3.x content check, and Quick Tutorial verification.        |
@@ -129,6 +136,7 @@ Prefer a focused example that readers can run over an exhaustive abstract explan
 | `src/css/custom.css`     | RushDB documentation theme and responsive styling.                             |
 | `plugins/`               | Local Docusaurus plugins for tutorials and Tailwind processing.                |
 | `redirects-migration.ts` | Redirects that preserve previously published URLs.                             |
+| `docs-version-redirects.ts` | Redirects from the pre-3.x-default layout, generated from the doc trees.    |
 | `docusaurus.config.ts`   | Site metadata, search, redirects, raw-source export, and LLM-index generation. |
 
 Generated directories—`build/` and `.docusaurus/`—are intentionally ignored and should not be edited or committed.
@@ -146,7 +154,7 @@ Publish the contents of `build/` with the static hosting platform used for `docs
 
 ## Related projects
 
-- [RushDB](https://github.com/rush-db/rushdb) — the RushDB 3 engine (`rushdb`) and its manual
+- [RushDB](https://github.com/rush-db/rushdb) — RushDB, the database for AI: the `rushdb` server and CLI, and its manual
 - [RushDB JavaScript SDK](https://github.com/rush-db/javascript-sdk) — `@rushdb/javascript-sdk`
 - [RushDB Python](https://github.com/rush-db/rushdb-python) — Python SDK
 - [RushDB MCP Server](https://github.com/rush-db/mcp-server) — `@rushdb/mcp-server`

@@ -2,6 +2,7 @@ import type { Config } from '@docusaurus/types'
 import type * as Preset from '@docusaurus/preset-classic'
 import tailwindPlugin from './plugins/tailwind-config.cjs'
 import slugMigrationRedirects from './redirects-migration'
+import { docsVersionRedirects, docsVersionRoutesPlugin } from './docs-version-redirects'
 import * as path from 'node:path'
 import * as fs from 'node:fs'
 import {
@@ -203,7 +204,7 @@ const config: Config = {
   title: 'RushDB Docs',
   organizationName: 'Collect Software Inc',
   projectName: 'RushDB Docs',
-  tagline: 'Instant Database for Modern Apps & AI Era',
+  tagline: 'RushDB — the database for AI',
   favicon: 'img/favicon.svg',
 
   // Set the production url of your site here
@@ -231,6 +232,7 @@ const config: Config = {
   plugins: [
     ['@docusaurus/plugin-content-docs', alternateDocsOptions],
     tailwindPlugin,
+    docsVersionRoutesPlugin,
     [
       require('./plugins/tutorials-data.cjs'),
       {
@@ -391,7 +393,12 @@ const config: Config = {
           { from: '/python-sdk/python-reference/search-result', to: '/learn/reference/python/search-result' },
           { from: '/python-sdk/python-reference/SearchQuery', to: '/learn/reference/python/SearchQuery' },
           { from: '/python-sdk/python-reference/transaction', to: '/learn/reference/python/transaction' }
-        ].map((redirect) => ({ ...redirect, to: legacyDocsRoute(redirect.to) }))
+        ]
+          .map((redirect) => ({ ...redirect, to: legacyDocsRoute(redirect.to) }))
+          // A version without an index page sends its base path to its home page.
+          .concat(DEFAULT_DOCS_VERSION === '3.x' ? [{ from: '/2.x', to: docsVersionHref('2.x') }] : []),
+        // URLs from the previous version layout (`/3.x/...`, unversioned 2.x pages).
+        createRedirects: docsVersionRedirects
       }
     ],
     ['@docusaurus/plugin-google-gtag', { trackingID: process.env.GTM_ID || 'GTM-XXXXX', anonymizeIP: true }],

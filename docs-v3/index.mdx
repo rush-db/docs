@@ -2,12 +2,12 @@
 title: RushDB 3 documentation
 sidebar_label: Overview
 slug: /
-description: RushDB 3 — a graph database for apps and AI agents, on RushDB Cloud or self-hosted.
+description: RushDB 3 — the database for AI. One database for your records, their relationships, and search over them, on RushDB Cloud or self-hosted.
 ---
 
 # RushDB 3
 
-RushDB is a graph database for apps and AI agents. Push JSON and get connected records you can filter, traverse, aggregate, and search by keywords, by meaning, or both, without designing a schema first.
+RushDB is the database for AI. Push JSON and get connected records you can filter, traverse, aggregate, and search by keywords, by meaning, or both, without designing a schema first.
 
 RushDB 3 runs on its own engine: a single Rust binary, `rushdb`, with its own storage, query planner, and vector and text indexes. You can use it two ways:
 
@@ -17,10 +17,6 @@ RushDB 3 runs on its own engine: a single Rust binary, `rushdb`, with its own st
 | Connect with | An API key: SDKs, REST API, MCP (local or hosted) | The engine URL and token: SDKs and MCP in direct mode, or the engine's own HTTP, PostgreSQL wire, Bolt and gRPC interfaces |
 
 The engine is the part of RushDB you can self-host. The dashboard, managed embeddings and the AI features — natural-language search, relationship-pattern suggestions — are part of RushDB Cloud.
-
-:::caution Pre-release
-RushDB 3 is being released. The JavaScript SDK, MCP server, agent skills and OpenClaw memory plugin for RushDB 3 are published; the Python SDK and Hermes provider follow. RushDB Cloud moves to the 3 engine with the platform cutover, and the engine's distribution channels open with its first release. Until then, the 2.x documentation (in the version switcher) describes RushDB Cloud as it runs today.
-:::
 
 ## Start here
 

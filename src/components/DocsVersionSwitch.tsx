@@ -12,7 +12,7 @@ function versionForPath(pathname: string): DocsVersion {
 }
 
 function label(version: DocsVersion): string {
-  return version === DEFAULT_DOCS_VERSION ? `${version} (current)` : version
+  return version === DEFAULT_DOCS_VERSION ? `${version} (current)` : `${version} (legacy)`
 }
 
 export default function DocsVersionSwitch() {
