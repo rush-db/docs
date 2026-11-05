@@ -147,7 +147,7 @@ at `begin` plus this transaction's staged writes.
 {
   "kind": "transactionGet",
   "transactionId": "0192f1f0a4c27b3e9d5f1a2b3c4d5e6f",
-  "record": { "_id": "00000000000000000000000000000001", "__label": "Person", "properties": { "name": "Ada" } }
+  "record": { "__id": "00000000000000000000000000000001", "__label": "Person", "properties": { "name": "Ada" } }
 }
 ```
 

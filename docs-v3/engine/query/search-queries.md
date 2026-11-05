@@ -93,7 +93,8 @@ Property names in `predicate`, `select`, `groupBy`, and `order` are matched
 after normalization: ASCII letters are lower-cased and every character that
 is not a letter or digit becomes `_`. `FirstName`, `firstname`, and
 `FIRSTNAME` all address the same property; `first-name` and `first_name`
-address another one. Records keep their original spelling in responses.
+address another one. Responses spell a property as it was first written in the
+tenant (see [Property names](../data-model/properties-and-types.md#property-names)).
 
 ## What kind of result you get
 
@@ -228,6 +229,11 @@ No match gives empty `content`.
 | Response size (`server.body-limit`) | 16 MiB for `rushdb serve` and `rushdb up` | A larger response fails rather than being truncated. Page large results with `limit` or a cursor. |
 | Distinct aggregation groups | 1,000 | See [Aggregations](aggregations.md#limits-and-budgets). |
 | Request deadline (`--request-timeout-ms`) | off | When set, a query running past it is cancelled with `cancelled` (HTTP 499). |
+| Records a filter without a usable index checks (`unindexed-walk-max-owners`) | no limit | A filter on a property with no ordered index walks every record that has it, which on millions of records takes minutes. When a limit is set, a larger walk is refused with `invalid_request` naming the index to declare. |
+
+A request can make each of these bounds stricter with `context.deadlineMs`,
+`context.queryMemoryMaxBytes` and `context.unindexedWalkMaxOwners` (see
+[request bounds](../architecture/resource-governance.md#request-bounds)).
 
 A query without `limit` returns every match, so always set `limit` on
 listings whose size you do not control.

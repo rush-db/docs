@@ -49,10 +49,13 @@ forms are recognised:
 | `2024-05-01T10:30:00Z`, `2024-05-01T10:30:00.250Z` | That UTC instant (a lowercase `z` is accepted too) |
 | `2024-05-01T12:30:00+02:00` | Converted to UTC (`10:30:00Z`); the original offset is not kept |
 | `2024-05-01T10:30:00` (no zone) | Treated as UTC |
+| `-0032-01-01T08:00:00Z`, `-0600-01-01` | A signed year: ISO 8601 astronomical numbering, so `0000` is 1 BC and `-0032` is 33 BC (proleptic Gregorian), in any of the layouts above |
 
 On output, a datetime that falls exactly on midnight UTC is rendered as a
 date (`2024-05-01`); any other instant is rendered as an RFC 3339 timestamp
-with milliseconds (`2024-05-01T10:30:00.000Z`). Datetime properties support
+with milliseconds (`2024-05-01T10:30:00.000Z`). A year before `0000` keeps its
+sign (`-0032-01-01T08:00:00.000Z`); RFC 3339 has no signed years, and
+JavaScript's `Date` reads them only in the six-digit form (`-000032`). Datetime properties support
 range filters and calendar-component filters such as `$year` and `$month`;
 see [Filtering](../query/filtering.md).
 
@@ -141,10 +144,13 @@ rdb '{"protocolVersion":1,"operation":{"kind":"mutate","mutation":{
 | `{"nickname": {"$exists": false}}` | Does not match | Matches |
 
 To make a property absent again on one record, `replace` the record without
-it; a `merge` that sends `null` stores an explicit null. A property that has
-only ever held `null` has no type yet, so it does not appear in
-`propertyTypes`; `describe.properties` and `describe.schema` list it with
-type `null` and the number of records that carry it.
+it; a `merge` that sends `null` stores an explicit null. A null has no type:
+`describe.properties` and `describe.schema` list a property's nulls as its
+own entry of type `null` (the number of records holding `null`), beside an
+entry per value type that counts only the records holding a value of that
+type. A property that has only ever held `null` has only the `null` entry and
+does not appear in `propertyTypes`. Nulls are not values: they are not in
+`propertyValues` lists, distinct counts or ranges.
 
 ## Property names
 
@@ -166,9 +172,10 @@ predicates, sorting and the schema catalog all use the normalised form, so
 > `snake_case`) and use it everywhere. Avoid relying on case to distinguish
 > two properties — it cannot.
 
-Avoid property names that start with `__` and the name `_id`; the engine uses
-these internally when it reconstructs records. In nested import, the key
-`$vectors` is reserved for attaching embeddings.
+Names that start with `__` are reserved for the engine (`__id`, `__label`,
+`__proptypes`, `__score`, …): a write that uses one is `invalid_request`.
+`_id` is an ordinary property. In nested import, `__id` sets the record's id
+and the key `$vectors` attaches embeddings.
 
 ## One name, several types
 
@@ -183,9 +190,10 @@ record and a number on another.
 The engine keeps a separate typed definition for each type it sees under a
 name, and the [schema catalog](schema-catalog.md#properties) lists one entry
 per type with a `siblingTypes` marker so clients can tell the property is
-split. Integers and floats are one type, `number`: integers written to a
-property that already holds floats are stored as floats, and a property that
-holds both is listed once as `number`.
+split. Integers and floats are one type, `number`: each value is stored as
+written (an integer stays an integer, in either order), range filters compare
+them as numbers, and a property that holds both is listed once as `number`.
+Inside one array a mix of integers and floats is stored as floats.
 
 Mixed types have consequences:
 

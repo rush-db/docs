@@ -28,7 +28,8 @@ declared index — or *residual* — it must be checked record by record. The
 planner estimates how many records each eligible leaf matches, materializes
 them most-selective first as compressed bitmaps of record ordinals, intersects
 them, and then evaluates the residual leaves only on the survivors. If no leaf
-is eligible, or even the most selective one is too large, it scans the label.
+is eligible, or even the most selective one is too large to walk without a
+declared index, it scans the label.
 
 ```mermaid
 flowchart TD
@@ -36,7 +37,7 @@ flowchart TD
     L --> E{eligible leaves?}
     E -- none --> S[label scan / full scan]
     E -- yes --> O[estimate each, sort ascending]
-    O --> C{smallest estimate > 2,000,000?}
+    O --> C{smallest estimate > 2,000,000<br/>and no ordered index on it?}
     C -- yes --> S
     C -- no --> M[materialize leaf owners, intersect]
     M --> R[evaluate residual leaves on survivors]
@@ -94,13 +95,52 @@ The planner returns to a scan of the requested labels (or of every record when
 
 - the predicate has no eligible leaf (for example only `$contains` or an
   `$or`);
-- the most selective eligible leaf is estimated above **2,000,000** records;
+- the most selective eligible leaf is estimated above **2,000,000** records
+  and no ready ordered index answers it (an indexed leaf of any size is read
+  from the index);
 - a leaf without an index would have to walk more than 2,000,000 owners of its
   property and no earlier leaf has already narrowed the candidates.
 
-Candidate bitmaps count against the request's working-set budget. A query whose
-candidate set exceeds it fails with `resource_exhausted` rather than returning
-a partial answer.
+Candidate bitmaps count against `query-memory-max` (default 256 MiB). A dense
+bitmap costs a few bits per record, so even a leaf of millions of records fits;
+a query whose working set exceeds the cap fails with `resource_exhausted`
+rather than returning a partial answer.
+
+A scan or walk runs to the end, as in PostgreSQL and Neo4j; the request's
+time and memory bounds stop it. To fail fast instead, the server
+(`unindexed-walk-max-owners`) or the request (`context.unindexedWalkMaxOwners`)
+sets the most records a filter without a usable index may check; above it the
+query is refused at planning with `invalid_request` naming the index to
+declare ([request bounds](../architecture/resource-governance.md#request-bounds)).
+
+SQL label tables read their candidates from the same planner: a statement's
+`column OP literal` conditions are planned like `where` leaves, and the
+statement is bounded and refused the same way
+([SQL § Large labels](../languages/sql.md#large-labels)).
+
+## Pages and totals
+
+A records query visits its candidates in record order and keeps only what the
+page needs:
+
+- **Without `order`**, it keeps the first `offset + limit` matches. When the
+  total is already known, it stops there. The total is known without
+  counting when nothing is left to check per record: from the label or tenant
+  record counters for a query without a predicate, and from the size of the
+  candidate bitmap when every leaf was eligible. Otherwise it keeps counting
+  matches without keeping them, so the total stays exact.
+- **With `order`**, it keeps the best `offset + limit` rows seen so far. It
+  reads only the ordering properties of each match, not the whole record
+  (arrays and system fields are the exception).
+- **Residual leaves** are evaluated on their own, reading only the properties
+  they name, not the whole record.
+
+Measured on one tenant of 10M records (2026-10-19): a first page without a
+predicate 7 ms; `status = "active" AND city = "Oslo"` on two ordered indexes
+(667,819 matches, exact total) 0.9 s; the same ordered by an indexed property
+2.2 s; adding an unindexed `age < 25` (65,078 matches) 22 s, because every
+one of the 667,819 candidates is checked. Declare an ordered index on a
+property you filter by to keep such reads short.
 
 ## Inspect a plan with `describe.explain`
 

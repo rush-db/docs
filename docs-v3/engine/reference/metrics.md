@@ -66,6 +66,7 @@ Bolt, and `pgwire.execute` for PostgreSQL wire.
 | `rushdb_storage_backend_mutex_wait_ms_total` | counter | — | Milliseconds spent waiting for the storage backend lock. |
 | `rushdb_storage_backend_mutex_hold_ms_total` | counter | — | Milliseconds the storage backend lock was held. |
 | `rushdb_storage_backend_mutex_hold_max_ms` | gauge | — | Longest single hold of the storage backend lock. |
+| `rushdb_writer_hold_seconds` | histogram | `holder` | Time one write transaction held the storage writer, from the start of its work to its commit: `publish` (commit groups), `history_gc` (one GC batch), `checkpoint` (fsync), `pause` (backup copy). Every other commit waits meanwhile, so the longest holds explain commit stalls. |
 
 ## Storage, WAL, and retention
 
@@ -85,6 +86,7 @@ Bolt, and `pgwire.execute` for PostgreSQL wire.
 | `rushdb_commit_log_rows_pruned` | gauge | — | Command-log rows reclaimed by retention. |
 | `rushdb_receipts_swept` | gauge | — | Retry receipts removed after the idempotency window. |
 | `rushdb_gc_tick_seconds` | histogram | — | Duration of one maintenance tick (GC, retention, checkpoint). |
+| `rushdb_maintenance_step_seconds` | histogram | `step` | Duration of one step of a maintenance tick: `read_pins`, `vector_segments`, `housekeeping`, `history_gc`, `retention`, `receipts`, `vector_slots`, `checkpoint`. |
 | `rushdb_retention_consumers` | gauge | — | Active retention consumers (backups, WAL archive, replicas, cursors). |
 | `rushdb_retention_protected_floor` | gauge | — | Lowest commit protected by a retention consumer. |
 | `rushdb_retention_oldest_reader_commit` | gauge | — | Oldest commit pinned by a live read view (0 = none). |
@@ -121,6 +123,7 @@ gauges. The allocator gauges stay 0 in builds without jemalloc.
 |---|---|---|---|
 | `rushdb_text_pending` | gauge | `index` | Changes not yet applied to each text index. In multitenant mode, summed by index name over the resident tenants. |
 | `rushdb_ann_exact_fallbacks_total` | counter | — | Vector searches answered exactly because the cache budget could not admit the ANN index. |
+| `rushdb_vector_searches_total` | counter | `path`, `reason` | Vector searches by the path that answered (`ann`, `exact`) and why (`none`, or the fallback: `annWarming`, `budget`, `metric`, `lowConfidence`). An `exact` answer with `annWarming` scanned every vector while the ANN index was built. |
 | `rushdb_unindexed_walks_total` | counter | — | Queries whose unindexed predicate leaf walked more than 10,000 owners; `describe.explain` names the ordered index to declare. |
 
 ## Startup

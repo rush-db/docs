@@ -98,7 +98,9 @@ See [Authentication](authentication.md).
 | `protocolVersion` | yes | Must be `1`. Any other value fails with `unsupported_version` (HTTP 426). |
 | `requestId` | no | Opaque string echoed in the response for correlation. |
 | `context.scope` | multitenant only | The tenant scope. On a multitenant server it is required and must equal the `X-RushDB-Tenant` header. On a single-tenant server it must be omitted (or `null`); a scope sent to a single-tenant server is refused with 403 `scope_mismatch`. |
-| `context.deadlineMs` | no | Ignored over HTTP: the server's `--request-timeout-ms` is authoritative. |
+| `context.deadlineMs` | no | Execution deadline in milliseconds. It may only shorten the server's `--request-timeout-ms`. |
+| `context.queryMemoryMaxBytes` | no | Working-memory cap of this request's queries, in bytes (positive). It may only lower `query-memory-max`. |
+| `context.unindexedWalkMaxOwners` | no | Refuse a filter without a usable index that would check more records than this; `0` refuses every such filter. It may only lower `unindexed-walk-max-owners`. See [request bounds](../architecture/resource-governance.md#request-bounds). |
 | `operation` | yes | The operation, tagged by `kind`. |
 
 Envelopes are strict where it matters: the native query document rejects
@@ -170,7 +172,7 @@ Common `response.kind` values:
 | `relationships` | `query.relationships` | `relationships`, `total` |
 | `propertyValues` | `query.propertyValues` | `property`, `values`, `distinctCount`, and mode-specific fields |
 | `count` | `query.joinPairs` | `value` |
-| `mutation` | delete, link, unlink, and retype-relations mutations | `affected` |
+| `mutation` | delete, link, unlink, and retype-relations mutations | `affected`; `retypeRelations` adds `merged` and `propertyConflicts` |
 | `statementMutation` | `mutate.statement` | `rows`, `total`, `affected`, `commitIndex`, optional `status` |
 | `ingested` | `ingest.documents`, `ingest.csv` | `count`, `relationships`, `records` |
 | `csv` | `query.exportCsv` | `content` (the CSV text), `count` |

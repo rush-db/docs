@@ -39,7 +39,7 @@ also verifies the archive's Sigstore signature.
 
 | Option | Environment variable | Default | Meaning |
 |---|---|---|---|
-| `--version <tag>` | `RUSHDB_VERSION` | latest release | Install a specific release, e.g. `v3.0.1` |
+| `--version <tag>` | `RUSHDB_VERSION` | latest release | Install a specific release, e.g. `v3.0.0` |
 | `--dir <path>` | `RUSHDB_INSTALL_DIR` | `~/.rushdb/bin` | Install directory |
 | `--no-modify-path` | `RUSHDB_NO_MODIFY_PATH=1` | off | Leave shell startup files alone |
 | `--verify-signature` | `RUSHDB_VERIFY_SIGNATURE=1` | off | Fail unless `cosign` verifies the signature |
@@ -47,7 +47,7 @@ also verifies the archive's Sigstore signature.
 Pass options after `sh -s --`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/rush-db/rushdb/main/install.sh | sh -s -- --version v3.0.1 --no-modify-path
+curl -fsSL https://raw.githubusercontent.com/rush-db/rushdb/main/install.sh | sh -s -- --version v3.0.0 --no-modify-path
 ```
 
 Supported platforms:
@@ -99,7 +99,7 @@ docker run -d --name rushdb \
   `rushdb/rushdb --languages sql,cypher,gql --bolt-port 7687`.
 - The image's health check runs `rushdb health`.
 
-Tags: `3.0.1` (exact), `3.0` and `3` (latest in that line). Images are signed
+Tags: `3.0.0` (exact), `3.0` and `3` (latest in that line). Images are signed
 with Sigstore and carry an SBOM and build provenance.
 
 ## Cargo

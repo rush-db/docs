@@ -46,7 +46,7 @@ flowchart LR
 | Derived family | What it answers |
 |---|---|
 | **Presence** — `(kind, label, pid, nullness, owner)` | Which owners of a label carry a property, and whether only as null. Lets the planner narrow a predicate to the owners that have the property at all. |
-| **Value dictionary** — `(kind, label, pid, value) → refcount` | How many occurrences hold each distinct value of a property under a label. Feeds exact counts for low-cardinality ranges and value-distribution estimates. Values whose encoding exceeds 96 bytes are counted in a separate "long values" counter instead of being stored. |
+| **Value dictionary** — `(kind, label, pid, value) → refcount` | How many occurrences hold each distinct value of a property under a label. Feeds exact counts for low-cardinality ranges and value-distribution estimates. Values whose encoding exceeds 96 bytes are not stored: a "long values" counter counts their occurrences, a refcount per value digest (16 bytes of SHA-256) and a distinct-long-values counter keep their distinct count exact. |
 | **Counters** | Live records per label; owners carrying each property (total and per label); explicit nulls; per-node degree in each direction; distinct values per property; relationships per `(type, source label, target label)`. |
 | **Array markers** | How many owners of a label hold a property as an array, so schema description can report array-ness without a scan. |
 | **Declared-index entries** — `(index, value, owner)` | Ordered entries for user-declared indexes ([query execution](query-execution.md#planning-choosing-candidates)). |

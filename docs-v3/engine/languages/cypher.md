@@ -18,7 +18,7 @@ Cypher database.
 | Property | Value |
 |---|---|
 | Status | **Release candidate** |
-| Enable with | `--languages cypher` (`languages.cypher: true`) |
+| Enable with | `--languages sql,cypher` (`languages.cypher: true`); a `--languages` list replaces the default set, so name `sql` to keep it |
 | Wire id | `cypher` |
 | Profile | openCypher property-graph profile |
 | Implementation | Grafeo graph planner and executor |
@@ -44,9 +44,12 @@ Cypher database.
 | Properties | Record or relationship properties |
 | Database | The request's tenant |
 
-A returned node is the record as a JSON object with its properties plus `_id`
+A returned node is the record as a JSON object with its properties plus `__id`
 (its dashed UUID) and `__label`. A returned relationship carries its
-properties plus `_id`, `type`, `source`, and `target` (dashed UUIDs). A
+properties plus `__id`, `__type`, `__source_id`, and `__target_id` (dashed
+UUIDs), the same system fields SQL uses. Names starting with `__` are the
+engine's, so they never collide with a property; `_id` is an ordinary
+property. A
 returned path is `{"nodes": [...], "edges": [...]}` with those objects.
 Temporal values are ISO 8601 strings (`1984-10-11`, `12:31:14.645Z`,
 `1984-10-11T12:31:14Z`, `P1Y2M`). A statement without `RETURN` (an updating
@@ -226,6 +229,20 @@ be reported upstream; RushDB does not patch Grafeo.
 | Lazy writes | 10 | `SKIP`/`LIMIT` after an updating clause also limits the updates. |
 | Non-termination | 1 | A variable-length match around a cycle does not end; the request deadline cancels it. |
 
+One internal error has a workaround. Grafeo builds a `CREATE` property only
+from a literal, a parameter, a variable or a property, so a computed value
+(a list index such as `r[0]`, `CASE`, arithmetic, a function call) fails.
+RushDB reports it as `unsupported`, not as an internal error. Compute the
+value in a `WITH` first:
+
+```cypher
+// Fails: CREATE (a)-[:FOLLOWS {since: r[2]}]->(b)
+UNWIND $rows AS r
+WITH r[0] AS src, r[1] AS dst, r[2] AS since
+MATCH (a:User {name: src}), (b:User {name: dst})
+CREATE (a)-[:FOLLOWS {since: since}]->(b)
+```
+
 ## Conformance
 
 The CI `opencypher-tck` job runs the whole openCypher TCK (2024.2) against a
@@ -247,6 +264,7 @@ aggregation 17% and graph functions 6%. Details and per-category counts are in
 |---|---|---|
 | Cypher not enabled | `language_disabled` | `Neo.ClientError.Statement.SyntaxError` |
 | Syntax not accepted by the parser | `unsupported` | `Neo.ClientError.Statement.SyntaxError` |
+| Computed property value in `CREATE` (see [Known defects](#known-defects)) | `unsupported` | `Neo.ClientError.Statement.SyntaxError` |
 | Statement error (undefined variable, type error, a write sent with `query.statement`) | `invalid_request`, with the engine's reason | `Neo.ClientError.Statement.SyntaxError` |
 | More than 8,192 clauses in one statement | `invalid_request` | `Neo.ClientError.Statement.SyntaxError` |
 | Index DDL sent with `query.statement` | `invalid_request` | `Neo.ClientError.Statement.SyntaxError` |

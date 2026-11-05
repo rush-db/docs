@@ -36,7 +36,7 @@ is for developers bringing Neo4j-style applications or tools to RushDB.
 The Bolt listener needs a port and a graph language:
 
 ```bash
-rushdb serve --data-dir ./data --languages cypher --bolt-port 7687
+rushdb serve --data-dir ./data --languages sql,cypher --bolt-port 7687
 ```
 
 It binds only when `--bolt-port` is non-zero **and** `cypher` is enabled:
@@ -66,7 +66,13 @@ opening a second keyspace.
    reads or writes, and routes it to the read or the write operation; you do
    not need separate read and write sessions. `RUN` executes the whole
    statement and buffers its rows; `PULL {n}` streams them in windows (`n: -1`
-   means all). `has_more` tells you whether rows remain.
+   means all). `has_more` tells you whether rows remain. The `SUCCESS` that
+   ends the result carries the query `type` (`r`, `w`, or `rw` for a write
+   that returns rows) and, after a write that changed data,
+   `stats: {"contains-updates": true}`. That is the only counter: RushDB
+   reports how many changes a write applied, not of which kind, so a
+   driver's `nodes_created` and similar counters stay 0 while
+   `contains_updates` is true.
 4. **`GOODBYE`** closes the connection.
 
 Supported messages:
@@ -95,11 +101,17 @@ discards them.
 ```text
 C: BEGIN {}
 S: SUCCESS {}
-C: RUN "CREATE (p:Person {name: 'commit'})" {} {}
+C: RUN "CREATE (p:Person {name: 'commit'})-[:WORKS_AT]->(:Company {name: 'Acme'})" {} {}
 S: SUCCESS {"fields": [], "type": "w"}
+C: PULL {"n": -1}
+S: SUCCESS {"type": "w", "stats": {"contains-updates": true}, "has_more": false}
 C: COMMIT
 S: SUCCESS {}
 ```
+
+Nodes, relationships (between new nodes, staged nodes or committed ones),
+updates and deletes all stage, so a driver's managed transactions
+(`execute_write`) work for any write.
 
 Rules inside an explicit transaction:
 
@@ -130,9 +142,9 @@ values:
 | Node, Relationship, Path structures | not sent: nodes and relationships are returned as **maps** |
 | Temporal and spatial structures | no |
 
-A returned node is a map of its properties plus `_id` (its dashed UUID) and
-`__label`; a relationship is a map of its properties plus `_id`, `type`,
-`source`, and `target` (dashed UUIDs). Drivers that expect `Node` and `Relationship` objects see plain maps
+A returned node is a map of its properties plus `__id` (its dashed UUID) and
+`__label`; a relationship is a map of its properties plus `__id`, `__type`,
+`__source_id`, and `__target_id` (dashed UUIDs). Drivers that expect `Node` and `Relationship` objects see plain maps
 instead. Return properties (`RETURN n.name AS name`) when you need typed
 columns.
 
@@ -184,7 +196,7 @@ What to expect from a driver:
   transactions (`execute_read`, `executeRead`) and `execute_query` all work.
   A read inside `execute_write`/`executeWrite` does not see that
   transaction's own writes until it commits.
-- **Nodes and relationships are maps.** `RETURN n` gives a map with `_id`,
+- **Nodes and relationships are maps.** `RETURN n` gives a map with `__id`,
   `__label` and the properties, not a driver `Node`.
 - **Integers are 64-bit.** The JavaScript driver returns them as its
   `Integer` type; call `.toNumber()` or create the driver with

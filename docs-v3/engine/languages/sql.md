@@ -49,11 +49,20 @@ name is the label name; lookups are case-insensitive, so the label `Person` is
 | Column | Type | Content |
 |---|---|---|
 | `__id` | text | The record's stable id (UUID). |
-| one column per property | inferred | Every property any record of that label has. |
+| one column per property | from the catalog | Every property any record of that label has. |
 
-Column types are inferred from the stored values of all records of the label
-at the snapshot (integers, floats, strings, booleans, arrays, nested objects).
-A record that lacks a property reads as `NULL` in that column.
+Column types come from the label's property catalog at the snapshot: the
+types its records store under each property (integers, floats, strings,
+booleans, datetimes as epoch milliseconds, arrays). Mixed types widen the way
+JSON values do: integers and floats read as floats, any other mix as text.
+Comparing such a text column with a number casts every value to a number, so
+a value that is not one fails the statement with `invalid_request` (`22P02`
+over pgwire) rather than being skipped. Compare it with text, or skip those
+values explicitly: `WHERE TRY_CAST(price AS BIGINT) > 30`. An
+array that has only ever been empty takes the element type its property was
+defined with. Property columns come in the order the properties were first
+created, then `__id`. Building a table reads no record, whatever the label's
+size. A record that lacks a property reads as `NULL` in that column.
 
 **Relationship tables.** Every relationship type is a table in the
 `rushdb_edges` schema, named after the type in lowercase (`KNOWS` becomes
@@ -67,7 +76,12 @@ A record that lacks a property reads as `NULL` in that column.
 | `__type` | The relationship type. |
 | one column per property | Relationship properties. |
 
-Relationship tables are read-only.
+Relationship tables are read-only. They stream like label tables: resolving
+`rushdb_edges.knows` reads the type's columns and row count from the
+relationship catalog, without reading a relationship, and a scan reads the
+relationships in batches, so there is no relationship cap. A scan still reads
+past the relationships of other types (there is no per-type index yet), so
+its cost grows with the graph, not only with the type.
 
 > **Note:** Labels that differ only in letter case (`Person` and `PERSON`)
 > resolve to the same SQL table name. Keep label names case-distinct if you
@@ -126,6 +140,30 @@ ORDER BY t.score DESC;
 See [Full-text search](../indexes-and-search/full-text-search.md#from-statement-languages).
 
 `EXPLAIN` is accepted and returns DataFusion's plan.
+
+### Large labels
+
+A label table streams its records, so a label of any size can be read.
+Filters use the same [query planner](../indexes-and-search/query-planning.md)
+as native queries:
+
+- A `column = literal`, `>=`, `<=`, `>` or `<` condition on a property with an
+  ordered index (and `__id = '…'`) narrows the records read to the index's
+  candidates. Conditions combined with `AND` are intersected; other
+  conditions beside them are checked on those candidates.
+- When the index answers a filter exactly (`=` on a property that holds one
+  kind of value, or `>=`/`<=` on a numeric one), no record is read for it:
+  `SELECT count(*) FROM "User" WHERE status = 'active' AND city = 'Oslo'`
+  counts index entries.
+- A filter with no usable index walks the label, like a PostgreSQL
+  sequential scan: on millions of records it takes minutes. The request's
+  time and memory bounds stop it, and a session can refuse such filters
+  outright with `SET disallow_full_table_scans = on` (or the server with
+  `unindexed-walk-max-owners`); the statement then fails with
+  `invalid_request` naming the property to index, as native queries do.
+  See [request bounds](../architecture/resource-governance.md#request-bounds).
+- `SELECT count(*)` with no filter reads the label's record counter, and a
+  `LIMIT` without a filter stops after its rows.
 
 ### Parameters
 
@@ -233,6 +271,11 @@ CREATE VECTOR INDEX note_embedding ON Note(embedding) SIMILARITY cosine DIMENSIO
 DROP INDEX item_price;
 ```
 
+The label is resolved like a table name: case-insensitively, to the stored
+label a `SELECT` on that name reads, so `CREATE INDEX s_region ON supplier
+(region)` indexes the label `SUPPLIER`. A label no record has yet is kept as
+written.
+
 The response `status` carries the created vector index's name. See
 [Indexes](../indexes-and-search/indexes.md) for how indexes are built and used.
 
@@ -252,25 +295,50 @@ transaction operations or a single DML statement that covers all of them.
 
 | Limit | Value | Error |
 |---|---|---|
-| Records in one label table | 100,000 | `resource_exhausted` |
-| Relationships scanned when a query uses `rushdb_edges` | 100,000 per tenant | `resource_exhausted` |
+| Writes one `INSERT`, `UPDATE` or `DELETE` plans (ids and new values) | the request's response budget | `resource_exhausted` |
 | Result rows per statement | 100,000 | `resource_exhausted` |
-| Result bytes | the request's working-set budget (`--query-memory-max`, default 256 MiB) | `resource_exhausted` |
+| Result bytes | the request's response budget (the body limit, 16 MiB) | `resource_exhausted` |
+| Working memory (sorts, groups, joins) | the response budget plus 16 MiB, and at most `query-memory-max` (256 MiB) or the request's smaller cap (`work_mem` over pgwire) | `resource_exhausted` |
+| Time | `request-timeout-ms` (none), or the request's shorter deadline (`statement_timeout` over pgwire) | `cancelled` |
+| Records an unindexed filter walks | none, unless `unindexed-walk-max-owners` or the request sets a limit (`disallow_full_table_scans` over pgwire) | `invalid_request` |
 
-These caps bound the in-memory Arrow snapshot. For larger labels, use the
-[native query document](../query/search-queries.md), which streams from the
-storage layout and supports cursors.
+Reads of label tables stream and have no record cap (see
+[Large labels](#large-labels)). DML statements read the same way: an `UPDATE`
+or `DELETE` finds its rows like a `SELECT` with the same `WHERE` (planned on the
+indexes), and only the rows it touches are held until the single atomic commit,
+so a statement can change any number of records within the request budget.
+Relationship tables stream too; a join with them is bounded by working
+memory, not a row count. For deep traversals, the
+[native query document](../query/search-queries.md) walks relationships
+without joins.
+
+## Under a data-access policy
+
+When the tenant's [data-access policy](../operations/security.md) is
+enforced, SQL `SELECT` sees only what the policy allows: a table for each
+allowed label, a column for each of its visible properties, and a
+`rushdb_edges` table for each relationship type that is not denied, holding
+only relationships whose source and target labels are both allowed. A hidden
+table or column fails exactly like one that does not exist (`not_found`), and
+no error or suggestion names it. `text_search` is not available under an
+enforced policy, and SQL DML and the other statement languages still fail
+with `unauthorized`.
 
 ## Errors
 
 | Situation | Protocol error | SQLSTATE over pgwire |
 |---|---|---|
 | SQL not enabled | `language_disabled` | `0A000` |
-| Unknown table or column | `not_found` | `42P01` |
-| Unsupported DML form (multi-statement, relationship table, non-DML on the write path) | `unsupported` | `0A000` |
+| Unknown table (the message suggests close names: `Did you mean 'Patient'?`) | `not_found` | `42P01` |
+| Unknown column (the message names the valid or closest columns) | `not_found` | `42703` |
+| Unknown function | `not_found` | `42883` |
+| A value that does not cast (a mixed-type column compared with a number), division by zero, overflow | `invalid_request` | `22P02`, `22012`, `22003` |
+| Unsupported DML form (multi-statement, relationship table, non-DML on the write path, `RETURNING`, `ON CONFLICT`, `ORDER BY`/`LIMIT` in DML) | `unsupported` | `0A000` |
+| A statement that is neither a read nor DML/index DDL (`SET`, `PREPARE`, `LISTEN`/`NOTIFY`, cursors, `COPY`, `CREATE TABLE` and other table DDL), multiple statements, or a type or feature DataFusion does not implement (`::jsonb`) | `unsupported` | `0A000` |
 | Limit exceeded | `resource_exhausted` | `53200` |
 | Cancelled or deadline elapsed | `cancelled` | `57014` |
-| Syntax error, or a write sent through `query.statement` | `invalid_request` | `42601` |
+| Syntax error, a statement that does not plan (ambiguous name, operand types that do not combine), or DML sent through `query.statement` | `invalid_request` | `42601` |
+| A filter without a usable index over more records than the server's or the request's unindexed-walk limit | `invalid_request` | `42601` |
 | A DML statement lost to another write to the same tenant after its snapshot (retry it) | `write_conflict` | `40001` |
 | Other failures | `execution_failed` | `XX000` |
 

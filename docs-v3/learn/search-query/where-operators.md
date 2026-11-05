@@ -721,7 +721,7 @@ Key semantics:
 - An omitted `hops.max` means 10. Set `max` explicitly to follow longer chains; every query still runs within the engine's query time budget.
 - Deeper nesting composes naturally: a nested label block under a `hops` endpoint continues from that endpoint.
 
-> **Performance:** variable-length traversal explores every matching path. Keep `max` as small as your use case allows, and prefer setting `direction` — an undirected, untyped `hops` query is the most expensive shape.
+> **Performance:** variable-length traversal visits every record within `max` hops of each candidate record (each record once, stopping at the first match), so its cost grows with how connected your graph is: cheap on chains and trees, steep on densely connected graphs, where a few hops already reach most records. Keep `max` as small as your use case allows, and prefer setting `direction` — an undirected, untyped `hops` query is the most expensive shape.
 
 > **Aggregation caveat:** multihop matching produces one row per _path_. `$count` and `$collect` deduplicate by default, but `$sum`/`$avg` over a multihop alias will count an endpoint once per path leading to it.
 

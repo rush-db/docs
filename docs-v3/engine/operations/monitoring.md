@@ -85,8 +85,9 @@ a subset.
 | Memory | `rushdb_allocator_resident_bytes`, `rushdb_budget_used_bytes{pool="managed"} / rushdb_budget_limit_bytes{pool="managed"}` | Approaching the host or container limit; managed budget exhaustion. |
 | Disk | `rushdb_storage_file_bytes`, `rushdb_wal_retained_bytes` | Growth; WAL held by a lagging consumer. |
 | Retention | `rushdb_retention_consumers`, `rushdb_retention_protected_floor`, `rushdb_retention_oldest_reader_commit` | A consumer or reader pinning history. |
-| Maintenance | `rushdb_gc_tick_seconds`, `rushdb_storage_compactions_total` | Maintenance falling behind. |
-| Search | `rushdb_text_pending`, `rushdb_ann_exact_fallbacks_total` | Text index backlog; vector cache too small. |
+| Maintenance | `rushdb_gc_tick_seconds`, `rushdb_maintenance_step_seconds{step}`, `rushdb_storage_compactions_total` | Maintenance falling behind; a long tick's `step` names what held the writer (a slow `checkpoint` is a slow fsync). |
+| Writer | `rushdb_writer_hold_seconds{holder}` | Long writer holds stall every tenant's commits; `holder` names the work (`publish`, `history_gc`, `checkpoint`, `pause`). |
+| Search | `rushdb_text_pending`, `rushdb_ann_exact_fallbacks_total`, `rushdb_vector_searches_total{path,reason}` | Text index backlog; vector cache too small; vector searches answered exactly instead of by the ANN index. |
 | Tenants | `rushdb_tenants_resident`, `rushdb_tenant_resident_bytes` | Residency budget pressure. |
 
 ## Logs
@@ -98,6 +99,8 @@ verbosity with `RUST_LOG`; the default is
 | Message | Level | Meaning |
 |---|---|---|
 | `rushdb listening` | info | Startup complete, with the bound ports and tenancy. |
+| `data directory has copy-on-write off` | info | The store files and the WAL are on a copy-on-write filesystem (btrfs) with copy-on-write turned off. |
+| `data files still copy on write: ...` | warn | Store files created before copy-on-write was turned off keep it; checkpoints can stall commits for seconds. `paths`, `reason`. See [Deployment](deployment.md#data-directory-layout). |
 | `slow protocol call` | warn | An HTTP request took at least `logs-query-threshold-ms` (default 5 s). Fields: `op`, `scope`, `elapsed_ms`, `rows`, `ok`. |
 | `storage compaction complete` | info | Idle compaction ran; `before_bytes`, `after_bytes`. |
 | `compaction deferred` | info | Compaction could not run this time; retried next interval. |
