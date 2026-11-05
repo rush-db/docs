@@ -50,7 +50,7 @@ rushdb up --data-dir ~/rushdb-data
 ```
 
 ```text
-RushDB 3.0.1
+RushDB 3.0.0
   HTTP     http://127.0.0.1:3000
   Postgres postgresql://127.0.0.1:5432
   Data     /home/me/rushdb-data

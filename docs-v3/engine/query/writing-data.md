@@ -89,7 +89,7 @@ curl -s http://127.0.0.1:3000/protocol/v1/execute \
 | `mode` | yes | `create`, `merge`, or `replace`. |
 | `label` | for `create` | The record's label. |
 | `id` | no | An explicit id (dashed UUID or 32 hex digits). A malformed id is `invalid_request`; an id that already exists is `conflict`. Without it, RushDB assigns a time-ordered id. |
-| `properties` | yes | A JSON object of property values. Nested objects are not properties; use [nested import](../data-model/nested-import.md) to turn them into related records. |
+| `properties` | yes | A JSON object of property values. Nested objects are not properties; use [nested import](../data-model/nested-import.md) to turn them into related records. Names starting with `__` (`__id`, `__label`, `__proptypes`, `__score`, …) are reserved for the engine: a write that uses one is `invalid_request`. Names are compared after normalization, so `--x` is reserved too. `_id` is an ordinary property. |
 | `vectors` | no | Inline vectors to store with the record, see [Vector search](../indexes-and-search/vector-search.md). |
 | `options` | no | Write options, below. |
 
@@ -132,6 +132,24 @@ values for every `mergeBy` property:
 | `["email"]` | `rewrite` | Match on `email`; replace all properties of the matched record with the given ones. |
 | `[]` (or `merge: true`) | `append` | Match on **all** given properties. |
 | absent | `append` / `rewrite` | Match on all given properties. |
+
+`mergeBy: ["__id"]` matches by record id: the record's `id` (or, in
+[document ingest](../data-model/nested-import.md), the document's `__id`) is
+looked up directly, and a miss creates the record with that id. With `[]`,
+a document's `__id` is one of the matched keys. Any other `mergeBy` key
+starting with `__` is `invalid_request`; `_id` is matched like any other
+property.
+
+Declare an [ordered index](../indexes-and-search/indexes.md) on a `mergeBy`
+property of a large label: the upsert then reads the index. Without one it
+reads the property's value on every record of the label that has it and
+holds them in memory while the request runs. Those values count against
+`query-memory-max` (default 256 MiB, or the request's smaller cap); over it
+the upsert fails with `resource_exhausted` naming the index to declare. When
+the server or the request sets an unindexed-walk limit
+([request bounds](../architecture/resource-governance.md#request-bounds)),
+an upsert over more records than that is refused up front with
+`invalid_request`, naming the property and the index to declare.
 
 The same options apply per record to [document ingest](../data-model/nested-import.md),
 which is the recommended path for bulk upserts.
@@ -356,8 +374,12 @@ a `sourceLabel` record and a `targetLabel` record:
 `sourceType` defaults to `__RUSHDB__RELATION__DEFAULT__`, the type nested
 import uses when no relationship type is configured. Each matching
 relationship is re-created with the new type, endpoints and properties
-preserved, and the old one is removed. `affected` is the number of
-relationships retyped.
+preserved, and the old one is removed. When a pair already has a
+relationship of the new type, they merge into it, and `mergeStrategy`
+(`keep` by default, `append`, `rewrite` or `fail`) decides which values
+win; see [Relationships](../data-model/relationships.md#rename-a-relationship-type).
+`affected` is the number of relationships retyped; `merged` and
+`propertyConflicts` count the merges and the conflicting properties.
 
 The whole retype is one commit: a reader sees every relationship under its
 old type or every one under its new type, and a refused retype changes
@@ -474,7 +496,7 @@ with a non-retryable `resource_exhausted`.
 
 | Error | Typical cause |
 |---|---|
-| `invalid_request` | Malformed envelope, missing `label` on create, missing `id` on merge/replace, malformed id. |
+| `invalid_request` | Malformed envelope, missing `label` on create, missing `id` on merge/replace, malformed id, a reserved property name or `mergeBy` key, an upsert on a key without an index over the unindexed-walk limit. |
 | `not_found` | The record or an endpoint id does not exist. |
 | `conflict` | Create with an id that exists; `retypeRecord` with a stale `fromLabel`. |
 | `unauthorized` | The token cannot write, or a data-access policy denies the label. |

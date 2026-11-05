@@ -221,6 +221,16 @@ Rules worth knowing:
   label carries or use `merge: true`.
 - **Values compare with their types**: `17` matches `17` and `17.0`, but not
   `"17"`. A multi-value key must match as a whole list.
+- **`__id` is the record's id, not a property.** A document's `__id` (a
+  UUID, dashes optional) becomes the new record's id; with
+  `mergeBy: ["__id"]` the record is found by id, and a miss creates it with
+  that id. Other names starting with `__` are reserved and refused; `_id` is
+  an ordinary property.
+- **Index the merge keys of large labels.** Without an ordered index on a
+  key, the upsert reads the key on every record of the label that has it,
+  and holds those values in memory: over `query-memory-max` it fails with
+  `resource_exhausted`, and over an unindexed-walk limit, when one is set,
+  it is refused up front. Both errors name the index to declare.
 - **Relationships are not duplicated.** After records are matched or created,
   each parent → child link is created only if an edge of that type does not
   already join the two records. Re-importing a merged document therefore

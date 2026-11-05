@@ -208,7 +208,8 @@ results 6–10 of `offset: 0, limit: 10`.
   own latest writes.
 - Every returned record is reconstructed through the tenant's data-access
   policy. When a policy is enforced, the query must name only allowed labels
-  (an empty `labels` list is refused).
+  (an empty `labels` list is refused unless the policy allows every label
+  with `"*"`).
 
 ## See also
 

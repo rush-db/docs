@@ -345,7 +345,8 @@ An index created with `"owner": "relationship"` binds vectors to
 relationships. `label` is the relationship type, `upsertVectors` items use the
 relationship id as `recordId`, and `query.vector` takes the relationship type
 in `labels`. The `predicate` filters on relationship properties. Results are
-relationship objects with a `score`.
+relationship objects (`__id`, `__type`, `__source_id`, `__target_id` and the
+properties) with a `score`.
 
 ### Inspect a vector query
 

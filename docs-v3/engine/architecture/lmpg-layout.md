@@ -99,7 +99,8 @@ property (in total and per label, in both label-major and property-major
 order), explicit-null counts, per-node relationship degree in each
 direction, distinct dictionary values, relationships per
 `(type, source label, target label)`, and values too long for the
-dictionary.
+dictionary (their occurrences, a refcount per value digest, and their
+distinct count).
 
 ### Segment families
 

@@ -24,7 +24,7 @@ to move data. It also covers upgrades between 3.x releases.
 
 RushDB 3 does **not** read a 2.x data directory or a Neo4j store, and it does
 not accept 2.x Core REST requests. RushDB 2.x remains available at its final
-`v2` maintenance tag in the `rush-db/rushdb` repository.
+`2.x` maintenance branch in the `rush-db/rushdb` repository.
 
 ## Planning the migration
 

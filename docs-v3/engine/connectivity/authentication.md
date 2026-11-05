@@ -194,11 +194,14 @@ narrows what reads may see:
 
 A policy is either `BoundaryOnly` (tenant isolation only) or `PolicyEnforced`.
 Under `PolicyEnforced`, native record queries, aggregates, single-record
-reads, and vector search apply the policy; a request outside it fails with
-`unauthorized`. Operations that cannot yet apply a policy fail closed with
-`unauthorized` ("policy-enforced reads are unavailable for this adapter"):
-statement queries in every language, `joinPairs`, `vectorIndexCandidates`,
-`text` search, `describe.schema`, `describe.labels`, `describe.properties`,
+reads, vector search, the catalog reads (`describe.schema`, `labels`,
+`properties`, `schemaSummary`, `names`, `valueOverlap`, `propertyValues`,
+`searchValues`) and SQL `SELECT` apply the policy: they see only allowed
+labels, their visible properties and allowed relationship types. A request
+outside it fails with `unauthorized`. Operations that cannot yet apply a
+policy fail closed with `unauthorized` ("policy-enforced reads are
+unavailable for this adapter"): Cypher, GQL, Gremlin, SQL/PGQ and Mongo
+statements, `joinPairs`, `vectorIndexCandidates`, `text` search,
 `describe.explain`, and `backup`.
 
 Policies are read and installed with the `policy` operation, which only the

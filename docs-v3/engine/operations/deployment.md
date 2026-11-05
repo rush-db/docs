@@ -130,6 +130,20 @@ With the Preview multi-shard option (`--shards N`), additional store files
 `rushdb.redb-1` … `rushdb.redb-(N-1)` appear beside the first one.
 
 - Keep the whole directory on one local filesystem with reliable `fsync`.
+- **Copy-on-write filesystems (btrfs).** On Linux the server turns
+  copy-on-write off for the data directory (`FS_NOCOW_FL`, what
+  `chattr +C` sets) before it creates any file, so the store files and the
+  WAL inherit it; ext4, xfs and tmpfs have no such flag and need nothing.
+  With copy-on-write on, each checkpoint's fsync re-writes and re-compresses
+  every changed extent: on a btrfs + zstd volume a bulk load stalled every
+  tenant's commits for up to 15 s, against 1.2 s with copy-on-write off
+  (same host and load). The flag only applies to files created empty, so a
+  data directory created before this release keeps copy-on-write on its
+  existing files; the server says so at boot (`data files still copy on
+  write`, with the paths). Re-create the files by restoring a backup into a
+  new data directory to drop it. Turning copy-on-write off also turns off
+  btrfs checksums and compression for those files; the WAL and redb
+  checksum their own records and pages.
 - Back up with the tools in [Backup and restore](backup-and-restore.md),
   not by copying files from a running server.
 - Omitting `--data-dir` runs an in-memory node: nothing survives a restart.
@@ -255,7 +269,8 @@ behind an application proxy on the same host:
 resources:
   threads: 0                         # = vCPUs
   storage-cache: 256MiB              # storage page cache; the kernel caches the rest
-  logical-cache-bytes: 384MiB        # vector and text caches
+  logical-cache-bytes: 256MiB        # text and planner caches
+  vector-cache-bytes: 512MiB         # resident ANN indexes
   query-memory-max: 256MiB
   http-inflight-body-bytes: 256MiB
   tx-log-retention-bytes: 4GiB
@@ -263,7 +278,7 @@ resources:
   retention-consumer-lease-seconds: 86400
 ```
 
-> **Note:** The logical caches, the transaction pool, and per-query phase
+> **Note:** The logical and vector caches, the transaction pool, and per-query phase
 > reservations all draw from `managed-limit` (default 512 MiB), and
 > `storage-cache + transaction-pool` must stay below it. When you enlarge the
 > caches, watch `rushdb_budget_used_bytes{pool="managed"}` against

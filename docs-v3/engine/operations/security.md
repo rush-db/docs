@@ -154,19 +154,46 @@ can never change the policy that limits it):
 
 | Field | Meaning |
 |---|---|
-| `allowedLabels` | Labels that can be read and written. Empty means every label. |
+| `allowedLabels` | Labels that can be read and written, compared case-insensitively. `["*"]` allows every label, including labels created later. An empty list allows none: an enforced policy with `"allowedLabels": []` locks the tenant's data (reads fail with `unauthorized` or answer empty, writes fail with `unauthorized`). |
 | `deniedRelTypes` | Relationship types readers cannot traverse. |
 | `visibleProperties` | Per label, the only properties a reader sees (an allow-list). A label without an entry shows every property. |
 | `maxResults` | Most rows a query may return (0 = no cap). |
+| `minCount` | Smallest group a catalog read reports (0 = no threshold). Under an enforced policy, `describe.*`, `propertyValues` and `searchValues` withhold labels, properties, values, relationship shapes and value overlap counted over fewer records, and drop sample, minimum and maximum values (often one record's value). It does not apply to record reads or SQL rows, which return records the policy already lets the reader see. |
 | `enforced` | `false` keeps tenant isolation only and filters nothing. |
+
+To hide columns or apply `minCount` without restricting labels, allow every
+label and keep the other fields:
+
+```json
+{"allowedLabels":["*"],"visibleProperties":{"Patient":["age","sex"]},"minCount":10}
+```
 
 Each `put` is a new policy generation; a transaction begun under the previous
 generation aborts at commit. `{"kind":"get"}` returns the active policy, its
-`generation` and `enforced`. While a policy is enforced, read paths that cannot apply it
-fail closed with `unauthorized` (`policy-enforced reads are unavailable for
-this adapter`): statement-language queries, `joinPairs`,
-`vectorIndexCandidates`, `text`, `backup`, and `describe` `schema`,
-`labels`, `properties`, and `explain`.
+`generation` and `enforced`. While a policy is enforced, the catalog and
+SQL see only what it allows: `describe` `schema`, `labels`, `properties`,
+`schemaSummary`, `names` and `valueOverlap`, `propertyValues` and
+`searchValues` answer over the allowed labels, their visible properties and
+relationship shapes of allowed types between allowed labels, and an SQL
+`SELECT` sees a table per allowed label with its visible columns and an edge
+table per allowed type (see [SQL](../languages/sql.md#under-a-data-access-policy)).
+A hidden label, property or type is never named, counted or suggested.
+
+A record query may use only what the policy shows. A filter, sort, group-by or
+metric (`$sum`, `$max`, …) on a hidden property is refused with `unauthorized`,
+because the records it selects, or their order, would reveal the hidden values
+even with the property masked from the output. A traversal through a denied
+relationship type is refused in the same way. So is a traversal that names no
+`$relation` type while the policy denies any type, since it could cross a
+denied one, and a traversal that names no endpoint label unless every label is
+allowed. Filtering on visible properties, including across allowed
+relationship types, works as without a policy. SQL plans only against the
+visible columns, so `WHERE salary > 150` on a hidden `salary` fails to plan.
+
+Read paths that cannot apply a policy still fail closed with `unauthorized`
+(`policy-enforced reads are unavailable for this adapter`): Cypher, GQL,
+Gremlin, SQL/PGQ and Mongo statements, `joinPairs`, `vectorIndexCandidates`,
+`text`, `backup` and `describe.explain`.
 
 ## Replication endpoints
 

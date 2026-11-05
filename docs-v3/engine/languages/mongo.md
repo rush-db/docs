@@ -36,7 +36,7 @@ developers who think in MongoDB queries; it is not a MongoDB server.
 | Collection | Label |
 | Document | Record |
 | Field | Property |
-| `_id` | The record id (assigned by RushDB; `_id`, `id`, `__id`, and `__label` in inserted documents are ignored) |
+| `_id` | The record id (assigned by RushDB; `_id`, `id`, `__id`, and `__label` in inserted documents are ignored). A top-level `_id` condition in a filter matches the record id. Because `_id` is the document id here, a record property named `_id` is not visible through this language. |
 | Database | The request's tenant |
 
 Relationships are not visible through this language.
@@ -81,7 +81,7 @@ curl -s http://127.0.0.1:3000/protocol/v1/execute \
 |---|---|
 | `collection` | Label to read. Required (or `labels`, an array of labels). |
 | `filter` | Filter document. Uses the native filter operators (`$eq`, `$ne`, `$gt`, `$in`, ...); see [Filtering](../query/filtering.md). |
-| `projection` | Inclusion projection: each field `1` or `true`. Exclusion (`0`/`false`) is rejected. |
+| `projection` | Inclusion projection: each field `1` or `true`. Documents keep only those fields and `_id`; `"_id": 0` drops `_id` too. Exclusion of other fields (`0`/`false`) is rejected. |
 | `sort` | Field to direction: `1` ascending, `-1` descending. Other values are rejected. |
 | `skip`, `limit` | Pagination. |
 
@@ -206,7 +206,7 @@ The capability profile lists `noLookup`, `noGeoNear`, `noUnwind`, and
   graph language or SQL joins for cross-label queries.
 - `$text` needs exactly one ready text index on the collection, belongs in
   the filter of a `find` or the first `$match`, and cannot sort a pipeline.
-- Exclusion projections, `findOne`, `replaceOne`, and update operators other
+- Exclusion projections (except `"_id": 0`), `findOne`, `replaceOne`, and update operators other
   than `$set`/`$inc`/`$unset` are rejected.
 - Update and delete commands consider at most 1,000,000 matching documents.
 - Results are materialized; page with `skip`/`limit`.

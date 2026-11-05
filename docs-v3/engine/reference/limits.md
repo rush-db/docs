@@ -24,7 +24,7 @@ in this release.
 | HTTP request bodies in flight (all connections) | 256 MiB (never below the body limit) | `http-inflight-body-bytes` | 503, `resource_exhausted`, before the body is read |
 | Admitted concurrent requests (scheduler) | workers + queue; workers = CPU count clamped to 2–256, queue = 32 × workers clamped to 64–4096 | `threads` | 503, `unavailable` |
 | Concurrent requests per tenant (multitenant) | unlimited | `--max-concurrent-requests-per-tenant` | `unavailable` |
-| Request execution deadline (every transport) | none | `--request-timeout-ms` | `cancelled` |
+| Request execution deadline (every transport) | none | `--request-timeout-ms`; a request may set a shorter one | `cancelled` |
 | `X-RushDB-Tenant` header length | 1024 bytes | no | 400, `invalid_request` |
 | pgwire connections | 1024 | no | connection refused |
 | Bolt connections | 1024 | no | connection refused |
@@ -39,7 +39,8 @@ in this release.
 
 | Limit | Default | Configurable | Behavior when exceeded |
 |---|---|---|---|
-| Query working set | 256 MiB | `query-memory-max` (0 = off) | `resource_exhausted` |
+| Query working set | 256 MiB | `query-memory-max` (0 = off); a request may set a smaller cap | `resource_exhausted` |
+| Records a filter without a usable index checks | none | `unindexed-walk-max-owners`; a request may set a limit ([request bounds](../architecture/resource-governance.md#request-bounds)) | `invalid_request` naming the index to declare |
 | Query phase reservation | 8 MiB per request, drawn from the managed envelope | no | `resource_exhausted` when the envelope is full |
 | Records cursor page size | 1–10,000 | no | refused |
 | Retained cursor state (node-wide) | 64 MiB | no | new cursor refused |
@@ -78,7 +79,8 @@ in this release.
 |---|---|---|
 | Managed envelope | 512 MiB | `managed-limit` |
 | Storage page cache | 128 MiB (minimum 64 KiB) | `storage-cache` |
-| Logical caches (vector, text, planner statistics) | 128 MiB | `logical-cache-bytes` |
+| Logical caches (text, planner statistics, metadata) | 128 MiB | `logical-cache-bytes` |
+| Vector cache (resident ANN indexes) | 256 MiB | `vector-cache-bytes` |
 | Planner statistics | 32 MiB (child of the logical caches) | `planner-stats-bytes` |
 | ANN segment cache | 256 MiB, and at most 12 cached generations | no |
 | Resident tenant handles | 512 MiB (16 KiB minimum charge per tenant) | `tenant-resident-bytes` |

@@ -25,6 +25,7 @@ request and response shapes with examples, see the
 | `GET` | `/internal/replication/wal` | boot token only | Node-to-node: a follower fetches WAL records. Not a client API. | 200 `{"records":[{"lsn":N,"command_b64":"..."}],"caught_up":bool}` |
 | `POST` | `/internal/replication/promote` | boot token only | Stop following the leader and accept writes. | 200 `{"promoted":true,"persisted":true}` |
 | `POST` | `/internal/backup/base?out=PATH` | boot token only | Online base backup into `PATH` on the server's filesystem. | 200 `{"commitIndex":N,"files":N}` |
+| `POST` | `/internal/usage` | boot token only | Usage figures of a list of tenants, and their total. | 200 `{"commitIndex":N,"tenants":[...],"total":{...}}` |
 | any | any other path | — | — | 404 `{"error":"route not found"}` |
 
 ### Authentication headers
@@ -88,6 +89,52 @@ durable commit: reads continue and commits wait for the copy. The base is
 registered as a `backup` retention consumer at its commit index. See
 [Backup and restore](../operations/backup-and-restore.md#2-take-a-base-backup).
 
+### `/internal/usage`
+
+Reports usage per tenant for the tenant scopes you list, plus their sum.
+The engine has no workspace, plan or billing concept: the caller decides
+which tenants to group. This is a cross-tenant read, so it takes the boot
+token and never an `X-RushDB-Tenant` scope.
+
+```bash
+curl -s -X POST http://127.0.0.1:3000/internal/usage \
+  -H "X-RushDB-Token: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"tenants":["project-1","project-2"]}'
+```
+
+```json
+{
+  "commitIndex": 1842,
+  "tenants": [
+    {"tenant": "project-1", "exists": true, "records": 3, "relationships": 2,
+     "labels": 1, "properties": 2, "logicalBytes": 1673, "vectors": 3,
+     "vectorIndexes": [{"index": "doc_embedding", "vectors": 3}]},
+    {"tenant": "project-2", "exists": true, "records": 2, "relationships": 1,
+     "labels": 1, "properties": 2, "logicalBytes": 802, "vectors": 0,
+     "vectorIndexes": []}
+  ],
+  "total": {"records": 5, "relationships": 3, "labels": 2, "properties": 4,
+            "logicalBytes": 2475, "vectors": 3}
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `records`, `relationships` | Live records and relationships. |
+| `labels` | Labels with at least one live record. |
+| `properties` | Property ids (name and type) carried by at least one live record. A name stored with two types counts twice, as `describe` lists it. |
+| `logicalBytes` | Key + value bytes of every row the tenant stores: data, derived rows (counters, presence, value dictionary, declared index entries), stored vectors and security rows. It does not include ANN index segment files on disk. Not the file size: redb pages run about 40–50% full, so the file is roughly twice this (see [capacity planning](../operations/capacity-planning.md)). |
+| `vectors` | Ready vectors summed over the tenant's vector indexes; `vectorIndexes` lists them per index. |
+| `exists` | `false` for a scope the tenant directory does not know (never written, or purged). Its figures are zero. The read never registers a scope. |
+
+All figures come from one snapshot (`commitIndex`). Each is a counter that
+the commit changing it updates, so a read costs one lookup per figure and
+vector index for each tenant, whatever the tenants' sizes. Single-tenant
+mode takes `{}` and reports the one tenant with `"tenant": null`. A request
+lists at most 10,000 tenants. Errors: 400 for an empty list in multitenant
+mode, a list in single-tenant mode, or an unknown body field; 401 without
+the boot token.
+
 ## Request envelope
 
 ```json
@@ -104,7 +151,9 @@ registered as a `backup` retention consumer at its commit index. See
 | `protocolVersion` | Must be `1`; anything else fails with `unsupported_version`. |
 | `requestId` | Optional; echoed on the response. |
 | `context.scope` | Single-tenant: must be omitted. Multitenant: required and must equal the transport scope (the `X-RushDB-Tenant` header on HTTP). |
-| `context.deadlineMs` | Over HTTP and pgwire this is replaced by the server's `--request-timeout-ms`. |
+| `context.deadlineMs` | Optional execution deadline in milliseconds; it may only shorten the server's `--request-timeout-ms`. |
+| `context.queryMemoryMaxBytes` | Optional working-memory cap of the request's queries (positive); it may only lower `query-memory-max`. |
+| `context.unindexedWalkMaxOwners` | Optional limit on the records a filter without a usable index may check; `0` refuses every such filter. It may only lower `unindexed-walk-max-owners`. See [request bounds](../architecture/resource-governance.md#request-bounds). |
 
 Successful responses carry `protocolVersion`, `requestId`, `serverTimingMs`
 and `response` (tagged by `kind`). Errors carry
@@ -127,7 +176,8 @@ capability scope needed.
 | `cursor` | Continue a snapshot-pinned records cursor (`cursorId`, `limit`). | `query.cursor` |
 | `record` | Fetch one record by `id`. | `query.record` |
 | `relationships` | Query relationships. | `query.relationships` |
-| `propertyValues` | Distinct values of a property (`mode`: `values`, `count`, `range`, `topK`). | `query.propertyValues` |
+| `propertyValues` | Distinct values of a property (`mode`: `values`, `count`, `range`, `topK`; optional `search`). | `query.propertyValues` |
+| `searchValues` | A value search across every property, with the label and property holding each match. | `query.searchValues` |
 | `vector` | Vector similarity search. | `query.vector` |
 | `joinPairs` | Pairwise join of two record sets. | `query.joinPairs` |
 | `vectorIndexCandidates` | Records not yet bound to a vector index (default `limit` 500). | `query.vectorIndexCandidates` |
@@ -157,13 +207,16 @@ capability scope needed.
 | `labels` | Labels present on the records matching a query. | `describe.labels` |
 | `properties` | Properties of the records matching a query (`detail`: `full` or `catalog`; `skip`, `limit`). | `describe.properties` |
 | `queryLanguages` | Enabled languages and their capability descriptors. | `describe.queryLanguages` |
-| `capabilities` | Feature flags for client negotiation. | `describe.capabilities` |
+| `capabilities` | Feature flags for client negotiation (the catalog reads below advertise `valueSearch`, `searchValues`, `describeNames`, `schemaSummary`, `valueOverlap`). | `describe.capabilities` |
 | `buildInfo` | Engine build information. | `describe.buildInfo` |
 | `explain` | Query plan for a search query. | `describe.explain` |
 | `explainVector` | Plan for a vector query. | `describe.explainVector` |
 | `indexes` | Declared property and text indexes. | `describe.indexes` |
 | `vectorIndexes` | Vector indexes. | `describe.vectorIndexes` |
 | `vectorIndex` | Statistics for one vector index (`name`). | `describe.vectorIndex` |
+| `schemaSummary` | Every label with its properties, distinct counts, ranges and few values in one read. | `describe.schemaSummary` |
+| `names` | Labels and properties spelled like a name (`text`). | `describe.names` |
+| `valueOverlap` | For property pairs, how much of the source's values the target holds (evidence for join suggestions). | `describe.valueOverlap` |
 
 ### `ingest` (permission `write`)
 

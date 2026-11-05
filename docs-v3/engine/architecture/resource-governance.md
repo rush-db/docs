@@ -45,9 +45,9 @@ flowchart TD
     ROOT --> TX["transaction staging<br/>transaction-pool · 128 MiB"]
     ROOT --> PH["query phases<br/>limit = managed-limit<br/>8 MiB per executing request"]
     ROOT --> LC["logical caches<br/>logical-cache-bytes · 128 MiB"]
+    ROOT --> VEC["vector cache: ANN segments<br/>vector-cache-bytes · 256 MiB"]
     PH --> SQL["sql (attribution)"]
     PH --> GR["graph (attribution)"]
-    LC --> VEC["vector: ANN segments"]
     LC --> PS["planner statistics<br/>planner-stats-bytes · 32 MiB"]
     LC --> MC["metadata + property caches,<br/>cursor state"]
 ```
@@ -58,7 +58,8 @@ flowchart TD
 | Page cache | `storage-cache` | 128 MiB | redb's page cache, reserved for the life of the store. |
 | Transaction staging | `transaction-pool` | 128 MiB | Staged writes of interactive transactions. |
 | Query phases | (= `managed-limit`) | — | A fixed 8 MiB token per executing request; this is the concurrency ceiling. |
-| Logical caches | `logical-cache-bytes` | 128 MiB | ANN segments, planner statistics, metadata and property caches, cursor state. `0` disables them (and with them ANN). |
+| Logical caches | `logical-cache-bytes` | 128 MiB | Text indexes, planner statistics, metadata and property caches, cursor state. `0` disables them. |
+| Vector cache | `vector-cache-bytes` | 256 MiB | Resident ANN indexes of vector spaces. `0` disables ANN: searches answer exactly. |
 | Planner statistics | `planner-stats-bytes` | 32 MiB | On-demand value distributions ([derived state](derived-state.md#planner-statistics-on-demand)). |
 
 Configuration is validated before anything is opened: `storage-cache` must
@@ -117,7 +118,7 @@ flowchart LR
 | In-flight request bodies, all connections | `http-inflight-body-bytes` | 256 MiB (at least one body limit) |
 | Request slots (HTTP) | derived from the scheduler shape | workers + queue |
 | Response size | same as the body limit | 16 MiB |
-| Request deadline, every transport (a client `deadlineMs` may only shorten it) | `request-timeout-ms` | 0 (none) |
+| Request deadline, every transport (a client `deadlineMs` may only shorten it; see [request bounds](#request-bounds)) | `request-timeout-ms` | 0 (none) |
 
 The body budget is reserved from the declared `Content-Length` before a
 byte of the body is read; a body without a declared length reserves the
@@ -151,6 +152,35 @@ graph-language results are charged against it, and `query-memory-max`
 (default 256 MiB) bounds structured-query and aggregation working sets
 where no request budget applies (aggregations take the smaller of the two).
 See [query execution](query-execution.md#budgets-deadlines-and-cancellation).
+
+## Request bounds
+
+A filter without a usable index runs: it walks the records it names, as a
+sequential scan does in PostgreSQL or a label scan in Neo4j. On a large
+label that can take minutes. Three bounds stop it. The server sets each
+one; a request can make each one stricter, never looser, the way
+CockroachDB's session settings work.
+
+| Bound | Server setting (default) | Request field | PostgreSQL wire session setting | On breach |
+|---|---|---|---|---|
+| Time | `request-timeout-ms` (0, none) | `context.deadlineMs` | `statement_timeout` (a bare number is milliseconds) | `cancelled` (pgwire `57014`) |
+| Working memory | `query-memory-max` (256 MiB) | `context.queryMemoryMaxBytes` (positive) | `work_mem` (a bare number is kilobytes) | `resource_exhausted` |
+| Records an unindexed filter may check | `unindexed-walk-max-owners` (0, none) | `context.unindexedWalkMaxOwners` (`0` refuses every walk) | `disallow_full_table_scans` with `large_full_scan_rows` (default 0) | `invalid_request` naming the index to declare (pgwire `42601`) |
+
+The bound in force is the smaller of the server's and the request's. A
+request cannot lift a bound the operator set. A multitenant service
+that must refuse long scans for every tenant sets
+`unindexed-walk-max-owners` on the server. A client that wants a fast error
+instead of a long scan sets its own limit.
+
+`work_mem` here caps the whole statement's working memory, not one sort or
+hash as in PostgreSQL. On the PostgreSQL wire the four settings are read
+with `SHOW`, set with `SET` (or as startup parameters), and cleared with
+`RESET` or `SET … = DEFAULT`; see
+[PostgreSQL wire](../connectivity/postgresql-wire.md#session-settings).
+
+The time bound is checked between batches of every scan, including a SQL
+`count(*)` that returns nothing until it ends.
 
 ## Writes
 

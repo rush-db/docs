@@ -103,7 +103,7 @@ For per-label record counts, use `describe.schema`.
 | Field | Default | Meaning |
 |---|---|---|
 | `query` | — | The query document. |
-| `detail` | `full` | `full` adds `sampleValues` and `min`/`max` (an unfiltered request samples up to 10,000 records for these; counts stay exact). `catalog` returns names, types, exact counts, array shape and type-split markers from catalogs only, without reading records, and rejects a non-empty `predicate`. |
+| `detail` | `full` | `full` adds `sampleValues` and `min`/`max`. An unfiltered request samples up to 10,000 records for `sampleValues`; its `min`/`max` and counts are exact. `catalog` returns names, types, exact counts, array shape and type-split markers from catalogs only, without reading records, and rejects a non-empty `predicate`. |
 | `skip`, `limit` | all | Slice of the returned property entries. |
 
 Each entry:
@@ -113,12 +113,12 @@ Each entry:
 | `id` | Stable property id. |
 | `name` | Property name. |
 | `type` | `string`, `number`, `boolean`, or `datetime`. |
-| `recordsCount` | Number of records that carry the property. |
+| `recordsCount` | Number of records that carry the property with a value of this entry's type; for the `null` entry, the records holding an explicit `null`. |
 | `label` | The label the entry was counted on, when reported per label. |
 | `isArray` | Some occurrence is stored as an array. |
-| `siblingTypes` | Other stored types for the same property name (for example, a property written both as a string and as a number); empty when there is one type. |
+| `siblingTypes` | Other stored types the property holds on this label (for example, written both as a string and as a number); empty when there is one type. |
 | `sampleValues` | A bounded set of distinct observed values (`full` only). |
-| `min`, `max` | Smallest and largest observed scalar values (`full` only). |
+| `min`, `max` | Smallest and largest values over every matching record (`full` only). Unfiltered, they come from the value dictionary and are left out where it does not hold every value (array properties, strings over 96 bytes). |
 
 ## Schema
 
@@ -199,20 +199,136 @@ curl -s http://127.0.0.1:3000/protocol/v1/execute \
 
 | `mode` | Response fields | Notes |
 |---|---|---|
-| `values` (default) | `values`, `distinctCount`, `truncated` | Distinct values. `limit` caps `values`; `truncated` is `true` when it did. |
+| `values` (default) | `values`, `distinctCount`, `truncated` | Distinct values, by descending record count, ties by value (as a search lists them). `limit` keeps the first `limit`; `truncated` is `true` when it did. |
 | `count` | `distinctCount` | Exact number of distinct values. |
-| `range` | `min`, `max`, `distinctCount` | Exact extremes; numbers compare numerically, other values lexically. Absent when there are no comparable values. |
-| `topK` | `values`, `counts`, `distinctCount` | The `limit` most frequent values (default 10, at most 1,000) with the number of records carrying each, most frequent first. |
+| `range` | `min`, `max`, `distinctCount` | Exact extremes of one ordered class: the numbers if the property has any, else its datetimes (by instant), else its text (lexically). Classes never mix. Absent when there are no comparable values. |
+| `topK` | `values`, `counts`, `distinctCount` | The `limit` most frequent values (default 10, at most 1,000) with the number of records carrying each, most frequent first. Values with equal counts come in no defined order. |
 
 `distinctCount` is always exact and reflects every distinct value, even when
-`values` is truncated. Array-valued properties contribute each element.
+`values` is truncated. An array value counts as one value (the whole array).
+
+### Searching values
+
+Add `search` to keep only the values whose text matches, for example to map a
+word in a question to the values actually stored:
+
+```json
+{
+  "kind": "propertyValues",
+  "property": "county",
+  "mode": "topK",
+  "limit": 20,
+  "search": { "text": "orange", "match": "contains" },
+  "query": { "labels": ["ZipCode"] }
+}
+```
+
+| `search` field | Default | Meaning |
+|---|---|---|
+| `text` | (required) | The text to look for. |
+| `match` | `contains` | `contains`, `prefix`, `exact` or `similar` (below). |
+| `caseSensitive` | `false` | Compare case-sensitively. |
+| `domainOnMiss` | (none) | When nothing matches and the property has at most this many distinct values in scope (capped at 1000), answer with all of them instead. |
+| `minSimilarity` | `0.6` | `similar` only: the least similarity, from 0 to 1. |
+
+Strings match as stored; numbers, booleans and datetimes match as the response
+renders them (`31`, `true`, `2020-01-02T03:04:05.000Z`); an array matches when any
+element does. Every mode answers over the matching values: `distinctCount`
+counts matches, and `values` and `topK` list them by descending record count,
+ties by value. With no predicate in `query`, the search reads the per-label
+value dictionaries, not the records.
+
+**Dates.** A `text` that reads as a year-first date with at least a month
+(`1993-11-12`, `1993/11/12`, `2010/2/22`, `2013-06`) also matches values that
+hold that date in another layout: a datetime, `1993.11.12`, `1993/11/12 08:30`,
+or a compact `19931112` / `201306` (as a string or a number). It matches at the
+text's precision, so `2013-06` matches every day in June 2013; with `exact`, the
+value must have the same precision. Day-first and month-first layouts
+(`12/11/1993`) are ambiguous and are matched as text only.
+
+**Near matches.** `match: "similar"` finds values spelled like the text
+rather than containing it. A value scores 1 when some run of its whole words
+spells the text once case, punctuation and spacing are ignored ("Spider-Man"
+for `spiderman`, "Orange County, Virginia" for `orange county virginia`), and
+otherwise the share of the text's character trigrams it holds, so a typo
+still scores high and an unrelated word low. Values at or above
+`minSimilarity` are kept, ranked by similarity, then by record count. They are
+near matches, not exact ones: check before using one as a filter.
+
+**When nothing matches.** A word in a question often names a value the data
+stores as a code ("positive" for `+`, "male" for `M`). With `domainOnMiss: N`, a
+search with no match on a property with at most `N` distinct values answers
+with all of them, by descending record count with `counts`, and sets
+`"searchMissed": true`. The values listed are then *not* matches: they show how
+the property is actually written. A larger domain, or a search that matches,
+answers as without the field.
+
+```json
+{
+  "kind": "propertyValues",
+  "property": "KCT",
+  "mode": "topK",
+  "search": { "text": "positive", "domainOnMiss": 20 },
+  "query": { "labels": ["Examination"] }
+}
+```
+
+```json
+{ "property": "kct", "values": ["-", "+"], "counts": [15, 6],
+  "distinctCount": 2, "searchMissed": true }
+```
+
+### Searching every property
+
+`query.searchValues` runs the same search over every property at once, for
+when the question names a value but not where it is stored:
+
+```json
+{
+  "kind": "searchValues",
+  "search": { "text": "Orange County", "match": "contains" },
+  "labels": ["schools", "frpm"],
+  "limit": 2
+}
+```
+
+```json
+{ "kind": "valueMatches", "total": 23,
+  "matches": [
+    { "label": "schools", "property": "District", "value": "Orange County Department of Education", "count": 55 },
+    { "label": "frpm", "property": "District Name", "value": "Orange County Department of Education", "count": 5 } ] }
+```
+
+(From the BIRD `california_schools` database; `total` counts every match before `limit`.)
+
+| Field | Default | Meaning |
+|---|---|---|
+| `search` | (required) | As above; `domainOnMiss` is ignored. |
+| `labels` | all | Labels to search. |
+| `limit` | `50` (at most 1000) | Most matches returned; `total` counts them all. |
+
+Each (label, property) is searched like `propertyValues` with a `search`:
+from the dictionaries where they answer, scanning long values otherwise (one
+scan of a label's records covers all of its long-valued properties). Matches
+rank by record count (by similarity first for `similar`). The values read are
+query working set, capped by `query-memory-max` or the request's
+`context.queryMemoryMaxBytes`: a property that does not fit is listed in
+`skipped` instead of failing the request. Cancellation and the request
+deadline still fail it.
 
 ## Facets and data-access policies
 
-When a tenant runs with an enforced data-access policy, `describe.labels`,
-`describe.properties`, `describe.schema` and `describe.explain` are refused
-with `unauthorized`; `query.propertyValues` remains available and counts
-only records the policy allows. See [Security](../operations/security.md).
+When a tenant runs with an enforced data-access policy, the catalog reads
+answer over what the policy allows: `describe.labels`, `describe.schema`,
+`describe.properties`, `describe.schemaSummary`, `describe.names` and
+`describe.valueOverlap` see only allowed labels, their visible properties
+and relationship shapes of allowed types between allowed labels;
+`query.propertyValues` and `query.searchValues` count only records the policy
+allows and never search a masked property. With the policy's `minCount`,
+groups counted over fewer records are withheld: such values are left out of
+every mode (so `count`, `range` and `topK` cover the reported values only).
+`describe.explain` is still refused with `unauthorized`. See
+[Security](../operations/security.md).
 
 ## See also
 

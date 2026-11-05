@@ -207,7 +207,7 @@ The rules of the `$cycle` operator, briefly:
 
 ### Model B: untyped, directed hops — with doubled counts
 
-In Model B the path alternates `ACCOUNT -[SENT]-> TRANSACTION -[CREDITS]-> ACCOUNT`, so each money movement costs **two hops**. A ring of 2–5 transfers is a closed path of 4–10 hops (the default cloud hop cap is 10, so in Model B that budget covers rings of up to 5 transfers). And because the hops alternate between two relationship types, omit `type` — untyped traversal allows a different type on each hop (RushDB automatically excludes its internal property metadata edges, so this never leaves your data model):
+In Model B the path alternates `ACCOUNT -[SENT]-> TRANSACTION -[CREDITS]-> ACCOUNT`, so each money movement costs **two hops**. A ring of 2–5 transfers is a closed path of 4–10 hops (so in Model B a `max` of 10 covers rings of up to 5 transfers). And because the hops alternate between two relationship types, omit `type` — untyped traversal allows a different type on each hop (RushDB automatically excludes its internal property metadata edges, so this never leaves your data model):
 
 <Tabs groupId="programming-language">
 <TabItem value="typescript" label="TypeScript">
@@ -437,9 +437,9 @@ Each step is a one-hop, ID-anchored query — cheap and index-friendly. In pract
 
 ## Performance notes
 
-- **Keep `max` small.** Variable-length traversal explores every matching path, and each extra hop multiplies the path count. Real laundering rings are short (3–6 parties); start there and widen only with evidence. Remember that in Model B the hop budget spends twice as fast — 10 hops is only 5 transfers.
+- **Keep `max` small.** Variable-length traversal visits every record within `max` hops of each candidate, and in a densely connected payments network each extra hop multiplies that count. Real laundering rings are short (3–6 parties); start there and widen only with evidence. Remember that in Model B the hop budget spends twice as fast — 10 hops is only 5 transfers.
 - **Always set `direction`.** It halves the expansion at every hop _and_ it is what makes the result mean "circular flow". An undirected, untyped `hops` query is the most expensive shape SearchQuery can produce.
-- **Mind the hop budget.** An omitted `hops.max` means 10. Deeper ring searches explore many more paths, so raise `max` only as far as the investigation needs.
+- **Mind the hop budget.** An omitted `hops.max` means 10. Deeper ring searches visit many more records, so raise `max` only as far as the investigation needs.
 - **Filter the root first.** Property criteria on the root (`country`, `riskTier`, activity flags) run before traversal and shrink the candidate set the cycle check has to cover.
 
 ---

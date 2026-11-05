@@ -794,7 +794,7 @@ curl -s -X POST "$BASE/records/search" \
 | ------------ | ------------------------------------------ | ---------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | Tree         | Single parent per node                     | Nested blocks for mixed-label paths; `hops` for same-label depth | Per-level filters/aliases need manual nesting — `hops` skips the middle |
 | Many-to-many | Nodes can appear in multiple relationships | Aggregation by relationship type                                 | Fan-out can be large without limit                                      |
-| Cyclic       | Loops are possible                         | `hops` for blast radius, `$cycle` for loop detection             | `hops.max` is capped per deployment (default 10); keep it small anyway  |
+| Cyclic       | Loops are possible                         | `hops` for blast radius, `$cycle` for loop detection             | keep `hops.max` small: cost grows fast on dense graphs              |
 
 ---
 
@@ -802,7 +802,7 @@ curl -s -X POST "$BASE/records/search" \
 
 Each shape has a fan-out risk. In trees, deep hierarchies multiply candidates at every hop. In networks, highly-connected hubs (an author with 200 papers) inflate traversal cost. In cyclic graphs, even a two-hop traversal can cover thousands of paths in large dependency graphs.
 
-Variable-length traversal explores every matching path, so treat `hops.max` as a budget: keep it as small as your use case allows, and always set `type` and `direction` — an undirected, untyped `hops` query is the most expensive shape. An omitted `hops.max` means 10, and every query runs within the engine's query time budget.
+Variable-length traversal visits every record within `hops.max` of each candidate record, so treat `hops.max` as a budget: keep it as small as your use case allows, and always set `type` and `direction` — an undirected, untyped `hops` query is the most expensive shape. An omitted `hops.max` means 10, and every query runs within the engine's query time budget.
 
 Apply `limit` conservatively and filter early on high-selectivity properties (e.g. `name`, `status`, `version`). Measure response times before and after adding hops to your query.
 

@@ -47,9 +47,9 @@ graph language rather than a vendor dialect.
 | Graph | The request's tenant |
 
 When a statement returns a whole node, the value is the record as a JSON object
-with its properties plus `_id` (the record's dashed UUID) and `__label`. A
-returned edge carries its properties plus `_id`, `type`, `source`, and
-`target` (dashed UUIDs).
+with its properties plus `__id` (the record's dashed UUID) and `__label`. A
+returned edge carries its properties plus `__id`, `__type`, `__source_id`,
+and `__target_id` (dashed UUIDs).
 
 ## Profile v1 features
 

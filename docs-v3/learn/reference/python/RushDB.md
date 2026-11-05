@@ -163,7 +163,7 @@ BM25 text indexes, used by `records.text_search` and the keyword leg of a hybrid
 
 ### `db.query`
 
-Raw openCypher statements, run by the engine. On a self-hosted engine, start it with `--languages cypher`.
+Raw openCypher statements, run by the engine. On a self-hosted engine, start it with `--languages cypher,sql` (the list replaces the default languages, so keep `sql`).
 
 | Method                      | Description                                                |
 | --------------------------- | ---------------------------------------------------------- |
