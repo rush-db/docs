@@ -49,6 +49,37 @@ curl -X PUT https://api.rushdb.com/api/v1/relationships/$MOVIE_ID \
 Detach can't run inside a transaction: with `X-Transaction-Id` it returns `400` and rolls the transaction back.
 
 
+## Update Properties
+
+`PATCH /api/v1/relationships/:entityId`
+
+Changes the properties of existing relationships of one type from `:entityId` to each target. Properties not named in `set` or `unset` are kept; pairs without such a relationship are skipped. Needs RushDB 3.0.4 or newer.
+
+```bash
+curl -X PATCH https://api.rushdb.com/api/v1/relationships/$MOVIE_ID \
+  -H "Authorization: Bearer $RUSHDB_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "targetIds": "$ACTOR_ID",
+    "type": "STARS_IN",
+    "set": {"billing": 2, "since": "2010-07-16T10:00:00.000Z"},
+    "unset": ["scenes"],
+    "types": {"since": "datetime"}
+  }'
+```
+
+| Field       | Type                     | Description                                                                                          |
+| ----------- | ------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `targetIds` | `string \| string[]`     | Target record ID(s)                                                                                  |
+| `type`      | `string`                 | Relationship type to update                                                                          |
+| `direction` | `"in" \| "out"`          | Direction from source to target (`out` = default)                                                    |
+| `set`       | `object`                 | Properties to write; `null` stores an explicit null                                                  |
+| `unset`     | `string[]`               | Property names to remove                                                                             |
+| `types`     | `Record<string, string>` | Type of a `set` property: `string`, `number`, `boolean` or `datetime` (an ISO 8601 string stored as a datetime) |
+
+Returns `{"message": …, "updated": n}` with the number of relationships changed. Like detach, it can't run inside a transaction.
+
+
 ## Bulk Create by Key Match
 
 `POST /api/v1/relationships/create-many`
