@@ -14,6 +14,7 @@ Start with the path that matches how you work. Every path below works with **Rus
 | Use RushDB from ChatGPT or Claude.ai                 | [Hosted MCP connector](#hosted-mcp-connector)     | ✓     | —           |
 | Teach an AI agent correct RushDB workflows           | [Install Agent Skills](#install-agent-skills)     | ✓     | ✓           |
 | Add persistent memory to an agent                    | [Agent memory](#agent-memory)                     | ✓     | ✓           |
+| Build RAG or agents with LangChain or LangGraph      | [LangChain & LangGraph](#langchain--langgraph)    | ✓     | ✓           |
 | Query with PostgreSQL or Neo4j drivers, or gRPC      | [SQL and Cypher clients](./sql-and-cypher.mdx)    | —     | ✓           |
 
 ---
@@ -109,6 +110,20 @@ Give an agent durable, searchable memory through MCP, or natively in OpenClaw an
 - [Agents](./agents.mdx) — the shared memory contract behind them
 
 On a self-hosted engine, recall by meaning needs an embedding model of your own; each integration explains how to supply one.
+
+---
+
+## LangChain & LangGraph
+
+`langchain-rushdb` (Python) and `@rushdb/langchain` (TypeScript) make RushDB a LangChain vector store and hybrid retriever, and LangGraph's long-term memory store and checkpointer:
+
+```python
+from langchain_rushdb import RushDBSaver, RushDBStore, RushDBVectorStore
+
+graph = builder.compile(checkpointer=RushDBSaver(client=client), store=RushDBStore(client=client))
+```
+
+[Set up LangChain & LangGraph →](./langchain.mdx)
 
 ---
 
