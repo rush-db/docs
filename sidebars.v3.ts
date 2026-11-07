@@ -21,6 +21,7 @@ const sidebars: SidebarsConfig = {
           ['connect/sdks', 'sdks'],
           ['connect/sql-and-cypher', 'sql'],
           ['connect/mcp', 'mcp'],
+          ['connect/langchain', 'langchain'],
           ['connect/skills', 'skills'],
           ['connect/agents', 'agents'],
           ['connect/openclaw-memory', 'openclaw'],

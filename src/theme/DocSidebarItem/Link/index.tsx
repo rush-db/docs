@@ -8,7 +8,7 @@ import clsx from 'clsx'
 import Link from '@docusaurus/Link'
 import { ThemeClassNames } from '@docusaurus/theme-common'
 import { isActiveSidebarItem } from '@docusaurus/plugin-content-docs/client'
-import { Bot, Code2, Cpu, Database, Sparkles } from 'lucide-react'
+import { Bot, Code2, Cpu, Database, Sparkles, Workflow } from 'lucide-react'
 import * as LucideIcons from 'lucide-react'
 import type { LucideProps } from 'lucide-react'
 
@@ -47,6 +47,9 @@ function ConnectIcon({ href, label }: { href: string; label: string }): ReactNod
   }
   if (path.startsWith('/connect/mcp')) {
     return <Cpu size={15} strokeWidth={1.75} className="sidebar-link-icon" aria-hidden="true" />
+  }
+  if (path.startsWith('/connect/langchain')) {
+    return <Workflow size={15} strokeWidth={1.75} className="sidebar-link-icon" aria-hidden="true" />
   }
   if (path.startsWith('/connect/sdks')) {
     return <Code2 size={15} strokeWidth={1.75} className="sidebar-link-icon" aria-hidden="true" />
