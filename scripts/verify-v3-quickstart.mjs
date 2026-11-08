@@ -1,16 +1,16 @@
 // Runs the 3.x Quick Tutorial (docs/get-started/quick-tutorial.mdx) against a
 // real engine: the TypeScript steps, in direct mode, with the published SDK.
 //
-//   RUSHDB_BIN=/path/to/rushdb pnpm verify:v3-quickstart   # default ../rust-rushdb/target/debug/rushdb
+//   RUSHDB_BIN=/path/to/rushdb pnpm verify:v3-quickstart   # default ../rushdb/target/debug/rushdb
 import { access, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { spawn } from 'node:child_process'
 import RushDB, { CloudOnlyError } from '@rushdb/javascript-sdk'
 
-const engine = process.env.RUSHDB_BIN ?? resolve('../rust-rushdb/target/debug/rushdb')
+const engine = process.env.RUSHDB_BIN ?? resolve('../rushdb/target/debug/rushdb')
 await access(engine).catch(() => {
-  throw new Error(`RushDB binary is unavailable: ${engine}. Build rust-rushdb first or set RUSHDB_BIN.`)
+  throw new Error(`RushDB binary is unavailable: ${engine}. Build ../rushdb first or set RUSHDB_BIN.`)
 })
 
 const token = 'docs-quickstart-token'

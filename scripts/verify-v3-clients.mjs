@@ -2,7 +2,7 @@
 // real engine: node-postgres over the PostgreSQL wire and neo4j-driver over
 // Bolt, on the Quick Tutorial's data.
 //
-//   RUSHDB_BIN=/path/to/rushdb pnpm verify:v3-clients   # default ../rust-rushdb/target/debug/rushdb
+//   RUSHDB_BIN=/path/to/rushdb pnpm verify:v3-clients   # default ../rushdb/target/debug/rushdb
 import { access, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -11,9 +11,9 @@ import { promisify } from 'node:util'
 import RushDB from '@rushdb/javascript-sdk'
 import pg from 'pg'
 
-const engine = process.env.RUSHDB_BIN ?? resolve('../rust-rushdb/target/debug/rushdb')
+const engine = process.env.RUSHDB_BIN ?? resolve('../rushdb/target/debug/rushdb')
 await access(engine).catch(() => {
-  throw new Error(`RushDB binary is unavailable: ${engine}. Build rust-rushdb first or set RUSHDB_BIN.`)
+  throw new Error(`RushDB binary is unavailable: ${engine}. Build ../rushdb first or set RUSHDB_BIN.`)
 })
 
 const token = 'docs-clients-token'
