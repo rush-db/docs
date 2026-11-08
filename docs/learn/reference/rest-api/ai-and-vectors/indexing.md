@@ -80,7 +80,7 @@ Creates a new embedding index policy scoped to a label. If the property already 
 | `label`              | string | **yes**  | Label to scope this index to (e.g. `"Article"`, `"Product"`)                                                                |
 | `propertyName`       | string | **yes**  | Name of the property to embed (e.g. `"description"`)                                                                        |
 | `sourceType`         | string | no       | `"managed"` (default) or `"external"`. See [Advanced Indexing](./advanced-indexing.md). |
-| `similarityFunction` | string | no       | `"cosine"` (default) or `"euclidean"`                                                                                       |
+| `similarityFunction` | string | no       | `"cosine"` (default), `"dot"` or `"euclidean"`                                                                              |
 | `dimensions`         | number | no       | Vector length. Defaults to the managed model's dimensions. **Required** for external indexes.                               |
 
 > **The managed model is RushDB Cloud's.** Each index records the model it was embedded with as `modelKey`.
@@ -256,7 +256,7 @@ When searching or writing vectors against a property with multiple indexes, spec
   "propertyName": "string",
   "modelKey": "string",
   "sourceType": "managed | external",
-  "similarityFunction": "cosine | euclidean",
+  "similarityFunction": "cosine | dot | euclidean",
   "dimensions": 1536,
   "vectorPropertyName": "string",
   "enabled": true,

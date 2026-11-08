@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: Semantic vector search
-description: "Run semantic vector search over RushDB records with db.records.vectorSearch(): filter by label and where first, then rank by cosine or euclidean similarity."
+description: "Run semantic vector search over RushDB records with db.records.vectorSearch(): filter by label and where, then rank by cosine, dot or euclidean similarity."
 ---
 
 import Tabs from '@site/src/components/LanguageTabs'
@@ -9,7 +9,7 @@ import TabItem from '@theme/TabItem'
 
 # Semantic search
 
-`db.records.vectorSearch()` / `POST /api/v1/ai/search` performs semantic vector search across records that have an associated embedding index. Candidates are narrowed by label and `where` filters first, then ranked by cosine or euclidean similarity.
+`db.records.vectorSearch()` / `POST /api/v1/ai/search` performs semantic vector search across records that have an associated embedding index. Candidates are narrowed by label and `where` filters first, then ranked by the index's similarity function (cosine, dot product or euclidean).
 
 The search needs a `ready` embedding index, named by `index` or found from `labels` and `propertyName`. See [Manage Embedding Indexes](./manage-indexes.mdx).
 
@@ -339,7 +339,7 @@ results.forEach((r) => {
 | `labels`             | `string[]`                | unless `index` | Label(s) to search within (min 1)                                                                      |
 | `query`              | `string`                  | conditionally | Free-text query. Required for managed indexes; **not allowed** for external indexes.                    |
 | `queryVector`        | `number[]`                | conditionally | Pre-computed query vector. Required for external indexes. Also accepted for managed indexes.            |
-| `similarityFunction` | `"cosine" \| "euclidean"` | no            | Required when multiple indexes target the same `(label, propertyName)`.                                 |
+| `similarityFunction` | `"cosine" \| "dot" \| "euclidean"` | no            | Required when multiple indexes target the same `(label, propertyName)`.                                 |
 | `dimensions`         | `number`                  | no            | Disambiguates when multiple indexes match. Inferred from `queryVector.length` when `queryVector` given. |
 | `where`              | `object`                  | no            | Prefilter — applied before similarity scoring.                                                          |
 | `skip`               | `number`                  | no            | Pagination offset (default `0`)                                                                         |

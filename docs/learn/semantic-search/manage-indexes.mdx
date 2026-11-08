@@ -152,7 +152,7 @@ curl -X POST https://api.rushdb.com/api/v1/ai/indexes \
 | `propertyName`       | `string` | **yes**  | Property to embed (e.g. `"description"`)                                                                            |
 | `sourceType`         | `string` | no       | `"managed"` (default) or `"external"`. See [Bring Your Own Vectors](./bring-your-own-vectors.mdx). |
 | `external`           | `boolean` | no      | Shorthand for `sourceType: "external"`.                                                                             |
-| `similarityFunction` | `string` | no       | `"cosine"` (default) or `"euclidean"`                                                                               |
+| `similarityFunction` | `string` | no       | `"cosine"` (default), `"dot"` or `"euclidean"`                                                                      |
 | `dimensions`         | `number` | no       | Vector length. Defaults to the managed model's dimensions. **Required** for external indexes.                       |
 
 > Attempting to create a duplicate `(label, propertyName, sourceType, similarityFunction, dimensions)` tuple returns `409 Conflict`.

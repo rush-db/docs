@@ -14,7 +14,7 @@ The AI API covers three capabilities:
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | **Graph Schema**      | Self-describing schema discovery: label names, field types, value ranges, and the relationship map — always up to date |
 | **Embedding Indexes** | Per-label vector policies that turn string properties into long-term semantic memory                                   |
-| **Semantic Search**   | Cosine/euclidean similarity retrieval over indexed properties, for agents and apps alike                               |
+| **Semantic Search**   | Cosine, dot-product or euclidean similarity retrieval over indexed properties, for agents and apps alike               |
 
 ---
 
