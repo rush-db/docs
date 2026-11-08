@@ -109,7 +109,7 @@ The repository serves both documentation generations at once. The default genera
 Never edit `docs/engine/` here. Edit the manual in the engine repository, then copy it in:
 
 ```bash
-pnpm sync:engine-manual            # reads ../rust-rushdb by default; pass another path as an argument
+pnpm sync:engine-manual            # reads ../rushdb by default; pass another path as an argument
 pnpm check:engine-manual           # fails if docs/engine is stale
 ```
 

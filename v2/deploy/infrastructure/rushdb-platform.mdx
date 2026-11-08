@@ -40,8 +40,6 @@ RushDB is a single **NestJS** application built on the **Fastify** adapter. It s
 | `RUSHDB_SERVE_STATIC`           |          | `false`    | Set to `true` to serve the dashboard from the same process (see below).                                   |
 | `RUSHDB_DASHBOARD_URL`          |          | —          | Public URL of the dashboard. Used in OAuth redirects and email links.                                     |
 | `RUSHDB_PUBLIC_URL`             |          | —          | Public URL of the API. Used as the OAuth issuer (`RUSHDB_OAUTH_ISSUER`).                                  |
-| `RUSHDB_BASE_URL`               |          | —          | Public/base URL of the API passed to managed synx connector workers.                                      |
-| `RUSHDB_SYNX_CONTROL_TOKEN`     |          | —          | Internal shared token for platform/core ↔ synx worker control endpoints. Required only when synx runs.   |
 
 See [Environment Variables](/deploy/configuration/environment-variables) for the full reference.
 
@@ -63,39 +61,11 @@ In the Docker Compose setup this is enforced with `depends_on` + `condition: ser
 The `DatabaseModule` retries the Neo4j HTTP health endpoint (`http://neo4j:7474`) up to 15 times with a 5-second interval before raising an error. This provides ~75 seconds of tolerance for slow Neo4j startup.
 :::
 
-## Managed connectors with synx
+## Data source connectors
 
-Continuous datasource connectors run in a separate `synx` worker process. The platform process remains the control plane: it stores connector configs, encrypted secrets, offsets, status, and exposes the project-scoped Connector API.
-
-Minimum platform/core env:
-
-```env
-RUSHDB_BASE_URL=https://rushdb.example.com
-RUSHDB_SYNX_CONTROL_TOKEN=generate-a-long-random-token
-RUSHDB_SYNX_DESTINATION_API_KEY=project-or-internal-write-key
-```
-
-Minimum synx worker env:
-
-```env
-RUSHDB_CORE_INTERNAL_URL=http://rushdb:3000
-RUSHDB_SYNX_CONTROL_TOKEN=the-same-token
-RUST_LOG=info
-```
-
-Run the worker:
-
-```bash
-synx managed \
-  --control-url "$RUSHDB_CORE_INTERNAL_URL" \
-  --token-env RUSHDB_SYNX_CONTROL_TOKEN \
-  --worker-id "$HOSTNAME" \
-  --claim-interval-ms 5000 \
-  --heartbeat-interval-ms 20000 \
-  --lease-ttl-ms 60000
-```
-
-The worker should not be publicly exposed. It needs outbound network access to the RushDB platform and to customer datasource endpoints. Run at least two replicas for high availability; leases expire and are reclaimed when a worker crashes.
+:::info Data source connectors
+Continuous sync from PostgreSQL, MongoDB, HubSpot, Salesforce and other sources is part of RushDB Cloud, Dedicated and BYOC deployments. It isn't included in the self-hosted platform; self-hosted installs load data through the REST API, the SDKs, or file import. [Contact us](mailto:hi@rushdb.com) about BYOC.
+:::
 
 ---
 

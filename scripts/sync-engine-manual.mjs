@@ -2,7 +2,7 @@
 // `docs/engine`. The engine repository is the only source of these pages:
 // edit them there and run this script again; never edit `docs/engine` here.
 //
-//   node scripts/sync-engine-manual.mjs [path-to-engine-repo]   # default ../rust-rushdb
+//   node scripts/sync-engine-manual.mjs [path-to-engine-repo]   # default ../rushdb
 //   node scripts/sync-engine-manual.mjs --check [path]          # fail if the copy is stale
 //
 // Each page gets front matter: `format: md` (the manual is plain Markdown, not MDX),
@@ -15,7 +15,7 @@ import { dirname, join, posix, relative, resolve } from 'node:path'
 
 const args = process.argv.slice(2)
 const check = args.includes('--check')
-const engineRepo = resolve(args.find((arg) => !arg.startsWith('--')) ?? new URL('../../rust-rushdb', import.meta.url).pathname)
+const engineRepo = resolve(args.find((arg) => !arg.startsWith('--')) ?? new URL('../../rushdb', import.meta.url).pathname)
 const manual = join(engineRepo, 'docs', 'manual')
 const target = new URL('../docs/engine/', import.meta.url).pathname
 const githubBlob = 'https://github.com/rush-db/rushdb/blob/main'

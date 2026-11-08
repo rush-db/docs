@@ -52,35 +52,6 @@ services:
       NEO4J_PASSWORD: password # must match NEO4J_AUTH below
       # ── Metadata DB (zero-config SQLite default) ───────────────────────────
       SQL_DB_TYPE: sqlite
-      # ── Optional managed connectors / synx ─────────────────────────────────
-      RUSHDB_BASE_URL: http://localhost:3000
-      # RUSHDB_SYNX_CONTROL_TOKEN: change-me-long-random-token
-      # RUSHDB_SYNX_DESTINATION_API_KEY: project-or-internal-write-key
-
-  # Optional: continuous sync worker for managed datasource connectors.
-  # Keep it private; it talks to RushDB platform/core and customer datasources.
-  # synx:
-  #   image: rushdb/synx:latest
-  #   depends_on:
-  #     - rushdb
-  #   command:
-  #     - managed
-  #     - --control-url
-  #     - http://rushdb:3000
-  #     - --token-env
-  #     - RUSHDB_SYNX_CONTROL_TOKEN
-  #     - --worker-id
-  #     - local-synx
-  #     - --claim-interval-ms
-  #     - '5000'
-  #     - --heartbeat-interval-ms
-  #     - '20000'
-  #     - --lease-ttl-ms
-  #     - '60000'
-  #   environment:
-  #     RUSHDB_SYNX_CONTROL_TOKEN: change-me-long-random-token
-  #     RUSHDB_CORE_INTERNAL_URL: http://rushdb:3000
-  #     RUST_LOG: info
 
   neo4j:
     image: neo4j:2026.01.4
@@ -172,9 +143,6 @@ The Neo4j instance must have **APOC Core** installed (version must match Neo4j).
 | `SQL_DB_PATH`                     |       —        | `./rushdb.db` | SQLite file path                                        |
 | `SQL_DB_URL`                      | ✅ if postgres | —             | `postgresql://user:pass@host:5432/rushdb`               |
 | `RUSHDB_PORT`                     |       —        | `3000`        | Port RushDB listens on                                  |
-| `RUSHDB_BASE_URL`                 |       —        | —             | Public/base RushDB API URL passed to synx assignments   |
-| `RUSHDB_SYNX_CONTROL_TOKEN`       |       —        | —             | Internal token for managed synx connector workers       |
-| `RUSHDB_SYNX_DESTINATION_API_KEY` |       —        | —             | Internal write key used by synx destination writes      |
 
 See [Environment Variables](/deploy/configuration/environment-variables) for the full reference.
 
