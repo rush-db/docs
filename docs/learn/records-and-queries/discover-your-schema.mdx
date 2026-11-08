@@ -333,7 +333,7 @@ type SchemaVectorIndex = {
   id: string
   name: string // e.g. 'Product.description.external.3.cosine'
   sourceType: string // 'managed' | 'external'
-  similarityFunction: string // 'cosine' | 'euclidean'
+  similarityFunction: string // 'cosine' | 'dot' | 'euclidean'
   dimensions: number
   // RushDB Cloud: 'pending' | 'indexing' | 'awaiting_vectors' | 'ready' | 'error'
   // Self-hosted engine: 'behind' until every record has a vector, then 'ready'

@@ -11,7 +11,7 @@ description: Call POST /api/v1/ai/search to rank RushDB records by vector simila
 
 Embeds the supplied query text (or uses a pre-computed vector) and returns the most relevant records by similarity score. The property referenced by `propertyName` must have a `ready` embedding index.
 
-RushDB performs exact semantic search: candidates are narrowed with label and `where` filters first, then ranked by cosine or euclidean similarity.
+RushDB performs exact semantic search: candidates are narrowed with label and `where` filters first, then ranked by the index's similarity function (cosine, dot product or euclidean).
 
 ---
 
@@ -24,7 +24,7 @@ RushDB performs exact semantic search: candidates are narrowed with label and `w
 | `labels`             | array of strings           | unless `index` | Label(s) to search within (min 1)                                                                                       |
 | `query`              | string                     | conditionally | Free-text query to embed. Required for managed indexes; **not allowed** for external indexes.                            |
 | `queryVector`        | array of numbers           | conditionally | Pre-computed query vector. Required for external indexes. Also accepted for managed indexes (bypasses server embedding). |
-| `similarityFunction` | string                     | no            | `"cosine"` or `"euclidean"`. Required when multiple indexes target the same `(label, propertyName)`.                     |
+| `similarityFunction` | string                     | no            | `"cosine"`, `"dot"` or `"euclidean"`. Required when multiple indexes target the same `(label, propertyName)`.                     |
 | `dimensions`         | number                     | no            | Disambiguates when multiple indexes match. Inferred from `queryVector.length` when `queryVector` is supplied.            |
 | `where`              | object                     | no            | Standard RushDB filter expression applied **before** similarity scoring.                                                 |
 | `skip`               | number                     | no            | Pagination offset (default `0`)                                                                                          |
