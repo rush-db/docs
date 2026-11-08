@@ -1,9 +1,11 @@
 ---
 sidebar_position: 2
-title: Advanced Indexing — BYOV
+title: External vector indexes REST API
+sidebar_label: Advanced indexing — BYOV
+description: Create external embedding indexes with the RushDB Cloud REST API, upsert your own vectors, write them with records, and mix external and managed indexes.
 ---
 
-# Advanced Indexing — Bring Your Own Vectors
+# Advanced indexing — bring your own vectors
 
 **External indexes** (BYOV — Bring Your Own Vectors) let you supply pre-computed embedding vectors instead of having the server compute them. Use them when you need:
 
@@ -31,7 +33,7 @@ curl -X POST https://api.rushdb.com/api/v1/ai/indexes \
   }'
 ```
 
-### Example Response
+### Example response
 
 ```json
 {
@@ -62,19 +64,19 @@ An external index starts with status `awaiting_vectors` and transitions to `read
 
 ---
 
-## Upsert Vectors
+## Upsert vectors
 
 `POST /api/v1/ai/indexes/:id/vectors/upsert`
 
 The bulk upload API — ideal for seeding an index from a dataset or syncing after a batch pipeline.
 
-### Request Body
+### Request body
 
 | Field   | Type  | Required | Description                                                   |
 | ------- | ----- | -------- | ------------------------------------------------------------- |
 | `items` | array | **yes**  | Array of `{ "recordId": string, "vector": number[] }` objects |
 
-### Example Request
+### Example request
 
 ```bash
 curl -X POST https://api.rushdb.com/api/v1/ai/indexes/idx_ext_abc123/vectors/upsert \
@@ -94,7 +96,7 @@ The request is **idempotent** — calling it again with the same `recordId` repl
 
 ## Writing vectors at record creation time
 
-Instead of a two-step create → upsertVectors flow, you can write vectors inline using the `vectors` field on any write endpoint. See [Write Records with Vectors](/learn/reference/rest-api/ai-and-vectors/write-with-vectors) for the full reference.
+Instead of a two-step create → upsertVectors flow, you can write vectors inline using the `vectors` field on any write endpoint. See [Write Records with Vectors](./write-with-vectors.md) for the full reference.
 
 ```bash
 # One step: create record AND write its vector

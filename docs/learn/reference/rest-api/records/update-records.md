@@ -1,10 +1,13 @@
 ---
+title: Update records REST API
+sidebar_label: Update records
+description: "Update RushDB records through the RushDB Cloud REST API: PATCH for a partial update that keeps unspecified fields, or a full replacement of a record."
 sidebar_position: 6
 ---
 
-# Update Records
+# Update records
 
-## Partial Update
+## Partial update
 
 `PATCH /api/v1/records/:entityId`
 
@@ -17,7 +20,7 @@ curl -X PATCH https://api.rushdb.com/api/v1/records/movie-123 \
   -d '{"data": {"rating": 9.0}}'
 ```
 
-## Full Replacement
+## Full replacement
 
 `PUT /api/v1/records/:entityId`
 
@@ -39,4 +42,4 @@ curl -X PUT https://api.rushdb.com/api/v1/records/movie-123 \
 
 ## See also
 
-- [Writing Records with Vectors](/learn/reference/rest-api/ai-and-vectors/write-with-vectors) — attach embedding vectors when creating or upserting records
+- [Writing Records with Vectors](../ai-and-vectors/write-with-vectors.md) — attach embedding vectors when creating or upserting records

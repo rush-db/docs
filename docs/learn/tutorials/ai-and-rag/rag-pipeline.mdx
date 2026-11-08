@@ -1,6 +1,6 @@
 ---
 sidebar_position: 6
-title: RAG Pipeline in Minutes
+title: RAG pipeline in minutes
 description: Chunk Markdown files, store them in RushDB, and build a retrieval-augmented generation pipeline in TypeScript, Python, or REST.
 tags: [AI, RAG]
 ---
@@ -8,7 +8,11 @@ tags: [AI, RAG]
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# RAG Pipeline in Minutes
+# RAG pipeline in minutes
+
+:::note Managed embeddings
+This tutorial searches with a text `query`, which RushDB Cloud embeds with its managed model. On a self-hosted engine, create external indexes and pass a `queryVector` from your own embedding model instead — see [Bring Your Own Vectors](../../semantic-search/bring-your-own-vectors.mdx).
+:::
 
 This tutorial builds a minimal but complete RAG pipeline:
 
@@ -19,7 +23,7 @@ This tutorial builds a minimal but complete RAG pipeline:
 5. Retrieve the top-K relevant chunks for a query
 6. Pass them to an LLM as context
 
-Prerequisites: a running RushDB instance with `RUSHDB_EMBEDDING_MODEL` configured, or RushDB Cloud with AI enabled.
+Prerequisites: a RushDB Cloud project, or a self-hosted engine with an external index and your own embedding model.
 
 ---
 
@@ -132,7 +136,7 @@ console.log(`Ingested ${records.length} chunks from ${DOCS_DIR}`)
 ```
 
 </TabItem>
-<TabItem value="shell" label="shell">
+<TabItem value="shell" label="Shell">
 
 Assemble your chunks in any language, then POST them in a single batch:
 
@@ -197,7 +201,7 @@ console.log('Embedding index created — backfilling in background')
 ```
 
 </TabItem>
-<TabItem value="shell" label="shell">
+<TabItem value="shell" label="Shell">
 
 ```bash
 curl -X POST https://api.rushdb.com/api/v1/ai/indexes \
@@ -259,7 +263,7 @@ chunks.forEach((chunk, i) => {
 ```
 
 </TabItem>
-<TabItem value="shell" label="shell">
+<TabItem value="shell" label="Shell">
 
 ```bash
 curl -X POST https://api.rushdb.com/api/v1/ai/search \
@@ -357,7 +361,7 @@ curl -s https://api.openai.com/v1/chat/completions \
 </TabItem>
 </Tabs>
 
-RushDB is the retrieval layer — any LLM or framework (LangChain, LlamaIndex, Vercel AI SDK) slots in at this step.
+RushDB is the retrieval layer — any LLM or framework ([LangChain](../../../connect/langchain.mdx), LlamaIndex, Vercel AI SDK) slots in at this step.
 
 ---
 
@@ -392,7 +396,7 @@ const { data } = await db.records.vectorSearch({
 ```
 
 </TabItem>
-<TabItem value="shell" label="shell">
+<TabItem value="shell" label="Shell">
 
 ```bash
 curl -X POST https://api.rushdb.com/api/v1/ai/search \
@@ -418,5 +422,5 @@ The `where` prefilter runs on the graph layer before semantic scoring — so you
 
 - Add more metadata fields (author, date, section heading) — they're queryable without any schema changes
 - Use `$startsWith` or `$in` on `source` to search across a subset of files
-- Combine with [transactions](/learn/records-and-queries/transactions) to atomically re-ingest a file when it changes
+- Combine with [transactions](../../records-and-queries/transactions.mdx) to atomically re-ingest a file when it changes
 - Replace the fixed-size chunker with a semantic splitter (split on headings, paragraphs, or sentences)

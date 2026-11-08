@@ -1,6 +1,6 @@
 ---
 title: Importing data from external sources
-description: Learn how to import your data to RushDB
+description: Import data into RushDB from MongoDB, HubSpot, PostgreSQL, Supabase, Firestore, Airtable and Notion with createMany, then link records by external keys.
 sidebar_position: 3
 tags: [Data, Getting Started]
 ---
@@ -154,12 +154,12 @@ TOKEN="RUSHDB_API_KEY"
 H='Content-Type: application/json'
 
 # 1) Import users (assuming you've extracted data to JSON)
-curl -s -X POST "$BASE/records/create-many" \
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{"label":"USER","data":[{"mongoId":"64f1a...","tenantId":"ACME","name":"Ada","email":"ada@example.com"}]}'
 
 # 2) Import orders
-curl -s -X POST "$BASE/records/create-many" \
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{"label":"ORDER","data":[{"mongoId":"64f2b...","tenantId":"ACME","total":149.99,"userMongoId":"64f1a..."}]}'
 
@@ -296,12 +296,12 @@ TOKEN="RUSHDB_API_KEY"
 H='Content-Type: application/json'
 
 # Import contacts (after extracting from HubSpot API)
-curl -s -X POST "$BASE/records/create-many" \
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{"label":"HS_CONTACT","data":[{"hubspotId":"101","email":"ada@acme.com","tenantId":"ACME"}]}'
 
 # Import companies
-curl -s -X POST "$BASE/records/create-many" \
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{"label":"HS_COMPANY","data":[{"hubspotId":"201","name":"Acme Corp","tenantId":"ACME"}]}'
 
@@ -479,12 +479,12 @@ TOKEN="RUSHDB_API_KEY"
 H='Content-Type: application/json'
 
 # Import users (after extracting from PostgreSQL)
-curl -s -X POST "$BASE/records/create-many" \
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{"label":"USER","data":[{"pgId":"1","name":"Ada","email":"ada@acme.com","tenantId":"ACME"}]}'
 
 # Import orders
-curl -s -X POST "$BASE/records/create-many" \
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{"label":"ORDER","data":[{"pgId":"10","userPgId":"1","total":149.99,"tenantId":"ACME"}]}'
 
@@ -602,11 +602,11 @@ TOKEN="RUSHDB_API_KEY"
 H='Content-Type: application/json'
 
 # Same REST pattern — import records then link by key
-curl -s -X POST "$BASE/records/create-many" \
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{"label":"USER","data":[{"pgId":"1","name":"Ada","email":"ada@acme.com","tenantId":"ACME"}]}'
 
-curl -s -X POST "$BASE/records/create-many" \
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{"label":"ORDER","data":[{"pgId":"10","userPgId":"1","total":149.99,"tenantId":"ACME"}]}'
 
@@ -719,12 +719,12 @@ TOKEN="RUSHDB_API_KEY"
 H='Content-Type: application/json'
 
 # Import users (after extracting from Firestore)
-curl -s -X POST "$BASE/records/create-many" \
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{"label":"USER","data":[{"firebaseId":"abc123","tenantId":"ACME","name":"Ada","email":"ada@acme.com"}]}'
 
 # Import orders
-curl -s -X POST "$BASE/records/create-many" \
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{"label":"ORDER","data":[{"firebaseId":"ord456","tenantId":"ACME","total":149.99,"userFirebaseId":"abc123"}]}'
 
@@ -855,12 +855,12 @@ TOKEN="RUSHDB_API_KEY"
 H='Content-Type: application/json'
 
 # Import companies (after extracting from Airtable API)
-curl -s -X POST "$BASE/records/create-many" \
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{"label":"AT_COMPANY","data":[{"airtableId":"rec123","tenantId":"ACME","name":"Acme Corp"}]}'
 
 # Import contacts
-curl -s -X POST "$BASE/records/create-many" \
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{"label":"AT_CONTACT","data":[{"airtableId":"rec456","tenantId":"ACME","name":"Ada","companyAirtableId":"rec123"}]}'
 
@@ -997,12 +997,12 @@ TOKEN="RUSHDB_API_KEY"
 H='Content-Type: application/json'
 
 # Import people (after extracting from Notion API)
-curl -s -X POST "$BASE/records/create-many" \
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{"label":"NT_PERSON","data":[{"notionId":"page-id-1","tenantId":"ACME","name":"Ada"}]}'
 
 # Import tasks
-curl -s -X POST "$BASE/records/create-many" \
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{"label":"NT_TASK","data":[{"notionId":"page-id-2","tenantId":"ACME","title":"Review PR","assigneeNotionId":"page-id-1"}]}'
 
@@ -1080,11 +1080,11 @@ TOKEN="RUSHDB_API_KEY"
 H='Content-Type: application/json'
 
 # Import
-curl -s -X POST "$BASE/records/create-many" \
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{"label":"USER","data":[...]}'
 
-curl -s -X POST "$BASE/records/create-many" \
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{"label":"ORDER","data":[...]}'
 
@@ -1111,6 +1111,6 @@ curl -s -X POST "$BASE/relationships/create-many" \
 
 ## See also
 
-- TypeScript SDK: [Relationships](/learn/relationships/connect-records) · [Import Data](/learn/records-and-queries/import-data)
-- Python SDK: [Relationships](/learn/relationships/connect-records) · [Import Data](/learn/records-and-queries/import-data)
-- REST API: [Relationships API](/learn/reference/rest-api/relationships) · [Records Import](/learn/reference/rest-api/records/import-data)
+- TypeScript SDK: [Relationships](../../relationships/connect-records.mdx) · [Import Data](../../records-and-queries/import-data.mdx)
+- Python SDK: [Relationships](../../relationships/connect-records.mdx) · [Import Data](../../records-and-queries/import-data.mdx)
+- REST API: [Relationships API](../../reference/rest-api/relationships.md) · [Records Import](../../reference/rest-api/records/import-data.md)

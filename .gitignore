@@ -24,3 +24,6 @@ yarn-error.log*
 
 # Internal planning notes
 /plans/
+
+# UI audit screenshots (scripts/audit-ui.mjs)
+/.ui-audit

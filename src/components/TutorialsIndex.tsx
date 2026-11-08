@@ -10,86 +10,31 @@ export type TutorialEntry = {
   time: string
 }
 
-const BORDER_CLASS = 'border-[var(--ifm-color-emphasis-200)]'
+/** Filters shown before "More": the most used tags. */
+const VISIBLE_TAGS = 10
 
 const SearchIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
     <circle cx="11" cy="11" r="8" />
     <path d="m21 21-4.35-4.35" />
   </svg>
 )
 
-const ClockIcon = () => (
-  <svg
-    width="12"
-    height="12"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <circle cx="12" cy="12" r="10" />
-    <polyline points="12 6 12 12 16 14" />
-  </svg>
-)
-
-const ArrowIcon = () => (
-  <svg
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M5 12h14" />
-    <path d="m12 5 7 7-7 7" />
-  </svg>
-)
-
 function TutorialCard({ tutorial: t }: { tutorial: TutorialEntry }) {
   return (
-    <a
-      href={t.href}
-      className={`group flex flex-col border ${BORDER_CLASS} bg-[var(--ifm-card-background-color)] p-6 text-inherit no-underline transition-[background-color,border-color,color] duration-150 ease-out hover:bg-[var(--ifm-color-emphasis-100)] hover:no-underline focus:no-underline active:no-underline`}
-    >
-      <div className="mb-3.5 flex flex-wrap gap-4">
+    <a href={t.href} className="rd-card">
+      <div className="mb-3 flex flex-wrap gap-1.5">
         {t.tags.map((tag) => (
-          <span key={tag} className="tabs__item pointer-events-none m-0! select-none p-0!">
+          <span key={tag} className="rd-tag">
             {tag}
           </span>
         ))}
       </div>
-
-      <h3 className="mb-2.5 text-[17px] font-bold leading-[1.35] text-[var(--ifm-font-color-base)] no-underline">
-        {t.title}
-      </h3>
-
-      <p className="grow pb-5 text-sm leading-[1.65] text-[var(--ifm-color-emphasis-700)] no-underline">
-        {t.description}
-      </p>
-
-      <div className={`flex items-center justify-between border-t ${BORDER_CLASS} pt-3.5`}>
-        <span className="flex items-center gap-1.5 text-xs text-[var(--ifm-color-emphasis-500)]">
-          <ClockIcon />
-          {t.time}
-        </span>
-        <span className="flex items-center gap-1.5 text-[13px] font-semibold text-[var(--ifm-color-emphasis-600)] transition-colors duration-150 ease-out group-hover:text-[var(--ifm-font-color-base)]">
-          Read <ArrowIcon />
-        </span>
+      <h3 className="rd-card__title">{t.title}</h3>
+      <p className="t-small m-0 grow pb-5">{t.description}</p>
+      <div className="flex items-center justify-between border-t border-lp-border pt-3">
+        <span className="t-meta">{t.time}</span>
+        <span className="t-label">Read →</span>
       </div>
     </a>
   )
@@ -100,16 +45,23 @@ export default function TutorialsIndex({ version = '2.x' }: { version?: string }
   const tutorials = (usePluginData('tutorials-data') as Record<string, TutorialEntry[]>)[version] ?? []
   const [search, setSearch] = useState('')
   const [activeTag, setActiveTag] = useState<string | null>(null)
+  const [showAllTags, setShowAllTags] = useState(false)
 
+  // Tags by how many tutorials use them, most used first.
   const allTags = useMemo<string[]>(() => {
-    const seen = new Set<string>()
+    const counts = new Map<string, number>()
     for (const tutorial of tutorials) {
       for (const tag of tutorial.tags) {
-        seen.add(tag)
+        counts.set(tag, (counts.get(tag) ?? 0) + 1)
       }
     }
-    return [...seen]
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([tag]) => tag)
   }, [tutorials])
+
+  const visibleTags =
+    showAllTags ? allTags : (
+      allTags.slice(0, VISIBLE_TAGS).concat(activeTag && !allTags.slice(0, VISIBLE_TAGS).includes(activeTag) ? [activeTag] : [])
+    )
 
   const filtered = useMemo(() => {
     return tutorials.filter((tutorial) => {
@@ -124,34 +76,32 @@ export default function TutorialsIndex({ version = '2.x' }: { version?: string }
   }, [tutorials, search, activeTag])
 
   return (
-    <div className="language-tabs not-prose">
-      <div className="mb-10 mt-10 text-center">
-        <h1 className="mb-3 text-4xl font-bold text-[var(--ifm-font-color-base)]">Tutorials</h1>
-        <p className="m-0 text-[1.1rem] text-[var(--ifm-color-emphasis-600)]">
-          Hands-on guides to build real things with RushDB
-        </p>
-      </div>
+    <div className="not-prose">
+      <h1>Tutorials</h1>
+      <p className="mb-8 max-w-2xl">Hands-on guides to build real things with RushDB.</p>
 
-      <div className="relative mx-auto mb-8 max-w-[560px]">
-        <div className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-[var(--ifm-color-emphasis-500)]">
+      <div className="relative mb-4 max-w-xl">
+        <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-lp-subtle">
           <SearchIcon />
-        </div>
+        </span>
         <input
-          type="text"
-          placeholder="Search tutorials..."
+          type="search"
+          aria-label="Search tutorials"
+          placeholder="Search tutorials"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className={`box-border w-full border border-solid ${BORDER_CLASS} focus:border-accent bg-transparent py-3 pl-11 pr-4 text-[15px] text-[var(--ifm-font-color-base)] outline-hidden transition-colors duration-150 ease-out placeholder:text-[var(--ifm-color-emphasis-500)]`}
+          className="rd-input"
         />
       </div>
 
-      <div className="tabs flex flex-wrap justify-center pb-10">
-        {['All', ...allTags].map((tag) => {
+      <div className="mb-8 flex flex-wrap gap-2" role="group" aria-label="Filter by tag">
+        {['All', ...visibleTags].map((tag) => {
           const isActive = tag === 'All' ? !activeTag : tag === activeTag
-
           return (
             <button
               key={tag}
+              type="button"
+              aria-pressed={isActive}
               onClick={() =>
                 setActiveTag(
                   tag === 'All' ? null
@@ -159,22 +109,37 @@ export default function TutorialsIndex({ version = '2.x' }: { version?: string }
                   : tag
                 )
               }
-              className={`tabs__item m-0! cursor-pointer border-0 bg-transparent! transition-[background-color,color] duration-150 ease-out ${isActive ? 'tabs__item--active' : ''}`}
+              className="rd-filter"
             >
               {tag}
             </button>
           )
         })}
+        {allTags.length > VISIBLE_TAGS && (
+          <button type="button" className="rd-filter" onClick={() => setShowAllTags((v) => !v)} aria-expanded={showAllTags}>
+            {showAllTags ? 'Fewer' : `More +${allTags.length - VISIBLE_TAGS}`}
+          </button>
+        )}
       </div>
 
       {filtered.length > 0 ?
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filtered.map((tutorial) => (
             <TutorialCard key={tutorial.href} tutorial={tutorial} />
           ))}
         </div>
-      : <div className="py-20 text-center text-[15px] text-[var(--ifm-color-emphasis-500)]">
-          No tutorials match your search.
+      : <div className="border border-lp-border px-6 py-16">
+          <p className="m-0 text-lp-text">No tutorials match your search.</p>
+          <button
+            type="button"
+            className="rd-filter mt-4"
+            onClick={() => {
+              setSearch('')
+              setActiveTag(null)
+            }}
+          >
+            Clear filters
+          </button>
         </div>
       }
     </div>

@@ -1,13 +1,14 @@
 ---
 sidebar_position: 0
-title: MCP Server
+title: MCP server reference
+description: "Reference for the RushDB MCP server: the hosted endpoint, where to start, the tool reference, and the rushdb.queryBuilder prompt for discovery-first querying."
 ---
 
-# MCP Server Reference
+# MCP server reference
 
 RushDB exposes a Model Context Protocol server for agents that need to discover, query, mutate, and traverse a project graph. Each tool publishes its input and output JSON schemas to the connected MCP client.
 
-Use [Connect with MCP](/connect/mcp) for hosted OAuth and local `npx` setup instructions.
+Use [Connect with MCP](../../../connect/mcp.mdx) for hosted OAuth, local `npx` and self-hosted engine setup instructions.
 
 ## Endpoint
 
@@ -23,7 +24,9 @@ Local MCP clients run:
 npx -y @rushdb/mcp-server
 ```
 
-## Start Here
+with `RUSHDB_API_KEY` for RushDB Cloud, or `RUSHDB_MODE=direct`, `RUSHDB_ENGINE_URL` and `RUSHDB_ENGINE_TOKEN` for a self-hosted engine.
+
+## Start here
 
 The server exposes a discovery-first workflow:
 
@@ -36,9 +39,9 @@ The server exposes a discovery-first workflow:
 
 | Page                                                                       | Description                                                   |
 | -------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| [All MCP Tools](/learn/reference/mcp/tools)                                | Complete catalog of all 37 tools, grouped by task             |
-| [MCP Setup](/connect/mcp)                                                  | Hosted OAuth, local client configuration, and troubleshooting |
-| [Suggested Relationship Patterns](/learn/relationships/suggested-patterns) | Review and apply inferred relationship structures             |
+| [All MCP Tools](./tools.mdx)                                | Complete catalog of all 43 tools, grouped by task             |
+| [MCP Setup](../../../connect/mcp.mdx)                                                  | Hosted OAuth, local client configuration, and troubleshooting |
+| [Suggested Relationship Patterns](../../relationships/suggested-patterns.mdx) | Review and apply inferred relationship structures             |
 
 ## Prompt
 

@@ -2,8 +2,7 @@
  * The only switch required to change which documentation generation owns `/`.
  *
  * 3.x has been the default since RushDB 3.0.0 reached general availability.
- * The other generation remains available at `/${version}/`, and
- * `docs-version-redirects.ts` keeps the URLs of the previous layout working.
+ * The other generation remains available at `/${version}/`.
  */
 export const DOCS_VERSIONS = ['2.x', '3.x'] as const
 
@@ -12,8 +11,8 @@ export type DocsVersion = (typeof DOCS_VERSIONS)[number]
 export const DEFAULT_DOCS_VERSION: DocsVersion = '3.x'
 
 export const docsSourcePath: Record<DocsVersion, string> = {
-  '2.x': 'docs',
-  '3.x': 'docs-v3'
+  '2.x': 'v2',
+  '3.x': 'docs'
 }
 
 export const docsSidebarPath: Record<DocsVersion, string> = {

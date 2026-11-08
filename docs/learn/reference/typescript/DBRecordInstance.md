@@ -1,12 +1,15 @@
 ---
+title: DBRecordInstance class (TypeScript SDK)
+sidebar_label: DBRecordInstance
+description: "Reference for DBRecordInstance in the RushDB TypeScript SDK: wrap one record, read its id, label and data, and update, set, attach, detach or delete it."
 sidebar_position: 3
 ---
 
 # DBRecordInstance
 
-`DBRecordInstance` is a class that wraps a DBRecord and provides methods for manipulating it. This class serves as an interface for working with individual [records](/learn/records-and-queries/store-records) in the database. It allows for updating [properties](/learn/records-and-queries/labels-and-properties) and managing [relationships](/learn/relationships).
+`DBRecordInstance` is a class that wraps a DBRecord and provides methods for manipulating it. This class serves as an interface for working with individual [records](../../records-and-queries/store-records.mdx) in the database. It allows for updating [properties](../../records-and-queries/labels-and-properties.mdx) and managing [relationships](../../relationships/index.mdx).
 
-## Class Definition
+## Class definition
 
 ```typescript
 export class DBRecordInstance<S extends Schema = Schema, Q extends SearchQuery<S> = SearchQuery<S>> {
@@ -14,7 +17,7 @@ export class DBRecordInstance<S extends Schema = Schema, Q extends SearchQuery<S
 }
 ```
 
-## Type Parameters
+## Type parameters
 
 | Parameter                                   | Description                                              |
 | ------------------------------------------- | -------------------------------------------------------- |
@@ -241,7 +244,7 @@ Removes a relationship from this record to the target record(s).
 
 **Throws**: Error if the record data is undefined
 
-## Usage Example
+## Usage example
 
 ```typescript
 // Get a record instance from a model

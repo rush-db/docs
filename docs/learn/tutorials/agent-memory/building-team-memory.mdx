@@ -1,6 +1,6 @@
 ---
 sidebar_position: 21
-title: 'Building Team Memory for Product and Support Workflows'
+title: 'Building team memory for product and support workflows'
 description: Ingest tickets, docs, decisions, incidents, and feature requests into a connected graph so your team can retrieve context instead of isolated documents.
 tags: [Memory, Agents, AI Search, TypeScript, Python]
 ---
@@ -8,7 +8,11 @@ tags: [Memory, Agents, AI Search, TypeScript, Python]
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Building Team Memory for Product and Support Workflows
+# Building team memory for product and support workflows
+
+:::note Managed embeddings
+This tutorial searches with a text `query`, which RushDB Cloud embeds with its managed model. On a self-hosted engine, create external indexes and pass a `queryVector` from your own embedding model instead — see [Bring Your Own Vectors](../../semantic-search/bring-your-own-vectors.mdx).
+:::
 
 A team accumulates context constantly: decisions made in Slack, bugs filed in Linear, docs written in Notion, post-mortems filed after incidents. That knowledge is scattered across tools and largely unretrievable — until someone needs it.
 
@@ -249,9 +253,9 @@ DOC_ID=$(curl -s -X POST "$BASE/records/search" \
   | jq -r '.data[0].__id')
 
 # Attach relationship
-curl -s -X POST "$BASE/records/$TICKET_ID/relations" \
+curl -s -X POST "$BASE/relationships/$TICKET_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$DOC_ID\"],\"options\":{\"type\":\"RESOLVED_BY\",\"direction\":\"out\"}}"
+  -d "{\"targetIds\":[\"$DOC_ID\"],\"type\":\"RESOLVED_BY\",\"direction\":\"out\"}"
 ```
 
 </TabItem>
@@ -544,7 +548,7 @@ curl -s -X POST "$BASE/ai/search" \
 
 Once the base graph is established, enrich it incrementally:
 
-- **Webhooks from Linear/GitHub/PagerDuty** — auto-create TICKET and INCIDENT records on event (see [Event-Driven Ingestion](/learn/tutorials/working-with-data/event-driven-ingestion))
+- **Webhooks from Linear/GitHub/PagerDuty** — auto-create TICKET and INCIDENT records on event (see [Event-Driven Ingestion](../working-with-data/event-driven-ingestion.mdx))
 - **Decisions as first-class nodes** — when a team makes a decision, create a DECISION record and link it to the TICKET or INCIDENT it resolved
 - **FEATURE_REQUEST linked to TICKET** — when a customer request drives a bug fix or feature, link the FEATURE_REQUEST to the TICKET so the team can see customer impact upstream of every change
 
@@ -558,6 +562,6 @@ Team memory graphs grow unboundedly unless pruned. Define a retention policy for
 
 ## Next steps
 
-- [Agent-Safe Query Planning with Schema First](/learn/tutorials/agent-memory/agent-safe-query-planning) — run agents over this memory graph safely
-- [Episodic Memory for Multi-Step Agents](/learn/tutorials/agent-memory/episodic-memory) — session-scoped context alongside persistent team memory
-- [Data Lineage](/learn/tutorials/graph-modeling/data-lineage) — trace decisions back to source data
+- [Agent-Safe Query Planning with Schema First](./agent-safe-query-planning.mdx) — run agents over this memory graph safely
+- [Episodic Memory for Multi-Step Agents](./episodic-memory.mdx) — session-scoped context alongside persistent team memory
+- [Data Lineage](../graph-modeling/data-lineage.mdx) — trace decisions back to source data

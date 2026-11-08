@@ -1,12 +1,13 @@
 ---
 sidebar_position: 1
-title: Labels & Properties
+title: Labels & properties
+description: "Inspect the labels and properties that emerge as you write RushDB records: list labels with counts, find properties, read property values and delete them."
 ---
 
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Labels & Properties
+# Labels & properties
 
 RushDB is schema-free — labels and properties emerge automatically as you write records. These APIs let you inspect, enumerate, and manage your schema at runtime.
 
@@ -16,7 +17,7 @@ RushDB is schema-free — labels and properties emerge automatically as you writ
 
 A **label** is a string tag applied to every record (e.g. `"Movie"`, `"User"`, `"Order"`). The labels API lets you discover which labels exist and how many records each has.
 
-### Find Labels
+### Find labels
 
 <Tabs groupId="programming-language">
   <TabItem value="python" label="Python" default>
@@ -33,7 +34,7 @@ result = db.labels.find({"where": {"rating": {"$gte": 8}}})
 # → [LabelResult(name='MOVIE', count=1)]
 ```
 
-`db.labels.find()` accepts a standard [`where`](/learn/search-query/where-operators) clause. It returns all labels that have at least one record matching the condition.
+`db.labels.find()` accepts a standard [`where`](../search-query/where-operators.md) clause. It returns all labels that have at least one record matching the condition.
 
   </TabItem>
   <TabItem value="typescript" label="TypeScript">
@@ -84,7 +85,7 @@ Response: `{ [label]: count }` map.
 
 A **property** is a field definition created automatically when you write a record with a new key. The properties API lets you inspect types, enumerate distinct values, and delete fields.
 
-### Find Properties
+### Find properties
 
 <Tabs groupId="programming-language">
   <TabItem value="python" label="Python" default>
@@ -164,7 +165,7 @@ curl https://api.rushdb.com/api/v1/properties/prop-123 \
   </TabItem>
 </Tabs>
 
-### Get Property Values
+### Get property values
 
 Enumerate distinct values for a property — useful for building filter UIs, autocomplete, or feeding into `db.ai.get_schema()`.
 
@@ -227,7 +228,7 @@ curl -X POST https://api.rushdb.com/api/v1/properties/prop-123/values \
   </TabItem>
 </Tabs>
 
-### Delete Property
+### Delete property
 
 :::warning
 Deletes the property definition and removes it from **all records** that have it. This is irreversible.
@@ -268,6 +269,6 @@ curl -X DELETE https://api.rushdb.com/api/v1/properties/prop-123 \
 
 ## See also
 
-- [Discover Your Schema](/learn/records-and-queries/discover-your-schema) — live schema via `db.ai.getSchema()`
-- [Find & Query](/learn/records-and-queries/find-and-query) — query records by property value
-- [Where Operators](/learn/search-query/where-operators) — filter syntax reference
+- [Discover Your Schema](./discover-your-schema.mdx) — live schema via `db.ai.getSchema()`
+- [Find & Query](./find-and-query.mdx) — query records by property value
+- [Where Operators](../search-query/where-operators.md) — filter syntax reference

@@ -1,8 +1,16 @@
+# Public docs are available for search, real-time AI grounding and model
+# training; references and citations back to RushDB are preferred.
+# 2.x (legacy) and tag pages carry a noindex meta tag instead of a Disallow,
+# so crawlers can still read it.
 User-agent: *
 Allow: /
+Content-Signal: search=yes, ai-input=yes, ai-train=yes, use=reference
 
-# Prevent crawlers from following API example URLs embedded in LLM-oriented text files.
-# Blocks /llms-full.txt, /llms-concepts-full.txt, etc. but keeps /llms.txt accessible for AI crawlers.
-Disallow: /llms-
+# AI search crawlers: the same rules as above, stated explicitly.
+User-agent: OAI-SearchBot
+User-agent: Claude-SearchBot
+User-agent: PerplexityBot
+Allow: /
+Content-Signal: search=yes, ai-input=yes, ai-train=yes, use=reference
 
 Sitemap: https://docs.rushdb.com/sitemap.xml

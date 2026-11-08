@@ -1,7 +1,6 @@
 import React from 'react'
 
-export const Method = ({ method, color }: { method: string; color: string }) => (
-  <span style={{ backgroundColor: color, color: 'white', padding: '2px 6px', borderRadius: '4px' }}>
-    {method}
-  </span>
+/** HTTP method badge (2.x API pages): mono, outlined, on tokens. `color` is accepted and ignored. */
+export const Method = ({ method }: { method: string; color?: string }) => (
+  <span className="rd-tag">{method}</span>
 )

@@ -1,14 +1,14 @@
 ---
 sidebar_position: 23
-title: 'Episodic Memory for Multi-Step Agents'
-description: Store goals, intermediate observations, tool outputs, and decisions as linked records so long-running agents can resume with context instead of stateless prompts.
+title: 'Episodic memory for multi-step agents'
+description: Store goals, observations, tool outputs and decisions as linked RushDB records so long-running agents resume with context instead of stateless prompts.
 tags: [Agents, Memory, Relationships, TypeScript, Python]
 ---
 
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Episodic Memory for Multi-Step Agents
+# Episodic memory for multi-step agents
 
 A stateless agent that restarts a task from scratch every session wastes context. A long-running agent that can write its observations and decisions to a graph database — and read them back on resume — can pick up where it left off, avoid repeating work, and build compound reasoning over time.
 
@@ -202,9 +202,9 @@ STEP_RESP=$(curl -s -X POST "$BASE/records" \
 STEP_ID=$(echo "$STEP_RESP" | jq -r '.data.__id')
 
 # Link step to goal
-curl -s -X POST "$BASE/records/$GOAL_ID/relations" \
+curl -s -X POST "$BASE/relationships/$GOAL_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$STEP_ID\"],\"options\":{\"type\":\"HAS_STEP\",\"direction\":\"out\"}}"
+  -d "{\"targetIds\":[\"$STEP_ID\"],\"type\":\"HAS_STEP\",\"direction\":\"out\"}"
 ```
 
 </TabItem>
@@ -299,9 +299,9 @@ OBS_RESP=$(curl -s -X POST "$BASE/records" \
   }')
 OBS_ID=$(echo "$OBS_RESP" | jq -r '.data.__id')
 
-curl -s -X POST "$BASE/records/$STEP_ID/relations" \
+curl -s -X POST "$BASE/relationships/$STEP_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$OBS_ID\"],\"options\":{\"type\":\"PRODUCED\",\"direction\":\"out\"}}"
+  -d "{\"targetIds\":[\"$OBS_ID\"],\"type\":\"PRODUCED\",\"direction\":\"out\"}"
 
 curl -s -X PATCH "$BASE/records/$STEP_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
@@ -483,8 +483,8 @@ curl -s -X PATCH "$BASE/records/$GOAL_ID" \
 | Pattern                                                                                  | Use case                                              |
 | ---------------------------------------------------------------------------------------- | ----------------------------------------------------- |
 | Episodic memory (this tutorial)                                                          | Per-session agent context: goals, steps, tool outputs |
-| Team memory ([Building Team Memory](/learn/tutorials/agent-memory/building-team-memory)) | Shared persistent knowledge: tickets, docs, decisions |
-| Fact memory ([RushDB as a Memory Layer](/learn/tutorials/agent-memory/memory-layer))     | Long-lived facts about entities across all sessions   |
+| Team memory ([Building Team Memory](./building-team-memory.mdx)) | Shared persistent knowledge: tickets, docs, decisions |
+| Fact memory ([RushDB as a Memory Layer](./memory-layer.mdx))     | Long-lived facts about entities across all sessions   |
 
 These patterns compose: an agent can write episodic steps to its own GOAL graph while also reading from shared team memory for background knowledge.
 
@@ -498,6 +498,6 @@ Episodic records accumulate quickly during active agent use. Define a cleanup po
 
 ## Next steps
 
-- [RushDB as a Memory Layer](/learn/tutorials/agent-memory/memory-layer) — long-lived facts and entity profiles
-- [Building Team Memory](/learn/tutorials/agent-memory/building-team-memory) — shared knowledge graph for agents
-- [Agent-Safe Query Planning](/learn/tutorials/agent-memory/agent-safe-query-planning) — grounded query execution guard
+- [RushDB as a Memory Layer](./memory-layer.mdx) — long-lived facts and entity profiles
+- [Building Team Memory](./building-team-memory.mdx) — shared knowledge graph for agents
+- [Agent-Safe Query Planning](./agent-safe-query-planning.mdx) — grounded query execution guard

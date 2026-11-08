@@ -1,9 +1,11 @@
 ---
 sidebar_position: 3
-title: Semantic Search
+title: Semantic search REST API
+sidebar_label: Semantic search
+description: Call POST /api/v1/ai/search to rank RushDB records by vector similarity from query text or a query vector, with where filters, multi-label search and paging.
 ---
 
-# Semantic Search
+# Semantic search
 
 `POST /api/v1/ai/search`
 
@@ -13,12 +15,13 @@ RushDB performs exact semantic search: candidates are narrowed with label and `w
 
 ---
 
-## Request Body
+## Request body
 
 | Field                | Type                       | Required      | Description                                                                                                              |
 | -------------------- | -------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `propertyName`       | string                     | **yes**       | The indexed property to search against (e.g. `"description"`)                                                            |
-| `labels`             | string or array of strings | **yes**       | Label(s) to search within (min 1)                                                                                        |
+| `index`              | string                     | no            | The index to search, by name (or id); `propertyName` and `labels` then default to the index's own.                       |
+| `propertyName`       | string                     | unless `index` | The indexed property to search against (e.g. `"description"`)                                                           |
+| `labels`             | array of strings           | unless `index` | Label(s) to search within (min 1)                                                                                       |
 | `query`              | string                     | conditionally | Free-text query to embed. Required for managed indexes; **not allowed** for external indexes.                            |
 | `queryVector`        | array of numbers           | conditionally | Pre-computed query vector. Required for external indexes. Also accepted for managed indexes (bypasses server embedding). |
 | `similarityFunction` | string                     | no            | `"cosine"` or `"euclidean"`. Required when multiple indexes target the same `(label, propertyName)`.                     |
@@ -26,6 +29,15 @@ RushDB performs exact semantic search: candidates are narrowed with label and `w
 | `where`              | object                     | no            | Standard RushDB filter expression applied **before** similarity scoring.                                                 |
 | `skip`               | number                     | no            | Pagination offset (default `0`)                                                                                          |
 | `limit`              | number                     | no            | Maximum results to return (default `20`)                                                                                 |
+| `mode`               | string                     | no            | `"auto"` (default), `"exact"` or `"ann"` (`ann` needs a cosine index).                                                   |
+| `ef`                 | number                     | no            | ANN gather breadth.                                                                                                      |
+| `scoreThreshold`     | number                     | no            | Keep only results scoring at least this much.                                                                            |
+| `text`               | object                     | no            | A keyword leg: `query`, `index`, `property`, `allTerms`, `phrase`, `weight`, `prefetchLimit`. Makes the search hybrid.   |
+| `weight`, `prefetchLimit` | number                | no            | Hybrid only: the vector leg's share of the fused score (default 1) and the hits it ranks before fusion (1–10,000).       |
+| `fusion`             | string                     | no            | Hybrid only: `"rrf"` (default) or `"dbsf"`.                                                                              |
+| `rrfK`               | number                     | no            | Hybrid only: the RRF smoothing constant (default 60).                                                                    |
+
+The response's `meta` reports how the search ran: `vectorSearch` (`mode`, `ef`, `fallback`, `pool`), and for a hybrid search `textSearch` (`matches`, `pending`) and `fusion`. See [Hybrid Search](../../../semantic-search/hybrid-search.mdx).
 
 ---
 

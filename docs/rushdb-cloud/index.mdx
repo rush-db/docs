@@ -1,32 +1,50 @@
 ---
 title: RushDB Cloud
-description: Understand RushDB Cloud billing, project isolation, licensing, third-party services, and self-hosted alternatives.
+description: The managed RushDB service — projects, API keys, the dashboard, managed embeddings and AI features on the RushDB engine.
 sidebar_position: 1
 ---
 
 # RushDB Cloud
 
-RushDB Cloud is the managed way to run RushDB. It provides projects, API keys, team access, usage tracking, and a dashboard while preserving the same graph model and APIs used by self-hosted deployments.
+RushDB Cloud is the managed RushDB service at [app.rushdb.com](https://app.rushdb.com). It runs the RushDB engine for you and adds what the engine alone doesn't have:
 
-## Choose an Operating Model
+- **the dashboard** — browse records and relationships, build queries, manage indexes;
+- **projects, workspaces and team access**, with API keys per project;
+- **managed embeddings** — mark a property for semantic search and Cloud embeds every write, and every text query;
+- **AI features** — [natural-language search](../learn/search-query/smart-search.mdx) and [relationship-pattern suggestions](../learn/relationships/suggested-patterns.mdx);
+- **the REST API** and a **hosted MCP connector** with OAuth for ChatGPT, Claude.ai and other web clients.
 
-| Model               | Graph backend                                    | RushDB operations    | Best fit                                               |
-| ------------------- | ------------------------------------------------ | -------------------- | ------------------------------------------------------ |
-| **RushDB Cloud**    | RushDB-managed Neo4j                             | Managed by RushDB    | Fastest path from API key to production                |
-| **Cloud with BYOC** | Your Neo4j or Aura instance                      | Managed by RushDB    | Keep graph data in your own cloud account              |
-| **Self-hosted**     | Your Neo4j, PostgreSQL, or SQLite infrastructure | Managed by your team | Full deployment control and no cloud quota enforcement |
+The engine itself — records, relationships, SearchQuery, keyword, vector and hybrid search, transactions — is the same one you can [self-host](../engine/getting-started/installation.md). Code written with the SDKs runs against both. See [What RushDB Cloud adds](./capabilities.mdx) for the full list.
 
-## Cloud Reference
+## Get an API key
 
-| Page                                                                     | What it explains                                                                   |
-| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
-| [Billing Model](/rushdb-cloud/billing-model)                             | Monthly plans, usage limits, and the KU-based billing model                        |
-| [Multitenancy & Project Isolation](/rushdb-cloud/project-isolation)      | How `{projectId}` scopes reads, writes, metadata, and BYOC connections             |
-| [Licensing & Third-Party Services](/rushdb-cloud/licensing-and-services) | RushDB software licenses and the runtime services involved in each operating model |
-| [Knowledge Units (KU)](/rushdb-cloud/knowledge-units)                    | What generates KU and how to estimate usage                                        |
+1. Sign up at [app.rushdb.com/signup](https://app.rushdb.com/signup) with your email address or a third-party provider.
+2. Create a project in the dashboard.
 
-## Start Using RushDB Cloud
+   ![Create Project Button](/img/quick-start/create-project-screen.png 'Create a project')
 
-1. [Get an API key](/deploy/configuration/get-api-key).
-2. [Connect through an SDK, MCP, or REST](/connect/).
-3. Use [BYOC with Neo4j or Aura](/deploy/infrastructure/neo4j-and-aura) when graph data must remain in your own cloud account.
+3. Copy the API key from the project's Help page, or create more on the **API Keys** tab.
+
+   ![Copy API Key](/img/quick-start/create-token-screen.png 'Copy an API key')
+
+Then connect:
+
+```typescript
+import RushDB from '@rushdb/javascript-sdk'
+
+const db = new RushDB(process.env.RUSHDB_API_KEY!)
+```
+
+### Full-access and read-only keys
+
+- **Full access (read & write)** — the default. Can call every endpoint, including creates, updates, deletes, imports and transactions. **Server-side use only.**
+- **Read-only** — can only query: record search and retrieval, labels, properties, relationship search, aggregations, keyword and semantic search, and CSV export. Every write is rejected with `403 Forbidden`.
+
+A read-only key can't modify anything, so it is safe in client-side code for public demos and dashboards. Read-only is not private: anyone who extracts the key can read the project's data. Use read-only keys only for data meant to be publicly readable, and set an expiration where possible.
+
+## Next steps
+
+- [Connect through an SDK, MCP or the REST API](../connect/index.mdx)
+- [What RushDB Cloud adds](./capabilities.mdx)
+- [Projects and isolation](./project-isolation.mdx)
+- [RushDB Cloud or a self-hosted engine](../learn/tutorials/use-cases/cloud-vs-self-hosted.mdx)

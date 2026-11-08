@@ -1,4 +1,7 @@
 ---
+title: RushDB class (Python SDK)
+sidebar_label: RushDB
+description: "Reference for the RushDB class in the Python SDK: constructor options and the records, tx, labels, properties, relationships, ai and query namespaces."
 sidebar_position: 0
 ---
 
@@ -14,24 +17,39 @@ from rushdb import RushDB
 # Connect to RushDB Cloud
 db = RushDB("RUSHDB_API_KEY")
 
-# Connect to a self-hosted instance
+# Connect to a self-hosted engine (direct mode)
 db = RushDB(
-    api_key="RUSHDB_API_KEY",
-    url="https://your-rushdb-instance.com"
+    "ENGINE_TOKEN",
+    direct=True,
+    engine_url="http://127.0.0.1:3000",
 )
 ```
 
 ## Constructor
 
 ```python
-RushDB(api_key: str, url: Optional[str] = None, base_url: Optional[str] = None)
+RushDB(
+    api_key: str,
+    base_url: Optional[str] = None,
+    url: Optional[str] = None,
+    direct: bool = False,
+    engine_url: Optional[str] = None,
+    engine_token: Optional[str] = None,
+    scope: Optional[str] = None,
+)
 ```
 
 | Parameter  | Type  | Description                                                                                                                                                         |
 | ---------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `api_key`  | `str` | API key for authentication                                                                                                                                          |
-| `url`      | `str` | Base URL of a self-hosted RushDB instance. When provided without `/api/`, the path `/api/v1` is appended automatically. Defaults to `https://api.rushdb.com/api/v1` |
-| `base_url` | `str` | Deprecated alias for `url`. Kept for backwards compatibility                                                                                                        |
+| `api_key`      | `str`  | A RushDB Cloud API key, or the engine token in direct mode                                                                                                  |
+| `url`          | `str`  | A RushDB Cloud API endpoint other than the default. When provided without `/api/`, the path `/api/v1` is appended automatically. Defaults to `https://api.rushdb.com/api/v1` |
+| `base_url`     | `str`  | Deprecated alias for `url`                                                                                                                                  |
+| `direct`       | `bool` | Talk to a self-hosted RushDB engine instead of RushDB Cloud. Methods in `CLOUD_ONLY_METHODS` raise `CloudOnlyError` before sending anything            |
+| `engine_url`   | `str`  | The engine's base URL, e.g. `http://127.0.0.1:3000`. Required when `direct=True`                                                                            |
+| `engine_token` | `str`  | The engine token, when it differs from `api_key`                                                                                                            |
+| `scope`        | `str`  | The tenant, on an engine started with `--multitenant`                                                                                                       |
+
+In direct mode, `db.engine.execute()` runs any [Protocol v1](../../../engine/connectivity/http-api.md) operation.
 
 ## Namespaces
 
@@ -59,6 +77,8 @@ CRUD and bulk operations on records.
 | `attach(source, target, *, options, transaction)`                         | Create relationships between records                                                                                                                        |
 | `detach(source, target, *, options, transaction)`                         | Remove relationships between records                                                                                                                        |
 | `export(search_query, *, transaction)`                                    | Export matching records as CSV text                                                                                                                         |
+| `vector_search(params, transaction)` | Vector search over an embedding index; add `text` for a hybrid search. See [Semantic Search](../../semantic-search/semantic-search.mdx) |
+| `text_search(params, transaction)` | Keyword (BM25) search over a text index. See [Keyword Search](../../semantic-search/keyword-search.mdx) |
 
 ### `db.tx`
 
@@ -71,7 +91,7 @@ Transaction lifecycle management.
 | `commit(transaction)`   | Commit a transaction by object or ID           |
 | `rollback(transaction)` | Roll back a transaction by object or ID        |
 
-See also: [Transaction](/learn/reference/python/transaction) for the `commit()` / `rollback()` instance methods and context manager usage.
+See also: [Transaction](./transaction.md) for the `commit()` / `rollback()` instance methods and context manager usage.
 
 ### `db.labels`
 
@@ -103,7 +123,7 @@ Query relationships, bulk-create them, and review inferred relationship patterns
 
 #### `db.relationships.patterns`
 
-Review and manage relationship patterns inferred from the project schema. See [Relationship Patterns](/learn/reference/python/relationship-patterns) for the full review flow.
+Review and manage relationship patterns inferred from the project schema. See [Relationship Patterns](./relationship-patterns.md) for the full review flow.
 
 | Method                                         | Description                                                            |
 | ---------------------------------------------- | ---------------------------------------------------------------------- |
@@ -115,11 +135,11 @@ Review and manage relationship patterns inferred from the project schema. See [R
 
 ### `db.ai`
 
-Semantic search and schema exploration. Embedding index management is available under `db.ai.indexes`.
+Schema exploration and natural-language search. Embedding index management is available under `db.ai.indexes`; vector search is `db.records.vector_search`.
 
 | Method                                        | Description                                                             |
 | --------------------------------------------- | ----------------------------------------------------------------------- |
-| `search(params)`                              | Semantic (vector) search over indexed properties; returns `ApiResponse` |
+| `search(prompt, current_query, transaction)` | Natural-language search: turns the prompt into a SearchQuery and runs it. RushDB Cloud only |
 | `get_schema(params, *, transaction)`          | Return the full graph schema as structured JSON                         |
 | `get_schema_markdown(params, *, transaction)` | Return the schema as compact Markdown (token-efficient, for LLMs)       |
 
@@ -130,12 +150,23 @@ Semantic search and schema exploration. Embedding index management is available 
 | `find()`                           | List all embedding index policies                     |
 | `create(params)`                   | Create a new embedding index for a property           |
 | `delete(index_id)`                 | Delete an embedding index by ID                       |
-| `stats(index_id)`                  | Get Neo4j-level statistics for an index               |
+| `stats(index_id)`                  | Get how many records an index covers and has vectors for |
 | `upsert_vectors(index_id, params)` | Bulk-seed an external index with pre-computed vectors |
+
+### `db.text_indexes`
+
+BM25 text indexes, used by `records.text_search` and the keyword leg of a hybrid search.
+
+| Method                | Description                                                     |
+| --------------------- | --------------------------------------------------------------- |
+| `find()`              | List text indexes with their `status` and `pending` changes     |
+| `create(params)`      | Declare a text index: `label`, `property` (or `*`), optional `name` and `consistency` |
+| `suggest_name(params)` | The default name a new text index would get                    |
+| `delete(name)`        | Drop a text index by name                                       |
 
 ### `db.query`
 
-Raw Cypher query execution. **Cloud-only** — not available on self-hosted instances without a managed database.
+Raw openCypher statements, run by the engine. On a self-hosted engine, start it with `--languages cypher,sql` (the list replaces the default languages, so keep `sql`).
 
 | Method                      | Description                                                |
 | --------------------------- | ---------------------------------------------------------- |
@@ -149,7 +180,7 @@ Project configuration.
 | ------- | ------------------------------------- |
 | `get()` | Retrieve the current project settings |
 
-## Instance Methods
+## Instance methods
 
 ### `ping()`
 
@@ -166,7 +197,7 @@ else:
     raise RuntimeError("Cannot reach RushDB server")
 ```
 
-## Usage Example
+## Usage example
 
 ```python
 from rushdb import RushDB

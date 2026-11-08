@@ -1,10 +1,13 @@
 ---
+title: Labels REST API
+sidebar_label: Labels
+description: Call POST /api/v1/labels/search in the RushDB Cloud REST API to list labels with their record counts, optionally filtered by a where clause.
 sidebar_position: 5
 ---
 
 # Labels
 
-## Search Labels
+## Search labels
 
 `POST /api/v1/labels/search`
 

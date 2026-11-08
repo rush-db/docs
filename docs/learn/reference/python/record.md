@@ -1,4 +1,7 @@
 ---
+title: Record class (Python SDK)
+sidebar_label: Record
+description: "Reference for the Record class in the RushDB Python SDK: id, label, fields and other properties, plus the set, update, attach, detach and delete methods."
 sidebar_position: 2
 ---
 
@@ -6,7 +9,7 @@ sidebar_position: 2
 
 The `Record` class represents a record in RushDB and provides methods for manipulating individual records, including updates, relationships, and deletions.
 
-## Class Definition
+## Class definition
 
 ```python
 class Record:
@@ -348,7 +351,7 @@ user = client.records.create("USER", {"name": "John"})
 response = user.delete()
 ```
 
-## Complete Usage Example
+## Complete usage example
 
 Here's a comprehensive example demonstrating various Record operations:
 
@@ -410,7 +413,7 @@ user.detach(
 user.delete()
 ```
 
-## Working with Transactions
+## Working with transactions
 
 Records can be manipulated within transactions for atomic operations:
 

@@ -1,9 +1,8 @@
 /**
  * Swizzled DocSidebarItem/Category component.
- * Adds Lucide icon support via `customProps.icon` on sidebar category items.
- *
- * Usage in sidebars.ts:
- *   { type: 'category', label: 'Deploy', customProps: { icon: 'Server' }, ... }
+ * Level-1 sections render as mono labels (custom.css); categories carry no
+ * icons. A section without a page of its own renders as text, not as a link
+ * that goes nowhere.
  */
 import React, { useEffect, useMemo, type ReactNode } from 'react'
 import clsx from 'clsx'
@@ -25,17 +24,6 @@ import { translate } from '@docusaurus/Translate'
 import useIsBrowser from '@docusaurus/useIsBrowser'
 import DocSidebarItems from '@theme/DocSidebarItems'
 import type { Props } from '@theme/DocSidebarItem/Category'
-import * as LucideIcons from 'lucide-react'
-import type { LucideProps } from 'lucide-react'
-
-type LucideIconComponent = React.ComponentType<LucideProps>
-
-function SidebarIcon({ name }: { name: string }): ReactNode {
-  const IconComponent = (LucideIcons as Record<string, unknown>)[name] as LucideIconComponent | undefined
-  if (!IconComponent) return null
-  return <IconComponent size={15} strokeWidth={1.75} className="sidebar-category-icon" aria-hidden="true" />
-}
-
 function useAutoExpandActiveCategory({
   isActive,
   collapsed,
@@ -114,7 +102,6 @@ export default function DocSidebarItemCategory({
   ...props
 }: Props): ReactNode {
   const { items, label, collapsible, className, href } = item
-  const iconName = item.customProps?.icon as string | undefined
 
   const {
     docs: {
@@ -167,7 +154,9 @@ export default function DocSidebarItemCategory({
           'menu__list-item-collapsible--active': isCurrentPage
         })}
       >
-        <Link
+        {!collapsible && !hrefWithSSRFallback ?
+          <span className="menu__link">{label}</span>
+        : <Link
           className={clsx('menu__link', {
             'menu__link--sublist': collapsible,
             'menu__link--sublist-caret': collapsible,
@@ -197,9 +186,8 @@ export default function DocSidebarItemCategory({
           href={collapsible ? (hrefWithSSRFallback ?? '#') : hrefWithSSRFallback}
           {...props}
         >
-          {iconName && <SidebarIcon name={iconName} />}
           {label}
-        </Link>
+        </Link>}
       </div>
 
       <Collapsible lazy as="ul" className="menu__list" collapsed={collapsed}>

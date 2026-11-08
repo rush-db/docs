@@ -1,8 +1,11 @@
 ---
+title: SearchQuery pagination and order
+sidebar_label: Pagination and order
+description: "Control RushDB SearchQuery results with limit, skip and orderBy: sort directions, page through records, and order results that use aggregations."
 sidebar_position: 3
 ---
 
-# Pagination and Order
+# Pagination and order
 
 SearchQuery provides flexible pagination and ordering capabilities to control the volume of returned data and the sequence in which records are presented.
 
@@ -28,7 +31,7 @@ These settings are defined at the top level in the SearchQuery DTO, alongside fi
 }
 ```
 
-## Pagination Parameters
+## Pagination parameters
 
 ### Limit
 
@@ -45,18 +48,18 @@ These settings are defined at the top level in the SearchQuery DTO, alongside fi
 - **Default**: `0`
 - **Description**: Specifies the number of records to skip before starting to return results. Useful for implementing paged access to large result sets.
 
-## Sorting Records with `orderBy`
+## Sorting records with `orderBy`
 
 The `orderBy` parameter controls the order in which records are returned.
 
-### Types of Sorting
+### Types of sorting
 
 You can specify sorting in two ways:
 
 1. **Simple Direction Sorting**: Apply a sort direction to the default ID field
 2. **Field-Specific Sorting**: Sort by specific fields with individual directions
 
-### Sort Direction Values
+### Sort direction values
 
 - `asc`: Ascending order (A → Z, 0 → 9)
 - `desc`: Descending order (Z → A, 9 → 0)
@@ -90,9 +93,9 @@ For sorting by specific fields, use an object with field names as keys and sort 
 }
 ```
 
-## Pagination Examples
+## Pagination examples
 
-### Basic Pagination
+### Basic pagination
 
 ```typescript
 // First page (records 1-100)
@@ -117,7 +120,7 @@ For sorting by specific fields, use an object with field names as keys and sort 
 }
 ```
 
-### Different Page Sizes
+### Different page sizes
 
 ```typescript
 // Get first 25 records
@@ -135,7 +138,7 @@ For sorting by specific fields, use an object with field names as keys and sort 
 }
 ```
 
-## Combined Pagination and Sorting
+## Combined pagination and sorting
 
 You can combine pagination and sorting to implement sophisticated data access patterns:
 
@@ -157,21 +160,21 @@ You can combine pagination and sorting to implement sophisticated data access pa
 }
 ```
 
-## Default Behavior
+## Default behavior
 
 - If `limit` is not specified, the default value is `100`
 - If `limit` is greater than `1000`, it will be capped at `1000`
 - If `skip` is not specified, the default value is `0`
 - If `orderBy` is not specified, results are sorted by the internal ID field in descending order
 
-## Performance Considerations
+## Performance considerations
 
 - For large datasets, combining high `skip` values with complex filtering conditions may impact performance
 - Consider using filtering conditions that leverage indexes for better performance with larger offsets
 - When possible, structure your application to use smaller page sizes (lower `limit` values)
 - The maximum allowed `limit` value (1000) is designed to prevent excessive resource consumption
 
-## Ordering with Aggregations
+## Ordering with aggregations
 
 Ordering interacts with aggregation execution order. RushDB distinguishes between:
 
@@ -180,7 +183,7 @@ Ordering interacts with aggregation execution order. RushDB distinguishes betwee
 
 Why it matters: Early ordering limits the raw input rows feeding the metrics computation. Late ordering allows the metrics computation to consider the entire matched set first, then applies `ORDER BY`, `SKIP`, `LIMIT` to the computed result rows.
 
-### Example: Late Order (Accurate Total)
+### Example: Late order (accurate total)
 
 ```jsonc
 {
@@ -202,7 +205,7 @@ ORDER BY `totalAmount` ASC SKIP 0 LIMIT 100
 RETURN {`totalAmount`:`totalAmount`} as records
 ```
 
-### Example: Early Order (Potentially Incomplete Total)
+### Example: Early order (potentially incomplete total)
 
 ```jsonc
 {
@@ -231,4 +234,4 @@ In the early order case, only the first 100 deals (by default ID ordering) contr
 - Use early ordering intentionally only when you want to compute metrics over a _windowed_ subset (e.g., rolling sample of newest records).
 - The behavior applies to any grouped aggregation, not just the self-group pattern.
 
-See also: [Select Expressions guide](/learn/search-query/select-expressions#ordering-by-select-keys-late-order--pagination) for more context.
+See also: [Select Expressions guide](./select-expressions.md#ordering-by-select-keys-late-order--pagination) for more context.

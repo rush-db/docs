@@ -1,6 +1,6 @@
 ---
 sidebar_position: 5
-title: Semantic Search in 5 Minutes
+title: Semantic search in 5 minutes
 description: Create embedding indexes, wait for backfill, and run your first semantic search query in TypeScript, Python, or REST.
 tags: [AI, Search]
 ---
@@ -8,7 +8,11 @@ tags: [AI, Search]
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Semantic Search in 5 Minutes
+# Semantic search in 5 minutes
+
+:::note Managed embeddings
+This tutorial searches with a text `query`, which RushDB Cloud embeds with its managed model. On a self-hosted engine, create external indexes and pass a `queryVector` from your own embedding model instead — see [Bring Your Own Vectors](../../semantic-search/bring-your-own-vectors.mdx).
+:::
 
 This tutorial walks you through the full semantic search workflow:
 
@@ -18,7 +22,7 @@ This tutorial walks you through the full semantic search workflow:
 4. Run semantic search
 5. Run semantic search with a filter
 
-Prerequisites: a running RushDB instance with `RUSHDB_EMBEDDING_MODEL` configured (or RushDB Cloud with AI enabled).
+Prerequisites: a RushDB Cloud project. On a self-hosted engine, follow the same steps with an external index and your own vectors ([Bring Your Own Vectors](../../semantic-search/bring-your-own-vectors.mdx)).
 
 ---
 
@@ -85,7 +89,7 @@ db.records.import_json({
 ```
 
 </TabItem>
-<TabItem value="shell" label="shell">
+<TabItem value="shell" label="Shell">
 
 ```http
 POST /api/v1/records/import/json
@@ -148,7 +152,7 @@ print(index["id"], index["status"])  # e.g. 'idx_abc123', 'pending'
 ```
 
 </TabItem>
-<TabItem value="shell" label="shell">
+<TabItem value="shell" label="Shell">
 
 ```http
 POST /api/v1/ai/indexes
@@ -220,7 +224,7 @@ wait_for_index(index["id"])
 ```
 
 </TabItem>
-<TabItem value="shell" label="shell">
+<TabItem value="shell" label="Shell">
 
 ```http
 GET /api/v1/ai/indexes/idx_abc123/stats
@@ -280,7 +284,7 @@ for result in response.data:
 ```
 
 </TabItem>
-<TabItem value="shell" label="shell">
+<TabItem value="shell" label="Shell">
 
 ```http
 POST /api/v1/ai/search
@@ -372,7 +376,7 @@ for result in response.data:
 ```
 
 </TabItem>
-<TabItem value="shell" label="shell">
+<TabItem value="shell" label="Shell">
 
 ```http
 POST /api/v1/ai/search
@@ -397,6 +401,6 @@ token: YOUR_API_KEY
 
 ## Next steps
 
-- **Inject schema context into an LLM**: [TypeScript AI docs](/learn/semantic-search) | [Python AI docs](/learn/semantic-search)
-- **REST API reference**: [REST AI docs](/learn/reference/rest-api/ai-and-vectors/overview)
+- **Inject schema context into an LLM**: [TypeScript AI docs](../../semantic-search/semantic-search.mdx) | [Python AI docs](../../semantic-search/semantic-search.mdx)
+- **REST API reference**: [REST AI docs](../../reference/rest-api/ai-and-vectors/overview.md)
 - **Multiple labels**: Pass 2+ labels in `labels` to search across all specified labels.

@@ -1,14 +1,18 @@
 ---
 sidebar_position: 41
-title: 'RAG Reranking'
-description: Improve retrieval precision with two-stage search — over-fetch candidates with vector similarity, then rerank with LLM scoring or Reciprocal Rank Fusion before sending to the LLM.
+title: 'RAG reranking'
+description: "Improve RushDB retrieval precision with two-stage search: over-fetch candidates by vector similarity, then rerank with LLM scoring or Reciprocal Rank Fusion."
 tags: [RAG, AI, Embeddings, Search]
 ---
 
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# RAG Reranking
+# RAG reranking
+
+:::note Managed embeddings
+This tutorial searches with a text `query`, which RushDB Cloud embeds with its managed model. On a self-hosted engine, create external indexes and pass a `queryVector` from your own embedding model instead — see [Bring Your Own Vectors](../../semantic-search/bring-your-own-vectors.mdx).
+:::
 
 Vector similarity retrieval is fast but imprecise: cosine distance is a proxy for relevance, not a direct measure of it. Reranking adds a second, slower, but more accurate scoring stage that re-orders the initial candidates before they reach the LLM.
 
@@ -38,9 +42,9 @@ The key insight is to **over-fetch** in stage 1 (retrieve more candidates than y
 Ask the LLM to score each candidate passage for relevance to the query on a 0–10 scale, then sort descending. This is simple to implement, costs a small number of tokens per candidate, and works well out of the box.
 
 <Tabs>
-<TabItem value="js" label="JavaScript">
+<TabItem value="javascript" label="JavaScript">
 
-```js
+```javascript
 import RushDB from '@rushdb/javascript-sdk'
 import OpenAI from 'openai'
 
@@ -94,7 +98,7 @@ async function retrieveAndRerank(query, topK = 5) {
   return reranked
 }
 
-const topChunks = await retrieveAndRerank('how does billing work for BYOC projects?')
+const topChunks = await retrieveAndRerank('how does billing work for team workspaces?')
 topChunks.forEach((c) => console.log(`[${c.rerankScore}/10] ${c.text.slice(0, 80)}...`))
 ```
 
@@ -152,7 +156,7 @@ def retrieve_and_rerank(query: str, top_k: int = 5) -> list:
     candidates = retrieve_candidates(query, 25)
     return rerank_with_llm(query, candidates, top_k)
 
-top_chunks = retrieve_and_rerank('how does billing work for BYOC projects?')
+top_chunks = retrieve_and_rerank('how does billing work for team workspaces?')
 for chunk in top_chunks:
     print(f'{chunk.text[:80]}...')
 ```
@@ -162,7 +166,7 @@ for chunk in top_chunks:
 
 ---
 
-## Approach 2: Reciprocal Rank Fusion (RRF)
+## Approach 2: Reciprocal rank fusion (RRF)
 
 RRF merges ranked result lists from multiple retrieval strategies without needing scores to be on the same scale. It's particularly useful when combining:
 
@@ -179,9 +183,9 @@ RRF(d) = Σ  1 / (k + rank_r(d))   for each result list r
 Where `k = 60` is the standard smoothing constant and `r` iterates over result lists.
 
 <Tabs>
-<TabItem value="js" label="JavaScript">
+<TabItem value="javascript" label="JavaScript">
 
-```js
+```javascript
 // rrf.js
 
 /**
@@ -281,9 +285,9 @@ def hybrid_search(db, query: str, top_k: int = 5) -> list:
 For maximum precision, use RRF to merge multiple retrieval strategies, then LLM-rerank the merged candidates:
 
 <Tabs>
-<TabItem value="js" label="JavaScript">
+<TabItem value="javascript" label="JavaScript">
 
-```js
+```javascript
 async function precisionPipeline(query, finalTopK = 5) {
   // Stage 1a: broad semantic search
   const semanticHits = await db.records.vectorSearch({
@@ -381,9 +385,9 @@ def precision_pipeline(db, openai_client, query: str, final_top_k: int = 5) -> l
 Reranker calls are expensive. Cache results for identical (query, candidate-set) pairs to avoid re-scoring on repeated queries.
 
 <Tabs>
-<TabItem value="js" label="JavaScript">
+<TabItem value="javascript" label="JavaScript">
 
-```js
+```javascript
 const rerankCache = new Map()
 
 async function cachedRerank(query, candidates, topK = 5) {
@@ -459,6 +463,6 @@ LLM.chat(prompt)               ← Final answer with citations
 
 ## Next steps
 
-- [RAG Evaluation](/learn/tutorials/ai-and-rag/rag-evaluation) — measure the Precision@k impact of adding reranking
-- [Multi-Source RAG](/learn/tutorials/ai-and-rag/rag-multi-source) — apply RRF across PDF, web, and database labels
-- [GraphRAG](/learn/tutorials/ai-and-rag/graphrag) — add graph-enriched context alongside reranked chunks
+- [RAG Evaluation](./rag-evaluation.mdx) — measure the Precision@k impact of adding reranking
+- [Multi-Source RAG](./rag-multi-source.mdx) — apply RRF across PDF, web, and database labels
+- [GraphRAG](./graphrag.mdx) — add graph-enriched context alongside reranked chunks

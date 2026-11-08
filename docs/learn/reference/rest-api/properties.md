@@ -1,10 +1,13 @@
 ---
+title: Properties REST API
+sidebar_label: Properties
+description: Search properties, get a property by ID, list its distinct values and delete it with the properties endpoints of the RushDB Cloud REST API.
 sidebar_position: 4
 ---
 
 # Properties
 
-## Search Properties
+## Search properties
 
 `POST /api/v1/properties/search`
 
@@ -15,7 +18,7 @@ curl -X POST https://api.rushdb.com/api/v1/properties/search \
   -d '{"where": {"type": "string"}}'
 ```
 
-## Get Property by ID
+## Get property by ID
 
 `GET /api/v1/properties/:propertyId`
 
@@ -24,7 +27,7 @@ curl https://api.rushdb.com/api/v1/properties/prop-123 \
   -H "Authorization: Bearer $RUSHDB_API_KEY"
 ```
 
-## Get Property Values
+## Get property values
 
 `POST /api/v1/properties/:propertyId/values`
 
@@ -44,7 +47,7 @@ curl -X POST https://api.rushdb.com/api/v1/properties/prop-123/values \
 | `skip`    | `number`          | Pagination offset                  |
 | `limit`   | `number`          | Max values to return               |
 
-## Delete Property
+## Delete property
 
 `DELETE /api/v1/properties/:propertyId`
 

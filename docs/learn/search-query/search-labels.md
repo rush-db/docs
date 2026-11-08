@@ -1,4 +1,7 @@
 ---
+title: Filter SearchQuery by label
+sidebar_label: Labels
+description: "Filter a RushDB SearchQuery by record label with the labels array: single and multiple labels, labels with relationship queries and with aggregations."
 sidebar_position: 2
 ---
 
@@ -21,9 +24,9 @@ The `labels` array is defined at the top level of the SearchQuery DTO, alongside
 }
 ```
 
-## Basic Usage
+## Basic usage
 
-### Filtering by a Single Label
+### Filtering by a single label
 
 The simplest way to use labels is to specify a single label to filter the records:
 
@@ -35,7 +38,7 @@ The simplest way to use labels is to specify a single label to filter the record
 
 This query will only return records that have the PERSON label.
 
-### Implicit Filtering
+### Implicit filtering
 
 When no labels are provided in the query, RushDB will search across all record labels:
 
@@ -48,7 +51,7 @@ When no labels are provided in the query, RushDB will search across all record l
 }
 ```
 
-## Label Behavior
+## Label behavior
 
 There are a few important things to understand about how labels work in SearchQuery:
 
@@ -60,7 +63,7 @@ There are a few important things to understand about how labels work in SearchQu
 
 ## Examples
 
-### Single Label Search
+### Single label search
 
 ```typescript
 {
@@ -73,7 +76,7 @@ There are a few important things to understand about how labels work in SearchQu
 
 This query searches for COMPANY records founded in or after 2010. This is the most efficient way to query when you know exactly what type of record you're looking for.
 
-### Multiple Labels Search
+### Multiple labels search
 
 ```typescript
 {
@@ -86,7 +89,7 @@ This query searches for COMPANY records founded in or after 2010. This is the mo
 
 This query searches for records that have either the PERSON label OR the EMPLOYEE label, and have an age greater than or equal to 18.
 
-### Combining Labels with Relationship Queries
+### Combining labels with relationship queries
 
 You can combine label filtering with relationship traversal in the where clause:
 
@@ -107,7 +110,7 @@ You can combine label filtering with relationship traversal in the where clause:
 
 This query finds companies founded in or after 2010 that have employees with the position "Software Engineer" who possess the "TypeScript" skill.
 
-### Using Labels with Aggregations
+### Using labels with aggregations
 
 Labels are particularly useful when you want to perform aggregations on specific types of records:
 
@@ -129,7 +132,7 @@ Labels are particularly useful when you want to perform aggregations on specific
 
 This query counts the number of employees for each company.
 
-## Performance Considerations
+## Performance considerations
 
 1. **Always specify a label when possible**: Queries with a single label are significantly faster than queries without label constraints. This is especially important for large databases.
 
@@ -137,7 +140,7 @@ This query counts the number of employees for each company.
 
 3. **Label-based indexes**: RushDB uses label-based indexes to quickly locate records of a specific type. Without labels, the system must scan a much larger set of records.
 
-## Additional Notes
+## Additional notes
 
 - **System labels**: Some labels in RushDB are prefixed with `__RUSHDB__` and are used for internal purposes. These are not typically used in user queries.
 
@@ -147,7 +150,7 @@ This query counts the number of employees for each company.
 
 - **Label inheritance**: RushDB does not have a concept of label hierarchy or inheritance. Each record can have its own set of independent labels.
 
-## Complete Examples
+## Complete examples
 
 <details>
 <summary>Using labels with complex where conditions</summary>

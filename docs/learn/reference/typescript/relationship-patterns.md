@@ -1,9 +1,15 @@
 ---
 sidebar_position: 7
-title: Relationship Patterns
+title: Relationship patterns API (TypeScript SDK)
+sidebar_label: Relationship patterns
+description: Use db.relationships.patterns in the RushDB TypeScript SDK to queue schema analysis, then approve, ignore or delete the relationship patterns Cloud suggests.
 ---
 
-# Relationship Patterns
+# Relationship patterns
+
+:::info Cloud
+This capability is provided by RushDB Cloud. It is not available on a self-hosted engine, where the SDK throws `CloudOnlyError` before sending anything.
+:::
 
 RushDB can analyze the project schema and suggest relationships that are not materialized yet. Suggestions are reviewable: no relationship is created until you approve a pattern.
 
@@ -19,7 +25,7 @@ Access the API through `db.relationships.patterns`.
 | `ignore(id)`          | Ignore a suggestion without applying it                                |
 | `delete(id, options)` | Delete a saved pattern, optionally removing materialized relationships |
 
-## Review Flow
+## Review flow
 
 ```typescript
 import RushDB from '@rushdb/javascript-sdk'
@@ -49,4 +55,4 @@ Deleting a saved pattern does not delete relationships that it already created u
 await db.relationships.patterns.delete('pattern-id', { deleteExisting: true })
 ```
 
-For lifecycle details, matching modes, REST endpoints, and MCP tools, see [Suggested Relationship Patterns](/learn/relationships/suggested-patterns).
+For lifecycle details, matching modes, REST endpoints, and MCP tools, see [Suggested Relationship Patterns](../../relationships/suggested-patterns.mdx).

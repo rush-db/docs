@@ -1,22 +1,22 @@
 ---
 sidebar_position: 1
-title: Connect Records
+title: Connect records
+description: Attach and detach RushDB records with typed, directed relationships, list them, and filter records by relationship type, direction and multi-hop traversal.
 ---
 
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Connect Records
+# Connect records
 
 Relationships are the connections that link records together, creating a graph structure. They have a **type** (a string label you define), a **direction**, and optional user-defined edge properties.
 
-RushDB supports three categories of relationships:
+RushDB has two categories of relationships:
 
-| Type                                         | Created by       | Description                                         |
-| -------------------------------------------- | ---------------- | --------------------------------------------------- |
-| `__RUSHDB__RELATION__DEFAULT__`              | Auto, on import  | Links parent → child records in nested JSON         |
-| `__RUSHDB__RELATION__VALUE__`                | Auto, internally | Connects property nodes to record nodes (read-only) |
-| Custom (`"STARS_IN"`, `"DIRECTED_BY"`, etc.) | You              | Domain-specific, manually created                   |
+| Type                                         | Created by                         | Description                                          |
+| -------------------------------------------- | ---------------------------------- | ---------------------------------------------------- |
+| `__RUSHDB__RELATION__DEFAULT__`              | Imports, and attach without a type | Links parent → child records in nested JSON          |
+| Custom (`"STARS_IN"`, `"DIRECTED_BY"`, etc.) | You                                | Domain-specific, manually created                    |
 
 ```mermaid
 graph LR
@@ -29,7 +29,7 @@ graph LR
 
 ---
 
-## Attach Records
+## Attach records
 
 <Tabs groupId="programming-language">
   <TabItem value="python" label="Python" default>
@@ -79,17 +79,17 @@ await db.records.attach({
   </TabItem>
   <TabItem value="shell" label="Shell">
 
-`POST /api/v1/records/:entityId/relationships`
+`POST /api/v1/relationships/:entityId`
 
 ```bash
 # Single target
-curl -X POST https://api.rushdb.com/api/v1/records/$MOVIE_ID/relationships \
+curl -X POST https://api.rushdb.com/api/v1/relationships/$MOVIE_ID \
   -H "Authorization: Bearer $RUSHDB_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"targetIds": "$ACTOR_ID", "type": "STARS_IN", "direction": "out", "properties": {"role": "lead"}}'
 
 # Multiple targets
-curl -X POST https://api.rushdb.com/api/v1/records/$MOVIE_ID/relationships \
+curl -X POST https://api.rushdb.com/api/v1/relationships/$MOVIE_ID \
   -H "Authorization: Bearer $RUSHDB_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"targetIds": ["$ACTOR1_ID", "$ACTOR2_ID"], "type": "STARS_IN"}'
@@ -118,7 +118,7 @@ graph LR
 
 ---
 
-## Detach Records
+## Detach records
 
 <Tabs groupId="programming-language">
   <TabItem value="python" label="Python" default>
@@ -129,8 +129,8 @@ graph LR
 db.records.detach(
     source=movie,
     target=actor,
-    options={"type": "STARS_IN"}
-    # Omit "type" to detach all relationship types
+    options={"typeOrTypes": "STARS_IN"}
+    # Omit "typeOrTypes" to detach every relationship type
 )
 ```
 
@@ -143,17 +143,17 @@ db.records.detach(
 await db.records.detach({
   source: 'movie-id-123',
   target: 'actor-id-456',
-  options: { typeOrTypes: 'STARS_IN' } // omit to detach all types
+  options: { typeOrTypes: 'STARS_IN' } // omit to detach every type
 })
 ```
 
   </TabItem>
   <TabItem value="shell" label="Shell">
 
-`PUT /api/v1/records/:entityId/relationships`
+`PUT /api/v1/relationships/:entityId`
 
 ```bash
-curl -X PUT https://api.rushdb.com/api/v1/records/$MOVIE_ID/relationships \
+curl -X PUT https://api.rushdb.com/api/v1/relationships/$MOVIE_ID \
   -H "Authorization: Bearer $RUSHDB_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"targetIds": "$ACTOR_ID", "typeOrTypes": ["STARS_IN"]}'
@@ -169,9 +169,11 @@ graph LR
   MOVIE -. "❌ STARS_IN" .-> ACTOR
 ```
 
+Without `typeOrTypes`, `detach` removes relationships of every type; without `direction` (`"in"` or `"out"`), it removes them pointing either way. `detach` can't run inside a transaction.
+
 ---
 
-## List Relationships
+## List relationships
 
 <Tabs groupId="programming-language">
   <TabItem value="python" label="Python" default>
@@ -211,10 +213,10 @@ const { data, total } = await db.relationships.find({
   </TabItem>
   <TabItem value="shell" label="Shell">
 
-`GET /api/v1/records/:entityId/relationships`
+`GET /api/v1/relationships/:entityId`
 
 ```bash
-curl "https://api.rushdb.com/api/v1/records/$MOVIE_ID/relationships?limit=50" \
+curl "https://api.rushdb.com/api/v1/relationships/$MOVIE_ID?limit=50" \
   -H "Authorization: Bearer $RUSHDB_API_KEY"
 ```
 
@@ -238,11 +240,11 @@ curl -X POST https://api.rushdb.com/api/v1/relationships/search \
 
 `db.relationships.find().where` is edge-scoped. Use `source` and `target` for record predicates. To filter records by traversing relationships, use `db.records.find()` with `$relation` as shown below.
 
-Edge properties are stored directly on relationship edges. They are filterable through `relationships.find()` and summarized in schema relationship sections, but they are not promoted to Record Property nodes and are not semantically indexed. See [Relationship Properties](/learn/relationships/relationship-properties) for storage semantics, the full operator set, and modeling guidance.
+Edge properties are stored directly on relationship edges. They are filterable through `relationships.find()` and summarized in schema relationship sections, but they are not record properties and cannot be vector or text indexed. See [Relationship Properties](./relationship-properties.mdx) for storage semantics, the full operator set, and modeling guidance.
 
 ---
 
-## Direction Reference
+## Direction reference
 
 | `direction` | Graph pattern                  |
 | ----------- | ------------------------------ |
@@ -257,7 +259,7 @@ graph LR
 
 ---
 
-## Search by Relationship
+## Search by relationship
 
 Use `$relation` inside a `where` clause to filter records through their graph connections. The **nested key** is the label of the related record; `$relation` constrains which relationship edge to follow.
 
@@ -509,11 +511,11 @@ graph LR
   DEPARTMENT -->|"HAS_PROJECT"| PROJECT
 ```
 
-→ For the full operator reference including `$alias`, `$id`, and logical grouping, see [Where Operators — Relationship Queries](/learn/search-query/where-operators#relationship-queries).
+→ For the full operator reference including `$alias`, `$id`, and logical grouping, see [Where Operators — Relationship Queries](../search-query/where-operators.md#relationship-queries).
 
 ---
 
-## In a Transaction
+## In a transaction
 
 <Tabs groupId="programming-language">
   <TabItem value="python" label="Python" default>
@@ -559,7 +561,7 @@ try {
   <TabItem value="shell" label="Shell">
 
 ```bash
-curl -X POST https://api.rushdb.com/api/v1/records/$MOVIE_ID/relationships \
+curl -X POST https://api.rushdb.com/api/v1/relationships/$MOVIE_ID \
   -H "Authorization: Bearer $RUSHDB_API_KEY" \
   -H "Content-Type: application/json" \
   -H "X-Transaction-Id: $TX_ID" \
@@ -571,7 +573,7 @@ curl -X POST https://api.rushdb.com/api/v1/records/$MOVIE_ID/relationships \
 
 ---
 
-## Via Record Instance
+## Via record instance
 
 <Tabs groupId="programming-language">
   <TabItem value="python" label="Python" default>
@@ -585,7 +587,7 @@ movie.attach(
 
 movie.detach(
     target=actor,
-    options={"type": "STARS_IN"}
+    options={"typeOrTypes": "STARS_IN"}
 )
 ```
 
@@ -622,6 +624,6 @@ await MovieModel.detach({
 
 ## See also
 
-- [Bulk Relationships](/learn/relationships/bulk-relationships) — connect/disconnect many records at once by key match or many-to-many
-- [Import Data](/learn/records-and-queries/import-data) — nested JSON auto-creates relationships
-- [Transactions](/learn/records-and-queries/transactions) — ACID guarantees for multi-step operations
+- [Bulk Relationships](./bulk-relationships.mdx) — connect/disconnect many records at once by key match or many-to-many
+- [Import Data](../records-and-queries/import-data.mdx) — nested JSON auto-creates relationships
+- [Transactions](../records-and-queries/transactions.mdx) — ACID guarantees for multi-step operations

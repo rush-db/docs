@@ -1,4 +1,7 @@
 ---
+title: Transaction class (Python SDK)
+sidebar_label: Transaction
+description: "Reference for the Transaction class and db.tx in the RushDB Python SDK: begin, commit and roll back, use a context manager, or recover a transaction by ID."
 sidebar_position: 1
 ---
 
@@ -6,7 +9,7 @@ sidebar_position: 1
 
 A `Transaction` groups multiple database operations so they succeed or fail together. Obtain one via `db.tx.begin()`, then pass it to any write method. Call `commit()` to make changes permanent or `rollback()` to discard them.
 
-## Class Definition
+## Class definition
 
 ```python
 class Transaction:
@@ -23,7 +26,7 @@ id: str
 
 The server-assigned transaction identifier. Passed automatically via `X-Transaction-Id` header when you supply the `Transaction` object to any API method.
 
-## Instance Methods
+## Instance methods
 
 ### `commit()`
 
@@ -41,7 +44,7 @@ def rollback() -> None
 
 Discards all operations performed within this transaction. Raises `RushDBError` if the transaction has already been committed or rolled back.
 
-## Context Manager
+## Context manager
 
 `Transaction` implements `__enter__` / `__exit__`, so you can use it with `with`:
 
@@ -59,14 +62,15 @@ Transactions are created and managed through the `db.tx` namespace.
 ### `begin()`
 
 ```python
-def begin(ttl: Optional[int] = None) -> Transaction
+def begin(ttl: Optional[int] = None, autocommit: bool = False) -> Transaction
 ```
 
 Starts a new transaction. Returns a `Transaction` object.
 
 | Parameter | Type  | Description                                                                                |
 | --------- | ----- | ------------------------------------------------------------------------------------------ |
-| `ttl`     | `int` | Time-to-live in milliseconds before the transaction auto-expires. Defaults to `5000` (5 s) |
+| `ttl`     | `int` | Time-to-live in milliseconds before the transaction auto-expires. Defaults to `5000` (5 s) on RushDB Cloud, where it is capped at 55 s; a self-hosted engine defaults to and caps at 60 s |
+| `autocommit` | `bool` | Commit instead of rolling back when the TTL elapses. Defaults to `False` |
 
 ```python
 tx = db.tx.begin(ttl=30000)  # 30-second window
@@ -96,7 +100,7 @@ def rollback(transaction: Union[str, Transaction]) -> None
 
 Rolls back a transaction identified by a `Transaction` object or a raw ID string.
 
-## Usage Examples
+## Usage examples
 
 ### Manual commit / rollback
 

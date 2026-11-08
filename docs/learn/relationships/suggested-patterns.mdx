@@ -1,12 +1,18 @@
 ---
 sidebar_position: 4
-title: Suggested Patterns
+title: Suggested relationship patterns
+sidebar_label: Suggested patterns
+description: Let RushDB Cloud analyze your labels and properties, suggest relationship patterns, and approve, ignore or delete them from the SDK, REST API or MCP tools.
 ---
 
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Suggested Relationship Patterns
+# Suggested relationship patterns
+
+:::info Cloud
+This capability is provided by RushDB Cloud. It is not available on a self-hosted engine, where the SDK throws `CloudOnlyError` before sending anything; create relationships yourself with [attach or `relationships.createMany`](./connect-records.mdx).
+:::
 
 RushDB can analyze the labels, properties, and existing edges in a project and suggest relationship patterns worth making explicit. Review suggestions before applying them: analysis proposes graph structure, but approval is the step that changes relationships.
 
@@ -14,14 +20,7 @@ This is useful after imports and schema evolution, when matching keys or default
 
 ## Prerequisites
 
-Relationship analysis uses the LLM configured by your RushDB server:
-
-```bash
-RUSHDB_LLM_API_KEY=...
-RUSHDB_LLM_MODEL=gpt-5.6-luna
-```
-
-For self-hosted deployments, see [Environment Variables](/deploy/configuration/environment-variables). Omit these variables to disable AI relationship suggestions.
+RushDB Cloud runs the analysis with its own language model; there is nothing to configure.
 
 ## Lifecycle
 
@@ -44,7 +43,7 @@ For self-hosted deployments, see [Environment Variables](/deploy/configuration/e
 | `join_pattern`                 | Creates relationships by matching keys between source and target records |
 | `retype_existing_relationship` | Replaces default import edges with an explicit domain relationship type  |
 
-## SDK Workflow
+## SDK workflow
 
 <Tabs groupId="programming-language">
   <TabItem value="python" label="Python" default>
@@ -150,7 +149,7 @@ curl -X DELETE "https://api.rushdb.com/api/v1/relationships/patterns/$PATTERN_ID
 `deleteExisting=true` removes graph relationships as well as the stored pattern. Confirm this destructive action before using it.
 :::
 
-## MCP Tools
+## MCP tools
 
 | Tool                          | Purpose                                                  |
 | ----------------------------- | -------------------------------------------------------- |

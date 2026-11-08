@@ -44,14 +44,35 @@ export default function SearchModal({ isOpen, onClose }: Props) {
     }
   }, [isOpen])
 
-  // Escape to close
+  // Escape closes; Tab stays inside the dialog; focus returns to the trigger.
   useEffect(() => {
     if (!isOpen) return
+    const trigger = document.activeElement as HTMLElement | null
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      }
+      if (e.key !== 'Tab' || !modalRef.current) return
+      const focusable = Array.from(
+        modalRef.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])')
+      ).filter((el) => el.offsetParent !== null)
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
     }
     document.addEventListener('keydown', handleKey)
-    return () => document.removeEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('keydown', handleKey)
+      trigger?.focus?.()
+    }
   }, [isOpen, onClose])
 
   // Prevent layout shift caused by scrollbar disappearing
@@ -93,7 +114,7 @@ export default function SearchModal({ isOpen, onClose }: Props) {
           onClick={onClose}
           aria-label="Close search"
         >
-          Esc
+          <kbd>Esc</kbd>
         </button>
       </div>
     </div>,

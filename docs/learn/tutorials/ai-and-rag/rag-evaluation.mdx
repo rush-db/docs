@@ -1,6 +1,6 @@
 ---
 sidebar_position: 40
-title: 'RAG Evaluation'
+title: 'RAG evaluation'
 description: Measure Precision@k and Recall@k for your retrieval pipeline, detect score drift after model updates, and add a CI regression gate that fails on quality drops.
 tags: [RAG, AI, Embeddings, Testing]
 ---
@@ -8,7 +8,11 @@ tags: [RAG, AI, Embeddings, Testing]
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# RAG Evaluation
+# RAG evaluation
+
+:::note Managed embeddings
+This tutorial searches with a text `query`, which RushDB Cloud embeds with its managed model. On a self-hosted engine, create external indexes and pass a `queryVector` from your own embedding model instead — see [Bring Your Own Vectors](../../semantic-search/bring-your-own-vectors.mdx).
+:::
 
 Retrieval quality degrades silently: a new embedding model bumps up dimensions, a chunk-size change reduces recall, or an index backfill problem leaves some records un-vectorized. This tutorial builds a lightweight evaluation harness that measures **Precision@k** and **Recall@k** for your RushDB vector search pipeline — and plugs into CI so regressions are caught before they reach production.
 
@@ -30,9 +34,9 @@ A well-tuned RAG retriever should maintain **Precision@5 ≥ 0.6** and **Recall@
 Create a small set of evaluation queries paired with expected top record IDs. Aim for 20–50 queries covering your key topic areas.
 
 <Tabs>
-<TabItem value="js" label="JavaScript">
+<TabItem value="javascript" label="JavaScript">
 
-```js
+```javascript
 // eval-dataset.js
 export const evalDataset = [
   {
@@ -40,7 +44,7 @@ export const evalDataset = [
     expectedIds: ['record-id-docker-guide', 'record-id-env-vars', 'record-id-first-boot']
   },
   {
-    query: 'connecting a Neo4j Aura database',
+    query: 'installing a self-hosted engine',
     expectedIds: ['record-id-aura-setup', 'record-id-bolt-url']
   },
   {
@@ -66,7 +70,7 @@ EVAL_DATASET = [
         ]
     },
     {
-        'query': 'connecting a Neo4j Aura database',
+        'query': 'installing a self-hosted engine',
         'expected_ids': [
             'record-id-aura-setup',
             'record-id-bolt-url'
@@ -91,9 +95,9 @@ EVAL_DATASET = [
 If you don't have ground-truth IDs yet, run a baseline search, manually review the results, and promote the relevant ones to your dataset:
 
 <Tabs>
-<TabItem value="js" label="JavaScript">
+<TabItem value="javascript" label="JavaScript">
 
-```js
+```javascript
 import RushDB from '@rushdb/javascript-sdk'
 const db = new RushDB(process.env.RUSHDB_API_KEY)
 
@@ -138,9 +142,9 @@ for h in hits:
 ## Step 2: Implement the metrics
 
 <Tabs>
-<TabItem value="js" label="JavaScript">
+<TabItem value="javascript" label="JavaScript">
 
-```js
+```javascript
 // metrics.js
 export function precisionAtK(retrievedIds, relevantIds, k) {
   const topK = retrievedIds.slice(0, k)
@@ -193,9 +197,9 @@ def mean_metric(values: list[float]) -> float:
 ## Step 3: Run the evaluation
 
 <Tabs>
-<TabItem value="js" label="JavaScript">
+<TabItem value="javascript" label="JavaScript">
 
-```js
+```javascript
 // evaluate.js
 import RushDB from '@rushdb/javascript-sdk'
 import { evalDataset } from './eval-dataset.js'
@@ -303,9 +307,9 @@ def evaluate():
 Track `__score` for a fixed set of queries to detect when your embedding model or index quality changes.
 
 <Tabs>
-<TabItem value="js" label="JavaScript">
+<TabItem value="javascript" label="JavaScript">
 
-```js
+```javascript
 // score-drift.js
 import fs from 'node:fs'
 
@@ -403,9 +407,9 @@ def compare_snapshots(baseline: dict, current: dict, drift_threshold: float = 0.
 Plug the evaluation harness into your CI pipeline so merges that degrade retrieval quality are blocked.
 
 <Tabs>
-<TabItem value="js" label="JavaScript">
+<TabItem value="javascript" label="JavaScript">
 
-```js
+```javascript
 // eval.ci.js  — run with: node eval.ci.js
 import { evaluate } from './evaluate.js'
 
@@ -513,9 +517,9 @@ jobs:
 Save evaluation results as JSON artifacts to build a history of retrieval quality.
 
 <Tabs>
-<TabItem value="js" label="JavaScript">
+<TabItem value="javascript" label="JavaScript">
 
-```js
+```javascript
 import { evaluate } from './evaluate.js'
 import fs from 'node:fs'
 
@@ -581,6 +585,6 @@ print('Results saved to eval_history.jsonl')
 
 ## Next steps
 
-- [RAG Reranking](/learn/tutorials/ai-and-rag/rag-reranking) — improve Precision@k by adding a second retrieval stage
-- [Multi-Source RAG](/learn/tutorials/ai-and-rag/rag-multi-source) — extend evaluation to cross-label retrieval
-- [GraphRAG](/learn/tutorials/ai-and-rag/graphrag) — measure enrichment quality alongside base retrieval metrics
+- [RAG Reranking](./rag-reranking.mdx) — improve Precision@k by adding a second retrieval stage
+- [Multi-Source RAG](./rag-multi-source.mdx) — extend evaluation to cross-label retrieval
+- [GraphRAG](./graphrag.mdx) — measure enrichment quality alongside base retrieval metrics

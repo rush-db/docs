@@ -1,52 +1,56 @@
 ---
 sidebar_position: 1
-title: Smart Search
+title: Smart search
+description: RushDB Cloud smart search turns a natural-language request into one read-only SQL query over your schema and runs it; see SDK usage, results and limits.
 ---
 
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Smart Search
+# Smart search
 
-Smart Search turns a natural-language request into a RushDB `SearchQuery`, executes it, and returns matching records.
+:::info Cloud
+This capability is provided by RushDB Cloud. It is not available on a self-hosted engine, where the SDK throws `CloudOnlyError` before sending anything; write the [SQL](../../engine/languages/sql.md) yourself, or have an agent write it from [`getSchemaMarkdown`](../agent-memory/schema-self-awareness.mdx).
+:::
+
+Smart Search turns a natural-language request into one read-only SQL statement over your project's schema, runs it, and returns the results.
 
 Use it when the user asks for data in product language:
 
 - "Who are piloting Falcon?"
-- "Find planets 3-5 hops away from Tatooine"
+- "How many orders per city?"
 - "Show active enterprise customers created last quarter"
 
-Use [`records.vectorSearch()`](/learn/semantic-search) instead when you already know the indexed property and want direct vector similarity.
+Use [`records.vectorSearch()`](../semantic-search/semantic-search.mdx) instead when you already know the indexed property and want direct vector similarity.
 
 ---
 
-## How It Works
+## How it works
 
 ```mermaid
 flowchart LR
-  A[User prompt] --> B[Project schema]
-  B --> C[LLM query planner]
-  A --> C
-  C --> D[Generated SearchQuery]
-  D --> E[records.search]
-  E --> F[Record results]
+  A[User prompt] --> C[LLM]
+  B[Project schema] --> C
+  C --> D[Generated SQL]
+  D --> E[Run in the project]
+  E --> F[Records or rows]
 
-  D --> G[Warnings]
+  C --> G[Name and warnings]
 ```
 
 Under the hood, RushDB:
 
-1. Reads the project schema: labels, properties, types, relationship map, and semantic index metadata.
-2. Sends the schema plus your prompt to the query-planning model.
-3. Receives a `SearchQuery`.
-4. Executes that query with the normal records search endpoint.
-5. Returns records plus the generated `SearchQuery` and any warnings.
+1. Reads the project schema: labels, properties, types and relationship map.
+2. Sends the schema and your prompt (with today's date, for relative dates) to the model.
+3. Receives one read-only SQL statement, a short title for it, and any warnings. RushDB plans the statement before returning it and asks the model once to fix it if it does not plan.
+4. Runs the statement in your project only. [Labels are tables and relationship types are `rushdb_edges.<type>` tables](../../engine/languages/sql.md#how-the-graph-maps-to-tables).
+5. Returns full records for rows that select a record's `__id`, and plain rows for aggregates such as counts and totals.
 
-Smart Search does **not** rank by embedding similarity unless the generated query itself uses a vector-capable pattern in a future version. Today it is primarily for schema-aware structured, relational, and filtered search.
+Smart Search does **not** rank by embedding similarity. It is for schema-aware structured, relational, filtered and aggregate search.
 
 ---
 
-## SDK Usage
+## SDK usage
 
 <Tabs groupId="programming-language">
   <TabItem value="typescript" label="TypeScript" default>
@@ -54,12 +58,15 @@ Smart Search does **not** rank by embedding similarity unless the generated quer
 ```typescript
 const results = await db.ai.search('Find active enterprise customers created last quarter')
 
-console.log(results.searchQuery)
+console.log(results.sql) // the statement that ran
+console.log(results.name) // a short title, e.g. to save the query under
 console.log(results.warnings)
 
 for (const record of results.data) {
   console.log(record.data)
 }
+
+const nextPage = await results.next()
 ```
 
   </TabItem>
@@ -68,43 +75,37 @@ for (const record of results.data) {
 ```python
 results = db.ai.search("Find active enterprise customers created last quarter")
 
-print(results.search_query)
+print(results.sql)  # the statement that ran
+print(results.name)  # a short title, e.g. to save the query under
 print(results.warnings)
 
 for record in results:
     print(record.data)
+
+next_page = results.next()
 ```
 
   </TabItem>
 </Tabs>
 
-You can pass the current query-builder state as context:
+Page through the results with `skip` and `limit` (at most 1000 rows per page), or run a statement directly, for example one you saved or wrote yourself:
 
 <Tabs groupId="programming-language">
   <TabItem value="typescript" label="TypeScript" default>
 
 ```typescript
-const results = await db.ai.search('Only show records from Germany', {
-  currentQuery: {
-    labels: ['CUSTOMER'],
-    where: { plan: 'enterprise' },
-    limit: 50
-  }
-})
+const page = await db.ai.search('customers in Germany', { skip: 100, limit: 50 })
+
+const perCity = await db.ai.runSql('SELECT "city", count(*) AS customers FROM "CUSTOMER" GROUP BY "city"')
 ```
 
   </TabItem>
   <TabItem value="python" label="Python">
 
 ```python
-results = db.ai.search(
-    "Only show records from Germany",
-    current_query={
-        "labels": ["CUSTOMER"],
-        "where": {"plan": "enterprise"},
-        "limit": 50,
-    },
-)
+page = db.ai.search("customers in Germany", skip=100, limit=50)
+
+per_city = db.ai.run_sql('SELECT "city", count(*) AS customers FROM "CUSTOMER" GROUP BY "city"')
 ```
 
   </TabItem>
@@ -112,39 +113,40 @@ results = db.ai.search(
 
 ---
 
-## Returned Result
+## Returned result
 
-Smart Search returns a normal record result with two extra pieces of metadata:
+Smart Search returns a normal record result with extra metadata:
 
-| Field                          | Description                                                                                     |
-| ------------------------------ | ----------------------------------------------------------------------------------------------- |
-| `data`                         | Matching records.                                                                               |
-| `total`                        | Total matching records when available.                                                          |
-| `searchQuery` / `search_query` | The generated `SearchQuery` that was executed.                                                  |
-| `warnings`                     | Non-fatal issues from query generation, such as ambiguity or an unsupported part of the prompt. |
+| Field      | Description                                                                                     |
+| ---------- | ----------------------------------------------------------------------------------------------- |
+| `data`     | Full records for rows that select a record's `__id`; otherwise the statement's rows.            |
+| `total`    | Total rows the statement returns.                                                               |
+| `sql`      | The generated SQL statement that ran.                                                           |
+| `name`     | A short title for the query, in the language of the prompt.                                     |
+| `warnings` | Non-fatal issues from generation, such as ambiguity or an assumption the model had to make.     |
 
-Always inspect the generated query when debugging:
+Always inspect the generated statement when debugging:
 
 ```typescript
 const results = await db.ai.search('recent risky accounts connected to Acme')
-console.dir(results.searchQuery, { depth: null })
+console.log(results.sql)
 ```
 
 ---
 
-## Smart Search Vs Vector Search
+## Smart search vs vector search
 
 | Need                                                                | Use                                                                  |
 | ------------------------------------------------------------------- | -------------------------------------------------------------------- |
 | Natural-language request over known schema                          | `db.ai.search(prompt)`                                               |
 | Direct meaning-based retrieval over an indexed text/vector property | `db.records.vectorSearch({...})` / `db.records.vector_search({...})` |
-| Exact filters, aggregations, graph traversal, pagination            | `db.records.find({...})`                                             |
+| Exact filters, aggregations, graph traversal, pagination            | `db.records.find({...})`, or SQL with `db.ai.runSql(sql)`            |
 | External embedding model / BYOV                                     | `db.records.vectorSearch({ queryVector, ... })`                      |
 
 Examples:
 
 ```typescript
-// Smart Search: generate SearchQuery from a user request
+// Smart Search: generate SQL from a user request and run it
 await db.ai.search('Find suppliers connected to delayed shipments')
 
 // Vector Search: similarity over a known indexed property
@@ -158,37 +160,38 @@ await db.records.vectorSearch({
 
 ---
 
-## Caveats And Limitations
+## Caveats and limitations
 
-Smart Search is a query-planning feature. Treat it like generated code:
+Smart Search is a query-generation feature. Treat it like generated code:
 
 - **Schema quality matters.** Ambiguous labels, generic property names, and missing relationships make generation less reliable.
-- **The LLM can misunderstand intent.** Always display, log, or inspect the generated `SearchQuery` for important workflows.
-- **It may return warnings.** Warnings mean RushDB generated a query but detected ambiguity, partial support, or a potentially surprising interpretation.
+- **The LLM can misunderstand intent.** Always display, log, or inspect the generated `sql` for important workflows.
+- **It may return warnings.** Warnings mean RushDB generated a statement but noted ambiguity or an assumption.
+- **Vague words are not guessed into thresholds.** "Cheap", "big" or "popular" without a number usually come back as all records ordered by that attribute, best match first.
 - **It is not a semantic vector ranking API.** Use vector search when you need embedding similarity and `__score`.
-- **It depends on configured LLM credentials.** If the server has no query-planning model configured, Smart Search cannot generate a query.
-- **Generated queries are bounded by SearchQuery capabilities.** Unsupported requests should be rewritten into labels, properties, relationships, filters, sorting, and pagination.
+- **It depends on configured LLM credentials.** If the server has no model configured, Smart Search cannot generate a statement.
+- **Statements are read-only.** Smart Search never writes; anything other than one `SELECT` is refused.
 - **High-stakes workflows should require review.** For destructive actions, permissions, billing, legal, medical, or compliance flows, use Smart Search to draft a query and require human or application-level validation before acting on results.
 
 ---
 
-## Recommended UI Pattern
+## Recommended UI pattern
 
 For user-facing search boxes:
 
 1. Call `db.ai.search(prompt)`.
 2. Show the records.
-3. Keep the generated `SearchQuery` available in an "Inspect query" panel.
+3. Keep the generated `sql` available in an "Inspect query" panel, and let users edit and re-run it with `db.ai.runSql(sql)`.
 4. Surface warnings near the result header.
-5. Let users refine filters manually after the query is generated.
+5. Offer to save the query under its `name`.
 
 This gives users natural-language entry without hiding the actual query that ran.
 
 ---
 
-## See Also
+## See also
 
-- [SearchQuery](/learn/search-query) — the query language Smart Search generates
-- [Find & Query](/learn/records-and-queries/find-and-query) — execute exact queries directly
-- [Semantic Search](/learn/semantic-search) — vector similarity over indexed properties
-- [Discover Your Schema](/learn/records-and-queries/discover-your-schema) — see the schema context available to Smart Search
+- [SQL](../../engine/languages/sql.md) — the dialect Smart Search generates
+- [Find & Query](../records-and-queries/find-and-query.mdx) — execute exact queries directly
+- [Semantic Search](../semantic-search/semantic-search.mdx) — vector similarity over indexed properties
+- [Discover Your Schema](../records-and-queries/discover-your-schema.mdx) — see the schema context available to Smart Search

@@ -1,6 +1,6 @@
 ---
 sidebar_position: 19
-title: 'Hybrid Retrieval: Filters Plus Semantic Search'
+title: 'Hybrid retrieval: Filters plus semantic search'
 description: Combine structured where-clause filtering with vector semantic search to narrow candidates by business constraints, then rank by relevance.
 tags: [AI, Semantic Search, Retrieval, TypeScript, Python]
 ---
@@ -8,7 +8,11 @@ tags: [AI, Semantic Search, Retrieval, TypeScript, Python]
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Hybrid Retrieval: Filters Plus Semantic Search
+# Hybrid retrieval: Filters plus semantic search
+
+:::note Managed embeddings
+This tutorial searches with a text `query`, which RushDB Cloud embeds with its managed model. On a self-hosted engine, create external indexes and pass a `queryVector` from your own embedding model instead — see [Bring Your Own Vectors](../../semantic-search/bring-your-own-vectors.mdx).
+:::
 
 Pure semantic search ranks by similarity to a query embedding. Pure keyword or filter search matches exact values. Hybrid retrieval combines both: narrowing the candidate set by business constraints first, then ranking by semantic relevance within that set.
 
@@ -30,7 +34,7 @@ This means you get tenant isolation and time-scoping for free, without a separat
 
 ## Prerequisites
 
-Before calling `db.records.vectorSearch`, a managed embedding index must exist and be ready for the label and property you want to search. See [Semantic Search for Multi-Tenant Products](/learn/tutorials/ai-and-rag/semantic-search-multitenant) for setup instructions.
+Before calling `db.records.vectorSearch`, a managed embedding index must exist and be ready for the label and property you want to search. See [Semantic Search for Multi-Tenant Products](./semantic-search-multitenant.mdx) for setup instructions.
 
 ---
 
@@ -550,6 +554,6 @@ curl -s -X POST "$BASE/ai/search" \
 
 ## Next steps
 
-- [Semantic Search for Multi-Tenant Products](/learn/tutorials/ai-and-rag/semantic-search-multitenant) — index setup and polling
-- [Building a Graph-Backed API Layer](/learn/tutorials/working-with-data/graph-backed-api) — integrate hybrid retrieval into a production handler
-- [Temporal Graphs](/learn/tutorials/graph-modeling/temporal-graphs) — retrieve current-state records before semantic ranking
+- [Semantic Search for Multi-Tenant Products](./semantic-search-multitenant.mdx) — index setup and polling
+- [Building a Graph-Backed API Layer](../working-with-data/graph-backed-api.mdx) — integrate hybrid retrieval into a production handler
+- [Temporal Graphs](../graph-modeling/temporal-graphs.mdx) — retrieve current-state records before semantic ranking

@@ -157,7 +157,7 @@ TOKEN="RUSHDB_API_KEY"
 H='Content-Type: application/json'
 
 # Export from MongoDB with mongosh/mongoexport, then POST to RushDB
-curl -s -X POST "$BASE/records/import" \
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{
     "label": "User",
@@ -288,7 +288,7 @@ def incremental_sync():
 
 ```bash
 # Upsert via REST — mergeBy + mergeStrategy in options
-curl -s -X POST "$BASE/records/import" \
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{
     "label": "User",
@@ -415,13 +415,13 @@ def import_with_references():
 
 ```bash
 # 1) Import users
-curl -s -X POST "$BASE/records/create-many" \
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{"label":"User","data":[{"mongoId":"64f1a...","name":"Ada","email":"ada@example.com"}],
        "options":{"suggestTypes":true,"mergeBy":["mongoId"],"mergeStrategy":"append"}}'
 
 # 2) Import orders
-curl -s -X POST "$BASE/records/create-many" \
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{"label":"Order","data":[{"mongoId":"64f2b...","userMongoId":"64f1a...","total":149.99,"status":"shipped"}],
        "options":{"suggestTypes":true,"mergeBy":["mongoId"],"mergeStrategy":"append"}}'
@@ -512,7 +512,7 @@ db.records.import_json(
 <TabItem value="shell" label="Shell">
 
 ```bash
-curl -s -X POST "$BASE/records/import" \
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{
     "label": "Order",
@@ -653,7 +653,7 @@ watch_collection()
 # Use the TypeScript or Python SDK for real-time sync.
 #
 # For a one-off upsert (the operation each stream event triggers):
-curl -s -X PUT "$BASE/records/upsert" \
+curl -s -X POST "$BASE/records" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{
     "label": "User",
@@ -761,8 +761,8 @@ def import_large_collection(batch_size=500):
 
 ```bash
 # Shell equivalent requires scripting the pagination loop.
-# Each batch is a POST to /records/create-many:
-curl -s -X POST "$BASE/records/create-many" \
+# Each batch is a POST to /records/import/json:
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{
     "label": "Product",
@@ -860,7 +860,7 @@ mongo.close()
 <TabItem value="shell" label="Shell">
 
 ```bash
-curl -s -X POST "$BASE/records/import" \
+curl -s -X POST "$BASE/records/import/json" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{
     "label": "User",
@@ -896,6 +896,6 @@ curl -s -X POST "$BASE/records/import" \
 
 ## See also
 
-- [Importing data from external sources](/learn/tutorials/working-with-data/importing-data) — HubSpot, Postgres, Firebase, Airtable, Notion
-- TypeScript SDK: [Import Data](/learn/records-and-queries/import-data) · [Relationships](/learn/relationships/connect-records)
-- Python SDK: [Import Data](/learn/records-and-queries/import-data) · [Relationships](/learn/relationships/connect-records)
+- [Importing data from external sources](./importing-data.mdx) — HubSpot, Postgres, Firebase, Airtable, Notion
+- TypeScript SDK: [Import Data](../../records-and-queries/import-data.mdx) · [Relationships](../../relationships/connect-records.mdx)
+- Python SDK: [Import Data](../../records-and-queries/import-data.mdx) · [Relationships](../../relationships/connect-records.mdx)

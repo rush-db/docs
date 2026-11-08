@@ -1,10 +1,13 @@
 ---
+title: RushDB class (TypeScript SDK)
+sidebar_label: RushDB
+description: "Reference for the RushDB class in the TypeScript SDK: constructor and SDKConfig options, and the records, relationships, labels, tx, ai and query namespaces."
 sidebar_position: 7
 ---
 
 # RushDB
 
-The `RushDB` class is the main entry point for interacting with the RushDB database. It manages API connections and model registration. It provides access to [records](/learn/records-and-queries/store-records), [labels](/learn/records-and-queries/labels-and-properties), and [transactions](/learn/records-and-queries/transactions).
+The `RushDB` class is the main entry point for interacting with the RushDB database. It manages API connections and model registration. It provides access to [records](../../records-and-queries/store-records.mdx), [labels](../../records-and-queries/labels-and-properties.mdx), and [transactions](../../records-and-queries/transactions.mdx).
 
 ## Initialization
 
@@ -13,9 +16,12 @@ import RushDB from '@rushdb/javascript-sdk'
 
 // Create an instance with an API token
 const db = new RushDB('RUSHDB_API_KEY', {
-  // Optionnaly provide API url to your RushDB instance
+  // Optionally, a RushDB Cloud API endpoint other than the default
   url: 'https://api.rushdb.com/api/v1'
 })
+
+// A self-hosted engine (direct mode)
+const engine = new RushDB('ENGINE_TOKEN', { direct: true, engineUrl: 'http://127.0.0.1:3000' })
 ```
 
 ## Constructor
@@ -33,11 +39,14 @@ Creates a new `RushDB` instance.
 | `token`   | `string`    | Optional API token for authentication |
 | `config`  | `SDKConfig` | Optional configuration object         |
 
-### SDKConfig Options
+### SDKConfig options
 
 | Option       | Type         | Description                       |
 | ------------ | ------------ | --------------------------------- |
-| `url`        | `string`     | The base URL of the RushDB API    |
+| `url`        | `string`     | A RushDB Cloud API endpoint other than the default (`https://api.rushdb.com/api/v1`) |
+| `direct`     | `boolean`    | Talk to a self-hosted RushDB engine instead of RushDB Cloud; the token is the engine token |
+| `engineUrl`  | `string`     | The engine's base URL, e.g. `http://127.0.0.1:3000`. Required with `direct` |
+| `scope`      | `string`     | The tenant, on an engine started with `--multitenant` |
 | `timeout`    | `number`     | Request timeout in milliseconds   |
 | `httpClient` | `HttpClient` | Custom HTTP client implementation |
 | `debug`      | `boolean`    | Enable debug mode                 |
@@ -68,8 +77,10 @@ CRUD, import, export, and relationship operations on records.
 | `attach({ source, target, options }, transaction)`                                 | Create relationships between records                                                                                                                                                   |
 | `detach({ source, target, options }, transaction)`                                 | Remove relationships between records                                                                                                                                                   |
 | `export(searchQuery, transaction)`                                                 | Export matching records as CSV text                                                                                                                                                    |
+| `vectorSearch(params, transaction)` | Vector search over an embedding index; add `text` for a hybrid search. See [Semantic Search](../../semantic-search/semantic-search.mdx) |
+| `textSearch(params, transaction)` | Keyword (BM25) search over a text index. See [Keyword Search](../../semantic-search/keyword-search.mdx) |
 
-For bulk imports, pass `options: { mergeBy: ['propertyName'], mergeStrategy: 'append' | 'rewrite' }` to upsert by property instead of creating duplicates. See [Upsert by Property During Import](/learn/records-and-queries/import-data#upsert-by-property-during-import).
+For bulk imports, pass `options: { mergeBy: ['propertyName'], mergeStrategy: 'append' | 'rewrite' }` to upsert by property instead of creating duplicates. See [Upsert by Property During Import](../../records-and-queries/import-data.mdx#upsert-by-property-during-import).
 
 ### `db.relationships`
 
@@ -83,7 +94,7 @@ Query and bulk-manage relationships.
 
 #### `db.relationships.patterns`
 
-Review and manage relationship patterns inferred from the project schema. See [Relationship Patterns](/learn/reference/typescript/relationship-patterns) for the full review flow.
+Review and manage relationship patterns inferred from the project schema. See [Relationship Patterns](./relationship-patterns.md) for the full review flow.
 
 | Method                | Description                                                            |
 | --------------------- | ---------------------------------------------------------------------- |
@@ -123,15 +134,15 @@ Transaction lifecycle management.
 | `commit(transaction)`   | Commit a transaction by object or ID       |
 | `rollback(transaction)` | Roll back a transaction by object or ID    |
 
-See also: [Transaction](/learn/reference/typescript/Transaction) for the `commit()` and `rollback()` instance methods.
+See also: [Transaction](./Transaction.md) for the `commit()` and `rollback()` instance methods.
 
 ### `db.ai`
 
-Semantic search and schema exploration. Embedding index management is available under `db.ai.indexes`.
+Schema exploration and natural-language search. Embedding index management is available under `db.ai.indexes`; vector search is `db.records.vectorSearch`.
 
 | Method                                   | Description                                   |
 | ---------------------------------------- | --------------------------------------------- |
-| `search(params)`                         | Semantic search over indexed properties       |
+| `search(prompt, options)`                | Natural-language search: turns the prompt into a SearchQuery and runs it. RushDB Cloud only |
 | `getSchema(params, transaction)`         | Return the graph schema as structured JSON    |
 | `getSchemaMarkdown(params, transaction)` | Return the schema as token-efficient Markdown |
 
@@ -142,12 +153,23 @@ Semantic search and schema exploration. Embedding index management is available 
 | `find()`                    | List all embedding index policies                     |
 | `create(params)`            | Create an embedding index for a property              |
 | `delete(id)`                | Delete an embedding index by ID                       |
-| `stats(id)`                 | Get Neo4j-level statistics for an index               |
+| `stats(id)`                 | Get how many records an index covers and has vectors for |
 | `upsertVectors(id, params)` | Bulk-seed an external index with pre-computed vectors |
+
+### `db.textIndexes`
+
+BM25 text indexes, used by `records.textSearch` and the keyword leg of a hybrid search.
+
+| Method                          | Description                                                  |
+| ------------------------------- | ------------------------------------------------------------ |
+| `find()`                        | List text indexes with their `status` and `pending` changes  |
+| `create({ label, property, name?, consistency? })` | Declare a text index over one property, or `*` for every string |
+| `suggestName({ label, property })` | The default name a new text index would get              |
+| `delete(name)`                  | Drop a text index by name                                    |
 
 ### `db.query`
 
-Raw Cypher query execution. **Cloud-only** — not available on self-hosted instances without a managed database.
+Raw openCypher statements, run by the engine. On a self-hosted engine, start it with `--languages cypher,sql` (the list replaces the default languages, so keep `sql`).
 
 | Method                                | Description                                                |
 | ------------------------------------- | ---------------------------------------------------------- |
@@ -171,7 +193,7 @@ state: State
 
 The internal state of the SDK instance.
 
-## Static Methods
+## Static methods
 
 ### getInstance()
 
@@ -183,7 +205,7 @@ Gets the singleton instance of the RushDB class.
 
 **Returns**: The RushDB instance
 
-## Instance Methods
+## Instance methods
 
 ### toInstance()
 
@@ -199,7 +221,7 @@ Converts a database record to a record instance.
 
 **Returns**: A record instance with additional methods
 
-## Usage Example
+## Usage example
 
 ```typescript
 import RushDB, { Model } from '@rushdb/javascript-sdk'

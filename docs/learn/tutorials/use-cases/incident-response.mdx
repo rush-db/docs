@@ -1,6 +1,6 @@
 ---
 sidebar_position: 27
-title: 'Incident Response Graphs'
+title: 'Incident response graphs'
 description: Model operational incidents as graph structures to answer root cause, blast radius, and resolution timeline questions in a single query.
 tags: [Incident Response, Graphs, Operations, Root Cause Analysis, TypeScript, Python]
 ---
@@ -8,7 +8,7 @@ tags: [Incident Response, Graphs, Operations, Root Cause Analysis, TypeScript, P
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Incident Response Graphs
+# Incident response graphs
 
 When something breaks in production, you need to answer four questions quickly:
 
@@ -234,9 +234,9 @@ INC_RESP=$(curl -s -X POST "$BASE/records" \
 INC_ID=$(echo "$INC_RESP" | jq -r '.data.__id')
 
 # Link alert
-curl -s -X POST "$BASE/records/$ALERT_ID/relations" \
+curl -s -X POST "$BASE/relationships/$ALERT_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" -H "x-transaction-id: $TX_ID" \
-  -d "{\"targets\":[\"$INC_ID\"],\"options\":{\"type\":\"TRIGGERED\",\"direction\":\"out\"}}"
+  -d "{\"targetIds\":[\"$INC_ID\"],\"type\":\"TRIGGERED\",\"direction\":\"out\"}"
 
 curl -s -X POST "$BASE/tx/$TX_ID/commit" -H "$H" -H "Authorization: Bearer $TOKEN"
 ```
@@ -351,9 +351,9 @@ EVENT_ID=$(curl -s -X POST "$BASE/records" \
     }
   }" | jq -r '.data.__id')
 
-curl -s -X POST "$BASE/records/$INC_ID/relations" \
+curl -s -X POST "$BASE/relationships/$INC_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" -H "x-transaction-id: $TX_ID" \
-  -d "{\"targets\":[\"$EVENT_ID\"],\"options\":{\"type\":\"HAS_EVENT\",\"direction\":\"out\"}}"
+  -d "{\"targetIds\":[\"$EVENT_ID\"],\"type\":\"HAS_EVENT\",\"direction\":\"out\"}"
 
 curl -s -X POST "$BASE/tx/$TX_ID/commit" -H "$H" -H "Authorization: Bearer $TOKEN"
 ```
@@ -606,9 +606,9 @@ ACTION_ID=$(curl -s -X POST "$BASE/records" \
     }
   }' | jq -r '.data.__id')
 
-curl -s -X POST "$BASE/records/$INC_ID/relations" \
+curl -s -X POST "$BASE/relationships/$INC_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" -H "x-transaction-id: $TX_ID" \
-  -d "{\"targets\":[\"$ACTION_ID\"],\"options\":{\"type\":\"RESOLVED_BY\",\"direction\":\"out\"}}"
+  -d "{\"targetIds\":[\"$ACTION_ID\"],\"type\":\"RESOLVED_BY\",\"direction\":\"out\"}"
 
 curl -s -X POST "$BASE/tx/$TX_ID/commit" -H "$H" -H "Authorization: Bearer $TOKEN"
 ```
@@ -708,6 +708,6 @@ curl -s -X POST "$BASE/records/search" \
 
 ## Next steps
 
-- [Supply Chain Traceability](/learn/tutorials/use-cases/supply-chain-traceability) — end-to-end causal chain tracing across complex pipelines
-- [Audit Trails with Immutable Events](/learn/tutorials/use-cases/audit-trails) — append-only event log for every state change
-- [Data Lineage](/learn/tutorials/graph-modeling/data-lineage) — tracking data origin and transformation through a system
+- [Supply Chain Traceability](./supply-chain-traceability.mdx) — end-to-end causal chain tracing across complex pipelines
+- [Audit Trails with Immutable Events](./audit-trails.mdx) — append-only event log for every state change
+- [Data Lineage](../graph-modeling/data-lineage.mdx) — tracking data origin and transformation through a system

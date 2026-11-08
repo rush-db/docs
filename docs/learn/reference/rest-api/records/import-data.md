@@ -1,8 +1,11 @@
 ---
+title: Import data REST API
+sidebar_label: Import data
+description: Import nested JSON or CSV into RushDB through the import endpoints of the RushDB Cloud REST API, with parseConfig options and upsert by property.
 sidebar_position: 1
 ---
 
-# Import Data
+# Import data
 
 ## Import JSON
 
@@ -85,7 +88,7 @@ curl -X POST https://api.rushdb.com/api/v1/records/import/csv \
 | `escapeChar`     | `"`     | Escape character                  |
 | `newline`        | auto    | Explicit newline sequence         |
 
-## Upsert by Property During Import
+## Upsert by property during import
 
 Both import endpoints support native upsert-by-property through `options.mergeBy`.
 When an incoming row or object matches an existing record on the listed properties, RushDB updates that record instead of creating a duplicate.
@@ -136,4 +139,4 @@ curl -X POST https://api.rushdb.com/api/v1/records/import/csv \
 
 ## See also
 
-- [Writing Records with Vectors](/learn/reference/rest-api/ai-and-vectors/write-with-vectors) — attach pre-computed embedding vectors to records at write time
+- [Writing Records with Vectors](../ai-and-vectors/write-with-vectors.md) — attach pre-computed embedding vectors to records at write time

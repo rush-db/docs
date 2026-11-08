@@ -21,7 +21,6 @@ export default function Logo(): React.ReactElement {
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
         className="navbar__logo"
-        style={{ display: 'block' }}
       >
         <path
           d="M111.479 85.3429L108.071 71.0952H161.682C174.129 71.0952 184.304 73.3419 192.206 77.8353C200.16 82.2771 206.048 88.2942 209.87 95.8865C213.692 103.479 215.603 111.949 215.603 121.298C215.603 130.646 213.692 139.142 209.87 146.786C206.1 154.43 200.263 160.525 192.361 165.07C184.459 169.563 174.336 171.81 161.992 171.81H161.372V154.766C169.894 154.766 176.737 153.294 181.902 150.35C187.067 147.406 190.812 143.429 193.136 138.419C195.512 133.358 196.7 127.65 196.7 121.298C196.7 114.945 195.512 109.263 193.136 104.254C190.812 99.2437 187.041 95.3184 181.825 92.4777C176.608 89.5854 169.687 88.1392 161.062 88.1392H127.284L111.479 85.3429Z"
@@ -42,7 +41,11 @@ export default function Logo(): React.ReactElement {
           strokeWidth="0.5"
         />
       </svg>
-      {title && <b className="navbar__title text--truncate">{title}</b>}
+      {/* The website header's wordmark, then the DOCS label. */}
+      <span className="rd-wordmark">
+        rushdb
+        {title && <span className="rd-wordmark__label">{title}</span>}
+      </span>
     </Link>
   )
 }

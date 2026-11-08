@@ -1,19 +1,20 @@
 ---
 sidebar_position: 2
-title: Schema Self-Awareness
+title: Schema self-awareness
+description: "Let agents fetch the RushDB schema at session start: labels with record counts, property types and values, and the relationship map for valid queries."
 ---
 
 import Tabs from '@site/src/components/LanguageTabs'
 import ThemeTabs from '@theme/Tabs'
 import TabItem from '@theme/TabItem'
 
-# Schema Self-Awareness
+# Schema self-awareness
 
 RushDB is **self-aware** — it continuously tracks its own structure and exposes it on demand. Agents use this to operate against an unknown or evolving knowledge graph without any hardcoded schema documentation.
 
 ---
 
-## Why Schema Discovery Matters
+## Why schema discovery matters
 
 Without schema discovery, AI agents hallucinate field names, use wrong label casing, and construct invalid queries. With a single schema call at session start, the agent knows:
 
@@ -24,162 +25,371 @@ Without schema discovery, AI agents hallucinate field names, use wrong label cas
 
 ---
 
-## What the Agent Receives
+## What the agent receives
 
-Consider a small commerce graph — labels are nodes, relationships are edges:
+Take a small shop: three users, four products and five orders. Each order is linked to the user who placed it and to the products it contains, with a `quantity` on each `CONTAINS` relationship. Product descriptions have a vector index.
 
 ```mermaid
 graph LR
-    O["Order (1840)"]
-    U["User (312)"]
-    P["Product (95)"]
+    O["Order (5)"]
+    U["User (3)"]
+    P["Product (4)"]
 
-    O -->|PLACED_BY| U
-    O -->|CONTAINS| P
+    O -->|"PLACED_BY (5)"| U
+    O -->|"CONTAINS (6), quantity"| P
 ```
 
-The schema comes in two formats: a compact Markdown document built for LLM context injection, and structured JSON for programmatic use.
+The schema comes in two formats with the same content: Markdown for an LLM's context, and JSON for code. Both examples below are the real output for this data from RushDB Cloud.
 
 <ThemeTabs groupId="schema-format">
   <TabItem value="markdown" label="Markdown" default>
 
-`getSchemaMarkdown()` serialises the graph into a token-efficient document ready to paste into a system prompt:
+`getSchemaMarkdown()` returns one Markdown document: a table of labels, then a section per label with its properties, the relationships it takes part in, and the properties of those relationships.
 
 ```text
 # Graph Schema
 
 ## Labels
 
-| Label     | Count |
-|-----------|------:|
-| `Order`   |  1840 |
-| `User`    |   312 |
-| `Product` |    95 |
+| Label | Count |
+|-------|------:|
+| `Order` | 5 |
+| `Product` | 4 |
+| `User` | 3 |
 
 ---
 
-## `Order` (1840 records)
+## `Order` (5 records)
 
 ### Properties
 
-| Property    | Type     | Values / Range                         | Semantic Search                |
-|-------------|----------|----------------------------------------|--------------------------------|
-| `status`    | string   | `pending`, `paid`, `shipped` (+2 more) | —                              |
-| `total`     | number   | `4.99`..`2499.00`                      | —                              |
-| `name`      | string   | `Widget A`, `Widget B` (+8 more)       | `managed` cosine 1536d [ready] |
-| `createdAt` | datetime | `2024-01-03`..`2026-02-27`             | —                              |
+| Property | ID | Type | Values / Range | Semantic Search |
+|----------|----|------|----------------|-----------------|
+| `createdAt` | `p000000000000000b` | datetime | `2026-10-02T09:15:00.000Z`..`2026-11-03T11:00:00.000Z` | — |
+| `status` | `p0000000000000009` | string | `paid`, `shipped`, `pending`, `cancelled` | — |
+| `total` | `p000000000000000a` | number | `79.8`..`499` | — |
 
 ### Relationships
 
-| Type        | Direction | Other Label |
-|-------------|-----------|-------------|
-| `PLACED_BY` | out       | `User`      |
-| `CONTAINS`  | out       | `Product`   |
+| Traversal | Count | Edge Properties |
+|-----------|------:|-----------------|
+| `(Order)-[:CONTAINS]->(Product)` | 6 | `quantity:number` |
+| `(Order)-[:PLACED_BY]->(User)` | 5 | — |
+
+### Relationship Properties
+
+| Traversal | Property | Type | Values / Range | Relationships |
+|-----------|----------|------|----------------|--------------:|
+| `(Order)-[:CONTAINS]->(Product)` | `quantity` | number | `1`..`2` | 6 |
 
 ---
 
-## `User` (312 records)
+## `Product` (4 records)
 
 ### Properties
 
-| Property    | Type   | Values / Range                | Semantic Search |
-|-------------|--------|-------------------------------|-----------------|
-| `email`     | string | `alice@example.com` (+8 more) | —               |
-| `name`      | string | `Alice`, `Bob` (+8 more)      | —               |
-| `plan`      | string | `free`, `pro`, `enterprise`   | —               |
+| Property | ID | Type | Values / Range | Semantic Search |
+|----------|----|------|----------------|-----------------|
+| `category` | `p0000000000000003` | string | `home`, `furniture`, `electronics`, `kitchen` | — |
+| `description` | `p0000000000000007` | string | `Adjustable LED desk lamp`, `Electric sit-stand desk`, `Tenkeyless keyboard with brown switches`, `Burr grinder with 40 settings` | `Product.description.external.3.cosine` (external, cosine, 3d) [ready] |
+| `inStock` | `p0000000000000005` | boolean | `true`, `false` | — |
+| `name` | `p0000000000000000` | string | `Desk lamp`, `Standing desk`, `Mechanical keyboard`, `Coffee grinder` | — |
+| `price` | `p0000000000000004` | number | `39.9`..`499` | — |
+| `tags` | `p0000000000000006` | string[] | `lighting`, `office`, `ergonomic`, `coffee` | — |
 
 ### Relationships
 
-| Type        | Direction | Other Label |
-|-------------|-----------|-------------|
-| `PLACED_BY` | in        | `Order`     |
+| Traversal | Count | Edge Properties |
+|-----------|------:|-----------------|
+| `(Product)<-[:CONTAINS]-(Order)` | 6 | `quantity:number` |
+
+### Relationship Properties
+
+| Traversal | Property | Type | Values / Range | Relationships |
+|-----------|----------|------|----------------|--------------:|
+| `(Product)<-[:CONTAINS]-(Order)` | `quantity` | number | `1`..`2` | 6 |
 
 ---
 
-## `Product` (95 records)
+## `User` (3 records)
 
 ### Properties
 
-| Property    | Type   | Values / Range                   | Semantic Search                |
-|-------------|--------|----------------------------------|--------------------------------|
-| `name`      | string | `Widget A`, `Widget B` (+8 more) | `managed` cosine 1536d [ready] |
-| `price`     | number | `4.99`..`2499.00`                | —                              |
-| `category`  | string | `electronics`, `home` (+3 more)  | —                              |
-| `inStock`   | boolean| `true`, `false`                  | —                              |
+| Property | ID | Type | Values / Range | Semantic Search |
+|----------|----|------|----------------|-----------------|
+| `email` | `p0000000000000001` | string | `alice@example.com`, `bob@example.com`, `carol@example.com` | — |
+| `name` | `p0000000000000000` | string | `Alice`, `Bob`, `Carol` | — |
+| `plan` | `p0000000000000002` | string | `pro`, `free`, `enterprise` | — |
 
 ### Relationships
 
-| Type       | Direction | Other Label |
-|------------|-----------|-------------|
-| `CONTAINS` | in        | `Order`     |
+| Traversal | Count | Edge Properties |
+|-----------|------:|-----------------|
+| `(User)<-[:PLACED_BY]-(Order)` | 5 | — |
 ```
 
-  </TabItem>
-  <TabItem value="json" label="JSON">
+How to read it:
 
-`getSchema()` returns the same data as a `SchemaItem[]` array — one item per label:
+- **Values / Range** shows up to 5 sample values for strings and booleans (with `(+N more)` when there are more) and `min`..`max` for numbers and dates. Values longer than 48 characters are cut short.
+- **Type** ends in `[]` when records store the property as an array, like `tags`.
+- **Semantic Search** names each vector index on the property, with its source, similarity, dimensions and status. Only a `[ready]` index can be queried.
+- **Traversal** is the pattern rooted at the section's label: `->` for an outgoing relationship, `<-` for an incoming one. In a `where` traversal, nest the other label and set `$relation: { type, direction }`, with `out` for `->` and `in` for `<-`.
+- **ID** is the property's ID for `db.properties.values()`. A property with the same name and type has the same ID under every label, like `name` here.
+
+</TabItem>
+<TabItem value="json" label="JSON">
+
+`getSchema()` returns the same content as an array with one item per label, largest label first:
 
 ```json
 [
   {
     "label": "Order",
-    "count": 1840,
+    "count": 5,
     "properties": [
       {
-        "id": "0195b3a1-92dd-7000-8000-3f2b6cdd91a4",
+        "id": "p000000000000000b",
+        "name": "createdAt",
+        "type": "datetime",
+        "recordsCount": 5,
+        "isArray": false,
+        "min": "2026-10-02T09:15:00.000Z",
+        "max": "2026-11-03T11:00:00.000Z"
+      },
+      {
+        "id": "p0000000000000009",
         "name": "status",
         "type": "string",
-        "values": ["pending", "paid", "shipped", "cancelled", "refunded"]
+        "recordsCount": 5,
+        "isArray": false,
+        "values": [
+          "paid",
+          "shipped",
+          "pending",
+          "cancelled"
+        ],
+        "min": "cancelled",
+        "max": "shipped"
       },
       {
-        "id": "0195b3a1-92dd-7000-8000-58dfb2c901ee",
+        "id": "p000000000000000a",
         "name": "total",
         "type": "number",
-        "min": 4.99,
-        "max": 2499.0
-      },
+        "recordsCount": 5,
+        "isArray": false,
+        "min": 79.8,
+        "max": 499
+      }
+    ],
+    "relationships": [
       {
-        "id": "0195b3a1-92dd-7000-8000-77ac01e4f2b3",
-        "name": "name",
-        "type": "string",
-        "values": ["Widget A", "Widget B"],
-        "vectorIndexes": [
+        "label": "Product",
+        "type": "CONTAINS",
+        "direction": "out",
+        "count": 6,
+        "properties": [
           {
-            "id": "0195b3a1-92dd-7000-8000-9c11de70a512",
-            "sourceType": "managed",
-            "similarityFunction": "cosine",
-            "dimensions": 1536,
-            "status": "ready",
-            "modelKey": "text-embedding-3-small"
+            "name": "quantity",
+            "type": "number",
+            "relationshipsCount": 6,
+            "min": 1,
+            "max": 2
           }
         ]
       },
       {
-        "id": "0195b3a1-92dd-7000-8000-b04f7d3361c8",
-        "name": "createdAt",
-        "type": "datetime",
-        "min": "2024-01-03T08:12:00Z",
-        "max": "2026-02-27T17:45:00Z"
+        "label": "User",
+        "type": "PLACED_BY",
+        "direction": "out",
+        "count": 5
+      }
+    ]
+  },
+  {
+    "label": "Product",
+    "count": 4,
+    "properties": [
+      {
+        "id": "p0000000000000003",
+        "name": "category",
+        "type": "string",
+        "recordsCount": 4,
+        "isArray": false,
+        "values": [
+          "home",
+          "furniture",
+          "electronics",
+          "kitchen"
+        ],
+        "min": "electronics",
+        "max": "kitchen"
+      },
+      {
+        "id": "p0000000000000007",
+        "name": "description",
+        "type": "string",
+        "recordsCount": 4,
+        "isArray": false,
+        "values": [
+          "Adjustable LED desk lamp",
+          "Electric sit-stand desk",
+          "Tenkeyless keyboard with brown switches",
+          "Burr grinder with 40 settings"
+        ],
+        "min": "Adjustable LED desk lamp",
+        "max": "Tenkeyless keyboard with brown switches",
+        "vectorIndexes": [
+          {
+            "id": "Product.description.external.3.cosine",
+            "name": "Product.description.external.3.cosine",
+            "sourceType": "external",
+            "similarityFunction": "cosine",
+            "dimensions": 3,
+            "status": "ready",
+            "modelKey": ""
+          }
+        ]
+      },
+      {
+        "id": "p0000000000000005",
+        "name": "inStock",
+        "type": "boolean",
+        "recordsCount": 4,
+        "isArray": false,
+        "values": [
+          "true",
+          "false"
+        ],
+        "min": "false",
+        "max": "true"
+      },
+      {
+        "id": "p0000000000000000",
+        "name": "name",
+        "type": "string",
+        "recordsCount": 4,
+        "isArray": false,
+        "values": [
+          "Desk lamp",
+          "Standing desk",
+          "Mechanical keyboard",
+          "Coffee grinder"
+        ],
+        "min": "Coffee grinder",
+        "max": "Standing desk"
+      },
+      {
+        "id": "p0000000000000004",
+        "name": "price",
+        "type": "number",
+        "recordsCount": 4,
+        "isArray": false,
+        "min": 39.9,
+        "max": 499
+      },
+      {
+        "id": "p0000000000000006",
+        "name": "tags",
+        "type": "string",
+        "recordsCount": 4,
+        "isArray": true,
+        "values": [
+          "lighting",
+          "office",
+          "ergonomic",
+          "coffee"
+        ]
       }
     ],
     "relationships": [
-      { "label": "User", "type": "PLACED_BY", "direction": "out", "count": 1840 },
-      { "label": "Product", "type": "CONTAINS", "direction": "out", "count": 5210 }
+      {
+        "label": "Order",
+        "type": "CONTAINS",
+        "direction": "in",
+        "count": 6,
+        "properties": [
+          {
+            "name": "quantity",
+            "type": "number",
+            "relationshipsCount": 6,
+            "min": 1,
+            "max": 2
+          }
+        ]
+      }
     ]
   },
-  { "label": "User", "count": 312, "properties": ["..."], "relationships": ["..."] },
-  { "label": "Product", "count": 95, "properties": ["..."], "relationships": ["..."] }
+  {
+    "label": "User",
+    "count": 3,
+    "properties": [
+      {
+        "id": "p0000000000000001",
+        "name": "email",
+        "type": "string",
+        "recordsCount": 3,
+        "isArray": false,
+        "values": [
+          "alice@example.com",
+          "bob@example.com",
+          "carol@example.com"
+        ],
+        "min": "alice@example.com",
+        "max": "carol@example.com"
+      },
+      {
+        "id": "p0000000000000000",
+        "name": "name",
+        "type": "string",
+        "recordsCount": 3,
+        "isArray": false,
+        "values": [
+          "Alice",
+          "Bob",
+          "Carol"
+        ],
+        "min": "Alice",
+        "max": "Carol"
+      },
+      {
+        "id": "p0000000000000002",
+        "name": "plan",
+        "type": "string",
+        "recordsCount": 3,
+        "isArray": false,
+        "values": [
+          "pro",
+          "free",
+          "enterprise"
+        ],
+        "min": "enterprise",
+        "max": "pro"
+      }
+    ],
+    "relationships": [
+      {
+        "label": "Order",
+        "type": "PLACED_BY",
+        "direction": "in",
+        "count": 5
+      }
+    ]
+  }
 ]
 ```
 
-See the full type definitions in [Discover Your Schema](/learn/records-and-queries/discover-your-schema#typescript-types).
+For the meaning of each field, see the [schema types](../records-and-queries/discover-your-schema.mdx#typescript-types).
 
   </TabItem>
 </ThemeTabs>
 
+:::note Self-hosted engine
+With an SDK in direct mode, the JSON is the same, except that relationship properties carry only `name`, `type` and `relationshipsCount`. The Markdown has no **ID** column and no **Relationship Properties** section. An index that is missing vectors for some records reports `behind` instead of `awaiting_vectors`.
+:::
+
 ---
 
-## Inject Schema into LLM Context
+## Inject schema into LLM context
 
 <Tabs groupId="programming-language">
   <TabItem value="python" label="Python" default>
@@ -261,7 +471,7 @@ curl -X POST https://api.rushdb.com/api/v1/ai/schema/md \
 
 ---
 
-## Dynamic Query Construction
+## Dynamic query construction
 
 Use structured schema to build queries programmatically — no hardcoded field names:
 
@@ -311,7 +521,7 @@ const searchable = orderSchema.properties.filter((p) =>
 
 // Look up a property ID for value enumeration
 const statusProp = orderSchema.properties.find((p) => p.name === 'status')!
-const { data: statuses } = await db.properties.values({ id: statusProp.id })
+const { data: statuses } = await db.properties.values(statusProp.id)
 ```
 
   </TabItem>
@@ -330,15 +540,15 @@ curl -X POST https://api.rushdb.com/api/v1/ai/schema \
 
 ---
 
-## Schema Caching
+## Schema caching
 
-Both schema endpoints share a **1-hour cache** per project. The first call after TTL expiry triggers a full graph scan; all subsequent calls within the hour are instant.
+On RushDB Cloud, both schema endpoints share one cached schema per project, kept for an hour. After that, a call still gets the cached schema straight away while a refresh runs in the background, so no call waits for a recalculation unless the project has no cached schema yet or you pass `force: true`. `force` waits for a schema that includes every write made before the call. With an SDK in direct mode there is no cache: each call reads the engine's catalog.
 
 <Tabs groupId="programming-language">
   <TabItem value="python" label="Python" default>
 
 ```python
-# Force fresh recalculation (bypass 1-hour cache)
+# Recalculate now instead of using the cached schema
 response = db.ai.get_schema_markdown({"force": True})
 ```
 
@@ -346,7 +556,7 @@ response = db.ai.get_schema_markdown({"force": True})
   <TabItem value="typescript" label="TypeScript">
 
 ```typescript
-// Force fresh recalculation (bypass 1-hour cache)
+// Recalculate now instead of using the cached schema
 const { data } = await db.ai.getSchemaMarkdown({ force: true })
 ```
 
@@ -365,12 +575,12 @@ curl -X POST https://api.rushdb.com/api/v1/ai/schema/md \
 
 ---
 
-## Agent Skills
+## Agent skills
 
 `@rushdb/skills` is a collection of installable agent skills that teach any skills-compatible AI assistant (Claude, GitHub Copilot, Cursor, Windsurf, and others) to use RushDB efficiently — without manual system-prompt engineering.
 
 ```bash
-npx skills add rush-db/rushdb --path packages/skills
+npx skills add rush-db/skills
 ```
 
 | Skill                    | What it teaches                                                                                                                                                   |
@@ -385,14 +595,14 @@ npx skills add rush-db/rushdb --path packages/skills
 Each skill bundles a `SKILL.md` with concise instructions and optional reference files that the agent loads on demand.
 
 :::note MCP server vs. Agent Skills
-The [MCP server](/deploy/guides/mcp-operator-quickstart) gives agents direct tool access to RushDB at runtime. Agent Skills teach agents _how_ to use those tools correctly — they complement each other.
+The [MCP server](../../connect/mcp.mdx) gives agents direct tool access to RushDB at runtime. Agent Skills teach agents _how_ to use those tools correctly — they complement each other.
 :::
 
 ---
 
 ## See also
 
-- [Agent Memory Overview](/learn/agent-memory) — three-layer memory model
-- [Discover Your Schema](/learn/records-and-queries/discover-your-schema) — full schema API reference
-- [Semantic Search](/learn/semantic-search) — search by meaning
-- [Find & Query](/learn/records-and-queries/find-and-query) — search by structure
+- [Agent Memory Overview](./index.mdx) — three-layer memory model
+- [Discover Your Schema](../records-and-queries/discover-your-schema.mdx) — full schema API reference
+- [Semantic Search](../semantic-search/semantic-search.mdx) — search by meaning
+- [Find & Query](../records-and-queries/find-and-query.mdx) — search by structure

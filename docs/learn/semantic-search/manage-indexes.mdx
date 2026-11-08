@@ -1,24 +1,34 @@
 ---
 sidebar_position: 2
-title: Manage Embedding Indexes
+title: Manage embedding indexes
+description: Create, list, inspect and delete RushDB embedding indexes, managed or external, wait until they are ready, and look up index errors and their fixes.
 ---
 
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Manage Embedding Indexes
+# Manage embedding indexes
 
-An **embedding index** is a policy that tells RushDB to vectorize a specific string property for a label. Once `status` is `ready`, every record matching that label+property pair is searchable via [`db.records.vectorSearch()`](/learn/semantic-search).
+An **embedding index** is a policy that tells RushDB to vectorize a specific string property for a label. Once `status` is `ready`, every record matching that label+property pair is searchable via [`db.records.vectorSearch()`](./semantic-search.mdx).
 
 Indexes are scoped to `(label, propertyName)` — `Book:description` and `Article:description` are completely independent with separate vector stores.
 
 ---
 
+## Managed and external indexes
+
+| `sourceType`        | Who makes the vectors                                                         | RushDB Cloud | Self-hosted engine |
+| ------------------- | ----------------------------------------------------------------------------- | :----------: | :----------------: |
+| `managed` (default) | RushDB Cloud embeds the property on every write, and backfills existing records. | ✓            | —                  |
+| `external`          | You do, with your own model, and write them with the record or in bulk.       | ✓            | ✓                  |
+
+A self-hosted engine never calls an embedding model. Create `external` indexes there (`external: true`), as in [Bring Your Own Vectors](./bring-your-own-vectors.mdx); a managed index throws `CloudOnlyError` before anything is sent.
+
 ## How RushDB stores embeddings
 
 Most databases store vectors directly on the record — polluting the schema with fields like `description_emb_v1_1536` alongside regular metadata. Agents retrieving records get back a mix of business fields and raw float arrays, making schemas noisy and hard to reason about.
 
-RushDB stores each vector on a dedicated **Property node**, connected to the Record via an internal edge. Your record metadata stays clean and uniform; the vector index lives separately and is only accessed when you explicitly call `db.records.vectorSearch()`.
+RushDB keeps vectors out of the record. Each embedding index is its own vector store, and each vector in it is **bound** to one record. Your record properties stay clean and uniform; the vectors are read only when you search.
 
 ```mermaid
 graph LR
@@ -43,8 +53,8 @@ graph LR
     R1 --- M2["author: string"]
     R1 --- M3["publishedAt: date"]
     R1 --- M4["description: string"]
-    M4 -. "vector index" .-> V1["Property node\nvector: float[1536]"]
-    M4 -. "vector index" .-> V2["Property node\nvector: float[768]"]
+    R1 -. "bound vector" .-> V1["Index Article.description…1536.cosine\nvector: float[1536]"]
+    R1 -. "bound vector" .-> V2["Index Article.description…768.euclidean\nvector: float[768]"]
 
     style V1 fill:#14532d,color:#86efac,stroke:#166534
     style V2 fill:#14532d,color:#86efac,stroke:#166534
@@ -55,11 +65,11 @@ Decoupling vectors from record data means:
 
 - **Agents see clean schemas** — no float arrays mixed with business fields
 - **Multiple indexes on one property** — cosine + euclidean, different dimensions, side by side
-- **Zero record writes on index create/delete** — vector policy changes don't touch your data nodes
+- **Zero record writes on index create/delete** — vector policy changes don't touch your records
 
 ---
 
-## Create an Index
+## Create an index
 
 <Tabs groupId="programming-language">
   <TabItem value="python" label="Python" default>
@@ -137,15 +147,17 @@ curl -X POST https://api.rushdb.com/api/v1/ai/indexes \
 
 | Parameter            | Type     | Required | Description                                                                                                         |
 | -------------------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------- |
+| `name`               | `string` | no       | Unique within the project: 1–64 letters, digits, `.`, `_`, `:` or `-`. Defaults to `<label>.<property>.<model>.<dimensions>.<similarity>`. Search, stats, vector writes and delete accept the name as well as the id. |
 | `label`              | `string` | **yes**  | Label to scope this index to (e.g. `"Article"`)                                                                     |
 | `propertyName`       | `string` | **yes**  | Property to embed (e.g. `"description"`)                                                                            |
-| `sourceType`         | `string` | no       | `"managed"` (default) or `"external"`. See [Bring Your Own Vectors](/learn/semantic-search/bring-your-own-vectors). |
+| `sourceType`         | `string` | no       | `"managed"` (default) or `"external"`. See [Bring Your Own Vectors](./bring-your-own-vectors.mdx). |
+| `external`           | `boolean` | no      | Shorthand for `sourceType: "external"`.                                                                             |
 | `similarityFunction` | `string` | no       | `"cosine"` (default) or `"euclidean"`                                                                               |
-| `dimensions`         | `number` | no       | Vector dimensionality. Defaults to server `RUSHDB_EMBEDDING_DIMENSIONS`. **Required** for external indexes.         |
+| `dimensions`         | `number` | no       | Vector length. Defaults to the managed model's dimensions. **Required** for external indexes.                       |
 
 > Attempting to create a duplicate `(label, propertyName, sourceType, similarityFunction, dimensions)` tuple returns `409 Conflict`.
 
-> **Model config is server-side.** The embedding model is set via `RUSHDB_EMBEDDING_MODEL` and `RUSHDB_EMBEDDING_DIMENSIONS` env vars. Each index remembers the model it was embedded with (`modelKey`). If the server's model changes, existing vectors become incompatible — the server detects this at startup and automatically strips old vectors and queues affected managed indexes for re-embedding.
+> **The managed model is RushDB Cloud's.** Each index remembers the model it was embedded with (`modelKey`), which is part of its default name. `POST /api/v1/ai/indexes/name-suggestion` returns the name a new index would get.
 
 ### Index lifecycle
 
@@ -159,7 +171,7 @@ curl -X POST https://api.rushdb.com/api/v1/ai/indexes \
 
 ---
 
-## List Indexes
+## List indexes
 
 <Tabs groupId="programming-language">
   <TabItem value="python" label="Python" default>
@@ -228,7 +240,7 @@ curl https://api.rushdb.com/api/v1/ai/indexes \
 
 ---
 
-## Index Stats
+## Index stats
 
 Returns the fill rate for an index — useful for progress monitoring.
 
@@ -275,7 +287,7 @@ curl https://api.rushdb.com/api/v1/ai/indexes/$INDEX_ID/stats \
 
 ---
 
-## Delete an Index
+## Delete an index
 
 <Tabs groupId="programming-language">
   <TabItem value="python" label="Python" default>
@@ -308,11 +320,9 @@ curl -X DELETE https://api.rushdb.com/api/v1/ai/indexes/$INDEX_ID \
   </TabItem>
 </Tabs>
 
-The underlying Neo4j DDL vector index is only dropped when **zero embeddings remain** across the entire project — this avoids unnecessary rebuilds when multiple policies share the same `(dimensions, similarityFunction)`.
-
 ---
 
-## Index Response Shape
+## Index response shape
 
 ```json
 {
@@ -334,7 +344,7 @@ The underlying Neo4j DDL vector index is only dropped when **zero embeddings rem
 
 ---
 
-## Wait for Index Ready
+## Wait for index ready
 
 For managed indexes, backfill runs asynchronously. Poll until `status` is `ready`:
 
@@ -404,7 +414,7 @@ done
 
 ---
 
-## Multiple Indexes on the Same Property
+## Multiple indexes on the same property
 
 You can have more than one index per `(label, propertyName)` pair, provided the signature differs:
 
@@ -464,7 +474,7 @@ curl -X POST https://api.rushdb.com/api/v1/ai/search \
 
 ---
 
-## Error Reference
+## Error reference
 
 | HTTP  | Cause                                                                                                      |
 | ----- | ---------------------------------------------------------------------------------------------------------- |
@@ -476,6 +486,6 @@ curl -X POST https://api.rushdb.com/api/v1/ai/search \
 
 ## See also
 
-- [Semantic Search](/learn/semantic-search) — search using managed or external indexes
-- [Write Records with Vectors](/learn/semantic-search/write-with-vectors) — attach vectors at write time
-- [Bring Your Own Vectors](/learn/semantic-search/bring-your-own-vectors) — external embedding workflow
+- [Semantic Search](./semantic-search.mdx) — search using managed or external indexes
+- [Write Records with Vectors](./write-with-vectors.mdx) — attach vectors at write time
+- [Bring Your Own Vectors](./bring-your-own-vectors.mdx) — external embedding workflow

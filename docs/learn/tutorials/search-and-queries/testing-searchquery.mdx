@@ -1,14 +1,14 @@
 ---
 sidebar_position: 32
-title: 'Testing SearchQuery Across TypeScript, Python, and REST'
-description: Write parity-driven tests that prove one query intent behaves identically across every RushDB surface.
+title: 'Testing SearchQuery across TypeScript, Python, and REST'
+description: Write parity tests that check one RushDB SearchQuery returns the same records and totals from the TypeScript SDK, the Python SDK and the REST API.
 tags: [Testing, SearchQuery, TypeScript, Python]
 ---
 
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Testing SearchQuery Across TypeScript, Python, and REST
+# Testing SearchQuery across TypeScript, Python, and REST
 
 A SearchQuery written in TypeScript must return the same records as the same query written in Python or issued as a raw REST call. This is called **query parity**. Parity tests catch SDK bugs, version drift, and silent behavioral differences before they reach production.
 
@@ -334,6 +334,6 @@ def test_rollback_does_not_persist():
 
 ## Next steps
 
-- [Query Optimization](/learn/tutorials/search-and-queries/query-optimization) — reduce the cost of the queries you've confirmed are correct
-- [Discovery Queries](/learn/tutorials/search-and-queries/discovery-queries) — explore the schema before writing parity tests
-- [Explainable Results](/learn/tutorials/ai-and-rag/explainable-results) — surface evidence alongside test-verified search results
+- [Query Optimization](./query-optimization.mdx) — reduce the cost of the queries you've confirmed are correct
+- [Discovery Queries](./discovery-queries.mdx) — explore the schema before writing parity tests
+- [Explainable Results](../ai-and-rag/explainable-results.mdx) — surface evidence alongside test-verified search results

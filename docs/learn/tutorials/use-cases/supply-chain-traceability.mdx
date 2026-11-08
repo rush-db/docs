@@ -1,6 +1,6 @@
 ---
 sidebar_position: 28
-title: 'Supply Chain Traceability and Recall Analysis'
+title: 'Supply chain traceability and recall analysis'
 description: Model suppliers, batches, products, shipments, and incidents so teams can answer upstream-impact and downstream-blast-radius questions for recalls.
 tags: [Domain Blueprint, Relationships, SearchQuery, TypeScript, Python]
 ---
@@ -8,7 +8,7 @@ tags: [Domain Blueprint, Relationships, SearchQuery, TypeScript, Python]
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Supply Chain Traceability and Recall Analysis
+# Supply chain traceability and recall analysis
 
 When a product defect is discovered, two questions need immediate answers:
 
@@ -243,9 +243,9 @@ BATCH_ID=$(curl -s -X POST "$BASE/records/search" -H "$H" -H "Authorization: Bea
 RUN_ID=$(curl -s -X POST "$BASE/records/search" -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{"labels":["PRODUCTION_RUN"],"where":{"runId":"RUN-A1"}}' | jq -r '.data[0].__id')
 
-curl -s -X POST "$BASE/records/$BATCH_ID/relations" \
+curl -s -X POST "$BASE/relationships/$BATCH_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$RUN_ID\"],\"options\":{\"type\":\"USED_IN\",\"direction\":\"out\"}}"
+  -d "{\"targetIds\":[\"$RUN_ID\"],\"type\":\"USED_IN\",\"direction\":\"out\"}"
 ```
 
 </TabItem>
@@ -464,9 +464,9 @@ INCIDENT_ID=$(curl -s -X POST "$BASE/records" \
   -d '{"label":"INCIDENT","data":{"title":"Polymer degradation LOT-001","severity":"critical","status":"open","reportedAt":"2025-03-15T09:00:00Z"}}' \
   | jq -r '.data.__id')
 
-curl -s -X POST "$BASE/records/$INCIDENT_ID/relations" \
+curl -s -X POST "$BASE/relationships/$INCIDENT_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$BATCH_ID\"],\"options\":{\"type\":\"CAUSED_BY\",\"direction\":\"out\"}}"
+  -d "{\"targetIds\":[\"$BATCH_ID\"],\"type\":\"CAUSED_BY\",\"direction\":\"out\"}"
 ```
 
 </TabItem>
@@ -482,6 +482,6 @@ Real supply chains are many-to-many: a production run may consume dozens of batc
 
 ## Next steps
 
-- [Data Lineage](/learn/tutorials/graph-modeling/data-lineage) — end-to-end causal chain from sources to answers
-- [Audit Trails](/learn/tutorials/use-cases/audit-trails) — append immutable events to supply chain records
-- [Incident Response Graphs](/learn/tutorials/use-cases/incident-response) — operational incident root cause analysis
+- [Data Lineage](../graph-modeling/data-lineage.mdx) — end-to-end causal chain from sources to answers
+- [Audit Trails](./audit-trails.mdx) — append immutable events to supply chain records
+- [Incident Response Graphs](./incident-response.mdx) — operational incident root cause analysis

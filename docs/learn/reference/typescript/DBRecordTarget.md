@@ -1,12 +1,15 @@
 ---
+title: DBRecordTarget type (TypeScript SDK)
+sidebar_label: DBRecordTarget
+description: "Reference for DBRecordTarget in the RushDB TypeScript SDK: pass a DBRecord, a DBRecordInstance or a record ID string to set, update, attach and delete."
 sidebar_position: 4
 ---
 
 # DBRecordTarget
 
-`DBRecordTarget` is a type that represents a target [record](/learn/records-and-queries/store-records) for operations like set, update, attach, detach, and delete. It is commonly used when working with [relationships](/learn/relationships) and [property](/learn/records-and-queries/labels-and-properties) updates.
+`DBRecordTarget` is a type that represents a target [record](../../records-and-queries/store-records.mdx) for operations like set, update, attach, detach, and delete. It is commonly used when working with [relationships](../../relationships/index.mdx) and [property](../../records-and-queries/labels-and-properties.mdx) updates.
 
-## Type Definition
+## Type definition
 
 ```typescript
 export type DBRecordTarget = DBRecord<any> | DBRecordInstance<any> | string
@@ -14,7 +17,7 @@ export type DBRecordTarget = DBRecord<any> | DBRecordInstance<any> | string
 
 This union type allows for multiple ways to reference a record when performing operations on it.
 
-## Type Options
+## Type options
 
 | Type                    | Description                                                |
 | ----------------------- | ---------------------------------------------------------- |
@@ -26,7 +29,7 @@ This union type allows for multiple ways to reference a record when performing o
 
 This type is used in various operations that need to target a specific record:
 
-### In Model Methods
+### In model methods
 
 ```typescript
 // Using a record ID string
@@ -57,7 +60,7 @@ await UserModel.attach({
 })
 ```
 
-### In Record Instance Methods
+### In record instance methods
 
 While `DBRecordInstance` methods like `attach` and `detach` use `DBRecordTarget` internally, you don't need to explicitly use this type as the instance's ID is already known:
 

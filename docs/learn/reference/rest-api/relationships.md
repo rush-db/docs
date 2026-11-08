@@ -1,4 +1,7 @@
 ---
+title: Relationships REST API
+sidebar_label: Relationships
+description: Attach, detach and update relationships, bulk-link records by key match, and search relationships with the RushDB Cloud REST API relationship endpoints.
 sidebar_position: 3
 ---
 
@@ -6,17 +9,17 @@ sidebar_position: 3
 
 ## Attach
 
-`POST /api/v1/records/:entityId/relationships`
+`POST /api/v1/relationships/:entityId`
 
 ```bash
 # Single target
-curl -X POST https://api.rushdb.com/api/v1/records/$MOVIE_ID/relationships \
+curl -X POST https://api.rushdb.com/api/v1/relationships/$MOVIE_ID \
   -H "Authorization: Bearer $RUSHDB_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"targetIds": "$ACTOR_ID", "type": "STARS_IN", "direction": "out", "properties": {"role": "lead"}}'
 
 # Multiple targets
-curl -X POST https://api.rushdb.com/api/v1/records/$MOVIE_ID/relationships \
+curl -X POST https://api.rushdb.com/api/v1/relationships/$MOVIE_ID \
   -H "Authorization: Bearer $RUSHDB_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"targetIds": ["$ACTOR1_ID", "$ACTOR2_ID"], "type": "STARS_IN"}'
@@ -25,31 +28,62 @@ curl -X POST https://api.rushdb.com/api/v1/records/$MOVIE_ID/relationships \
 | Field        | Type                 | Description                                       |
 | ------------ | -------------------- | ------------------------------------------------- |
 | `targetIds`  | `string \| string[]` | Target record ID(s)                               |
-| `type`       | `string`             | Relationship type                                 |
+| `type`       | `string`             | Relationship type. Defaults to `__RUSHDB__RELATION__DEFAULT__` |
 | `direction`  | `"in" \| "out"`      | Direction from source to target (`out` = default) |
 | `properties` | `object`             | Optional user-defined edge properties             |
 
 ## Detach
 
-`PUT /api/v1/records/:entityId/relationships`
+`PUT /api/v1/relationships/:entityId`
 
 ```bash
-curl -X PUT https://api.rushdb.com/api/v1/records/$MOVIE_ID/relationships \
+curl -X PUT https://api.rushdb.com/api/v1/relationships/$MOVIE_ID \
   -H "Authorization: Bearer $RUSHDB_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"targetIds": "$ACTOR_ID", "typeOrTypes": ["STARS_IN"]}'
 ```
 
-## List Relationships
+| Field         | Type                 | Description                                                         |
+| ------------- | -------------------- | ------------------------------------------------------------------- |
+| `targetIds`   | `string \| string[]` | Target record ID(s)                                                 |
+| `typeOrTypes` | `string \| string[]` | Types to remove. Omit to remove relationships of every type         |
+| `direction`   | `"in" \| "out"`      | Direction to remove. Omit to remove relationships pointing either way |
 
-`GET /api/v1/records/:entityId/relationships`
+Detach can't run inside a transaction: with `X-Transaction-Id` it returns `400` and rolls the transaction back.
+
+
+## Update properties
+
+`PATCH /api/v1/relationships/:entityId`
+
+Changes the properties of existing relationships of one type from `:entityId` to each target. Properties not named in `set` or `unset` are kept; pairs without such a relationship are skipped. Needs RushDB 3.0.4 or newer.
 
 ```bash
-curl "https://api.rushdb.com/api/v1/records/$MOVIE_ID/relationships?limit=50" \
-  -H "Authorization: Bearer $RUSHDB_API_KEY"
+curl -X PATCH https://api.rushdb.com/api/v1/relationships/$MOVIE_ID \
+  -H "Authorization: Bearer $RUSHDB_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "targetIds": "$ACTOR_ID",
+    "type": "STARS_IN",
+    "set": {"billing": 2, "since": "2010-07-16T10:00:00.000Z"},
+    "unset": ["scenes"],
+    "types": {"since": "datetime"}
+  }'
 ```
 
-## Bulk Create by Key Match
+| Field       | Type                     | Description                                                                                          |
+| ----------- | ------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `targetIds` | `string \| string[]`     | Target record ID(s)                                                                                  |
+| `type`      | `string`                 | Relationship type to update                                                                          |
+| `direction` | `"in" \| "out"`          | Direction from source to target (`out` = default)                                                    |
+| `set`       | `object`                 | Properties to write; `null` stores an explicit null                                                  |
+| `unset`     | `string[]`               | Property names to remove                                                                             |
+| `types`     | `Record<string, string>` | Type of a `set` property: `string`, `number`, `boolean` or `datetime` (an ISO 8601 string stored as a datetime) |
+
+Returns `{"message": …, "updated": n}` with the number of relationships changed. Like detach, it can't run inside a transaction.
+
+
+## Bulk create by key match
 
 `POST /api/v1/relationships/create-many`
 
@@ -75,7 +109,7 @@ curl -X POST https://api.rushdb.com/api/v1/relationships/create-many \
 | `properties` | `object`                | Shared user-defined properties to write on each created edge                                    |
 | `manyToMany` | `boolean`               | Cartesian product mode — requires non-empty `where` on both sides unless join keys are provided |
 
-## Bulk Delete
+## Bulk delete
 
 `POST /api/v1/relationships/delete-many`
 
@@ -96,7 +130,7 @@ curl -X POST https://api.rushdb.com/api/v1/relationships/delete-many \
 Setting `manyToMany: true` without join keys requires `where` filters on both sides — the cartesian product is otherwise unbounded and the request is rejected. Key joins (`source.key` + `target.key`) never need `where` scoping.
 :::
 
-## Search Relationships
+## Search relationships
 
 `POST /api/v1/relationships/search`
 
@@ -114,9 +148,9 @@ curl -X POST https://api.rushdb.com/api/v1/relationships/search \
 
 `where` filters relationship edges: `type` maps to the relationship type and every other field maps to a user-defined edge property. Use `source` and `target` for endpoint record predicates.
 
-## Suggested Patterns
+## Suggested patterns
 
-RushDB can analyze a project's schema and propose relationship patterns for review before applying them. See [Suggested Relationship Patterns](/learn/relationships/suggested-patterns) for the lifecycle, SDK examples, and all five REST endpoints.
+RushDB can analyze a project's schema and propose relationship patterns for review before applying them. See [Suggested Relationship Patterns](../../relationships/suggested-patterns.mdx) for the lifecycle, SDK examples, and all five REST endpoints.
 
 ## Direction
 

@@ -1,12 +1,15 @@
 ---
+title: SearchQuery select expressions
+sidebar_label: Select expressions
+description: "Shape RushDB SearchQuery output with select: field references, $sum, $avg and $count, derived metrics, $collect for related records, and $timeBucket."
 sidebar_position: 7
 ---
 
-# Select Expressions
+# Select expressions
 
 The `select` clause shapes the output of a SearchQuery: compute metrics, derive new metrics from other outputs, collect related records as arrays, and bucket datetime fields into calendar intervals — all in a single declarative map. The legacy `aggregate` clause is deprecated and should only be used for vector similarity until select supports it.
 
-## Expression Placement
+## Expression placement
 
 The `select` key sits at the same level as `where`, `limit`, `orderBy`, and `labels`:
 
@@ -26,9 +29,13 @@ The `select` key sits at the same level as `where`, `limit`, `orderBy`, and `lab
 }
 ```
 
-> **Note**: `select` is evaluated only when fetching records.
+:::note
 
-## Expression Reference
+`select` is evaluated only when fetching records.
+
+:::
+
+## Expression reference
 
 | Expression                        | Description                                                           |
 | --------------------------------- | --------------------------------------------------------------------- |
@@ -49,7 +56,7 @@ The `select` key sits at the same level as `where`, `limit`, `orderBy`, and `lab
 | `{ $collect: CollectExpr }`       | Collect related records into an array                                 |
 | `{ $timeBucket: TimeBucketExpr }` | Bucket a datetime field into calendar intervals                       |
 
-## Field References
+## Field references
 
 Expressions reference record data using `"$alias.fieldName"` strings. The root record always uses `$record`; related records use aliases declared in `where` via `$alias`.
 
@@ -66,7 +73,7 @@ Expressions reference record data using `"$alias.fieldName"` strings. The root r
 }
 ```
 
-## Statistical Aggregations
+## Statistical aggregations
 
 All statistical expressions take a field reference (`"$alias.field"`) or another expression as their argument.
 
@@ -124,7 +131,7 @@ Optional `$precision` controls decimal places (0 = integer result).
 }
 ```
 
-## Math & Derived Metrics
+## Math & derived metrics
 
 Use arithmetic operators to compute derived values inline. Each takes a two-element array of expressions.
 
@@ -157,7 +164,7 @@ Supported: `$add`, `$subtract`, `$multiply`, `$divide` — each accepts `[expr, 
 }
 ```
 
-## `$collect` — Related Records as Arrays
+## `$collect` — related records as arrays
 
 `$collect` gathers related records into an array. There are two forms:
 
@@ -342,7 +349,7 @@ graph LR
 
 </details>
 
-## `$timeBucket` — Calendar Grouping
+## `$timeBucket` — calendar grouping
 
 `$timeBucket` buckets a datetime field into calendar intervals. Use with `groupBy` to produce time-series rows.
 
@@ -434,9 +441,9 @@ Bucket value is the **start of the interval** as epoch milliseconds (suitable fo
 
 If a record's field is not typed as `datetime` in RushDB metadata, its bucket value is `null`. Filter with a `where` condition on the field or exclude nulls client-side.
 
-## Grouping Results (`groupBy`)
+## Grouping results (`groupBy`)
 
-For full grouping semantics see the [Grouping guide](/learn/search-query/group-by). Quick reference:
+For full grouping semantics see the [Grouping guide](./group-by.md). Quick reference:
 
 ```typescript
 {
@@ -463,9 +470,9 @@ For full grouping semantics see the [Grouping guide](/learn/search-query/group-b
 }
 ```
 
-This produces a single-row result array with both metrics. See the [Grouping guide](/learn/search-query/group-by#grouping-only-by-an-aggregated-value-self-group) for details.
+This produces a single-row result array with both metrics. See the [Grouping guide](./group-by.md#grouping-only-by-an-aggregated-value-self-group) for details.
 
-## Ordering by `select` Keys (Late Order & Pagination)
+## Ordering by `select` keys (late order & pagination)
 
 When you reference a `select` output key in `orderBy`, RushDB defers `ORDER BY` and pagination until _after_ the aggregation step. This guarantees correct totals across the full matching record set.
 
@@ -498,9 +505,9 @@ Guidelines:
 - Always specify `orderBy` on a `select` key when using `groupBy` to get accurate totals across the entire match set.
 - Omit it only if you intentionally want to aggregate over a pre-sliced subset of records.
 
-See also: [Pagination & Order guide](/learn/search-query/pagination-order#ordering-with-aggregations).
+See also: [Pagination & Order guide](./pagination-order.md#ordering-with-aggregations).
 
-## Complete Example
+## Complete example
 
 ```typescript
 {

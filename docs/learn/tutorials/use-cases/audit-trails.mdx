@@ -1,6 +1,6 @@
 ---
 sidebar_position: 24
-title: 'Audit Trails with Immutable Events and Derived State'
+title: 'Audit trails with immutable events and derived state'
 description: Log business events as immutable records separate from current state so teams can reconstruct what happened, not just what is true now.
 tags: [Lineage, Audit, Transactions, TypeScript, Python]
 ---
@@ -8,7 +8,7 @@ tags: [Lineage, Audit, Transactions, TypeScript, Python]
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Audit Trails with Immutable Events and Derived State
+# Audit trails with immutable events and derived state
 
 Current-state records are useful for answering "what is true now?". They are not useful for answering "what happened, and when, and who did it?"
 
@@ -153,10 +153,10 @@ EVENT_RESP=$(curl -s -X POST "$BASE/records" \
 EVENT_ID=$(echo "$EVENT_RESP" | jq -r '.data.__id')
 
 # Link
-curl -s -X POST "$BASE/records/$ORDER_ID/relations" \
+curl -s -X POST "$BASE/relationships/$ORDER_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -H "x-transaction-id: $TX_ID" \
-  -d "{\"targets\":[\"$EVENT_ID\"],\"options\":{\"type\":\"HAS_EVENT\",\"direction\":\"out\"}}"
+  -d "{\"targetIds\":[\"$EVENT_ID\"],\"type\":\"HAS_EVENT\",\"direction\":\"out\"}"
 
 # Commit
 curl -s -X POST "$BASE/tx/$TX_ID/commit" \
@@ -280,10 +280,10 @@ EVENT_RESP=$(curl -s -X POST "$BASE/records" \
   -d "{\"label\":\"EVENT\",\"data\":{\"type\":\"status_changed\",\"from\":\"pending\",\"to\":\"shipped\",\"actorId\":\"service-fulfillment\",\"entityId\":\"$ORDER_ID\",\"occurredAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}}")
 EVENT_ID=$(echo "$EVENT_RESP" | jq -r '.data.__id')
 
-curl -s -X POST "$BASE/records/$ORDER_ID/relations" \
+curl -s -X POST "$BASE/relationships/$ORDER_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -H "x-transaction-id: $TX_ID" \
-  -d "{\"targets\":[\"$EVENT_ID\"],\"options\":{\"type\":\"HAS_EVENT\",\"direction\":\"out\"}}"
+  -d "{\"targetIds\":[\"$EVENT_ID\"],\"type\":\"HAS_EVENT\",\"direction\":\"out\"}"
 
 curl -s -X POST "$BASE/tx/$TX_ID/commit" \
   -H "$H" -H "Authorization: Bearer $TOKEN"
@@ -460,6 +460,6 @@ Audit trails grow with every write. For high-write systems (thousands of events 
 
 ## Next steps
 
-- [Versioning Records Without Losing Queryability](/learn/tutorials/graph-modeling/versioning-records) — complement to audit trails
-- [Compliance and Retention Patterns](/learn/tutorials/use-cases/compliance-retention) — expiration, archival, and redaction
-- [Temporal Graphs](/learn/tutorials/graph-modeling/temporal-graphs) — point-in-time reconstruction from state chains
+- [Versioning Records Without Losing Queryability](../graph-modeling/versioning-records.mdx) — complement to audit trails
+- [Compliance and Retention Patterns](./compliance-retention.mdx) — expiration, archival, and redaction
+- [Temporal Graphs](../graph-modeling/temporal-graphs.mdx) — point-in-time reconstruction from state chains

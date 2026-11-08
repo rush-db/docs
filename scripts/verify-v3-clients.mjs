@@ -1,4 +1,4 @@
-// Runs the JavaScript examples of docs-v3/connect/sql-and-cypher.mdx against a
+// Runs the JavaScript examples of docs/connect/sql-and-cypher.mdx against a
 // real engine: node-postgres over the PostgreSQL wire and neo4j-driver over
 // Bolt, on the Quick Tutorial's data.
 //
@@ -72,7 +72,7 @@ try {
   })
 
   // Every JavaScript example on the page, with the ports of this engine.
-  const page = await readFile(new URL('../docs-v3/connect/sql-and-cypher.mdx', import.meta.url), 'utf8')
+  const page = await readFile(new URL('../docs/connect/sql-and-cypher.mdx', import.meta.url), 'utf8')
   const examples = [...page.matchAll(/```javascript\n([\s\S]*?)```/g)].map((match) =>
     match[1].replace('port: 5432', `port: ${ports.pgwire}`).replace('bolt://127.0.0.1:7687', `bolt://127.0.0.1:${ports.bolt}`)
   )

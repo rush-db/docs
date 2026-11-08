@@ -1,6 +1,6 @@
 ---
 sidebar_position: 16
-title: 'Modeling Hierarchies, Networks, and Feedback Loops'
+title: 'Modeling hierarchies, networks, and feedback loops'
 description: Three common graph shapes — trees, many-to-many networks, and cyclic systems — with guidance on how to query each without flattening away meaning.
 tags: [Graph Modeling, Concepts, SearchQuery, Traversal]
 ---
@@ -8,7 +8,7 @@ tags: [Graph Modeling, Concepts, SearchQuery, Traversal]
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Modeling Hierarchies, Networks, and Feedback Loops
+# Modeling hierarchies, networks, and feedback loops
 
 Not all graphs are the same shape. A file system is a tree. A social network is many-to-many. A supply chain with feedback has cycles. Each shape has different query patterns, different failure modes, and different production constraints.
 
@@ -94,8 +94,8 @@ COMPANY_ID=$(curl -s -X POST "$BASE/records" -H "$H" -H "Authorization: Bearer $
 DIV_ID=$(curl -s -X POST "$BASE/records" -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{"label":"DIVISION","data":{"name":"Engineering"}}' | jq -r '.data.__id')
 
-curl -s -X POST "$BASE/records/$COMPANY_ID/relations" -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$DIV_ID\"],\"options\":{\"type\":\"HAS_DIVISION\"}}"
+curl -s -X POST "$BASE/relationships/$COMPANY_ID" -H "$H" -H "Authorization: Bearer $TOKEN" \
+  -d "{\"targetIds\":[\"$DIV_ID\"],\"type\":\"HAS_DIVISION\"}"
 ```
 
 </TabItem>
@@ -256,7 +256,7 @@ curl -s -X POST "$BASE/records/search" \
 
 The org chart above mixes labels — every level is a different label, so every level gets its own nested block. That manual nesting is exactly right for mixed-label paths: it lets you alias and filter each level independently.
 
-But many trees repeat **one label and one relationship type** at every level: category trees (`CATEGORY -[HAS_CHILD]-> CATEGORY`), folder trees, management chains. Nesting the same block once per level hard-codes the depth and gets verbose fast. For those, use variable-length traversal: add [`hops` to `$relation`](/learn/search-query/where-operators#variable-length-traversal-hops) and cover N levels in a single block.
+But many trees repeat **one label and one relationship type** at every level: category trees (`CATEGORY -[HAS_CHILD]-> CATEGORY`), folder trees, management chains. Nesting the same block once per level hard-codes the depth and gets verbose fast. For those, use variable-length traversal: add [`hops` to `$relation`](../../search-query/where-operators.md#variable-length-traversal-hops) and cover N levels in a single block.
 
 All descendants of the "Electronics" category, up to 4 levels deep:
 
@@ -316,7 +316,7 @@ How `hops` behaves:
 
 - `hops: 3` matches exactly 3 hops; `hops: { min, max }` matches a range (`min` defaults to `1`).
 - `type` and `direction` constrain **every hop**; the nested label and its criteria constrain only the **endpoint** record. Intermediate records are anonymous and unconstrained.
-- `hops.max` is capped per deployment (`RUSHDB_MAX_TRAVERSAL_HOPS`, default 10). Omitting `max` requests unbounded traversal, which is only allowed on self-hosted deployments and projects with a custom Neo4j instance.
+- An omitted `hops.max` means 10. Set `max` explicitly when a hierarchy is deeper.
 
 Keep manual nesting when levels carry different labels, or when you need to alias or filter intermediate levels — `hops` cannot express per-level criteria.
 
@@ -388,8 +388,8 @@ LENA_ID=$(curl -s -X POST "$BASE/records" -H "$H" -H "Authorization: Bearer $TOK
 PAPER_ID=$(curl -s -X POST "$BASE/records" -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{"label":"PAPER","data":{"title":"GNN Scaling Strategies","year":2024}}' | jq -r '.data.__id')
 
-curl -s -X POST "$BASE/records/$LENA_ID/relations" -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$PAPER_ID\"],\"options\":{\"type\":\"CO_AUTHORED\"}}"
+curl -s -X POST "$BASE/relationships/$LENA_ID" -H "$H" -H "Authorization: Bearer $TOKEN" \
+  -d "{\"targetIds\":[\"$PAPER_ID\"],\"type\":\"CO_AUTHORED\"}"
 ```
 
 </TabItem>
@@ -484,7 +484,7 @@ graph LR
   PKG_C -->|DEPENDS_ON| PKG_D
 ```
 
-SearchQuery supports variable-length traversal natively: add [`hops` to `$relation`](/learn/search-query/where-operators#variable-length-traversal-hops) to follow a relationship pattern up to N hops in a single block. Traversal depth is bounded by a per-deployment cap (`RUSHDB_MAX_TRAVERSAL_HOPS`, default 10); truly unbounded traversal (omitting `max`) is available only on self-hosted deployments and projects with a custom Neo4j instance. Explicitly scoping traversal to the depth your product requires remains good practice — for blast-radius analysis (which packages are affected if `crypto-utils` has a CVE?), traverse up to a known safe depth.
+SearchQuery supports variable-length traversal natively: add [`hops` to `$relation`](../../search-query/where-operators.md#variable-length-traversal-hops) to follow a relationship pattern up to N hops in a single block. An omitted `max` means 10 hops; set it explicitly for deeper chains. Explicitly scoping traversal to the depth your product requires remains good practice — for blast-radius analysis (which packages are affected if `crypto-utils` has a CVE?), traverse up to a known safe depth.
 
 ### Ingesting the dependency graph
 
@@ -537,10 +537,10 @@ AUTH_ID=$(curl -s -X POST "$BASE/records" -H "$H" -H "Authorization: Bearer $TOK
 CRYPTO_ID=$(curl -s -X POST "$BASE/records" -H "$H" -H "Authorization: Bearer $TOKEN" \
   -d '{"label":"PACKAGE","data":{"name":"crypto-utils","version":"0.9.8"}}' | jq -r '.data.__id')
 
-curl -s -X POST "$BASE/records/$CORE_ID/relations" -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$AUTH_ID\"],\"options\":{\"type\":\"DEPENDS_ON\"}}"
-curl -s -X POST "$BASE/records/$AUTH_ID/relations" -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$CRYPTO_ID\"],\"options\":{\"type\":\"DEPENDS_ON\"}}"
+curl -s -X POST "$BASE/relationships/$CORE_ID" -H "$H" -H "Authorization: Bearer $TOKEN" \
+  -d "{\"targetIds\":[\"$AUTH_ID\"],\"type\":\"DEPENDS_ON\"}"
+curl -s -X POST "$BASE/relationships/$AUTH_ID" -H "$H" -H "Authorization: Bearer $TOKEN" \
+  -d "{\"targetIds\":[\"$CRYPTO_ID\"],\"type\":\"DEPENDS_ON\"}"
 ```
 
 </TabItem>
@@ -726,7 +726,7 @@ One caveat when aggregating over multihop matches: the traversal produces one ro
 
 ### Cyclic query: detecting circular dependencies with `$cycle`
 
-Cyclic graphs raise a question tree-shaped data never does: does anything depend on itself, directly or transitively? [`$cycle`](/learn/search-query/where-operators#cycle-detection-cycle) finds records that sit on a closed path back to themselves:
+Cyclic graphs raise a question tree-shaped data never does: does anything depend on itself, directly or transitively? [`$cycle`](../../search-query/where-operators.md#cycle-detection-cycle) finds records that sit on a closed path back to themselves:
 
 <Tabs groupId="programming-language">
 <TabItem value="typescript" label="TypeScript">
@@ -794,7 +794,7 @@ curl -s -X POST "$BASE/records/search" \
 | ------------ | ------------------------------------------ | ---------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | Tree         | Single parent per node                     | Nested blocks for mixed-label paths; `hops` for same-label depth | Per-level filters/aliases need manual nesting — `hops` skips the middle |
 | Many-to-many | Nodes can appear in multiple relationships | Aggregation by relationship type                                 | Fan-out can be large without limit                                      |
-| Cyclic       | Loops are possible                         | `hops` for blast radius, `$cycle` for loop detection             | `hops.max` is capped per deployment (default 10); keep it small anyway  |
+| Cyclic       | Loops are possible                         | `hops` for blast radius, `$cycle` for loop detection             | keep `hops.max` small: cost grows fast on dense graphs              |
 
 ---
 
@@ -802,7 +802,7 @@ curl -s -X POST "$BASE/records/search" \
 
 Each shape has a fan-out risk. In trees, deep hierarchies multiply candidates at every hop. In networks, highly-connected hubs (an author with 200 papers) inflate traversal cost. In cyclic graphs, even a two-hop traversal can cover thousands of paths in large dependency graphs.
 
-Variable-length traversal explores every matching path, so treat `hops.max` as a budget: keep it as small as your use case allows, and always set `type` and `direction` — an undirected, untyped `hops` query is the most expensive shape. `hops.max` is capped per deployment (`RUSHDB_MAX_TRAVERSAL_HOPS`, default 10); unbounded traversal is only available on self-hosted deployments and custom Neo4j instances, bounded there by the transaction timeout.
+Variable-length traversal visits every record within `hops.max` of each candidate record, so treat `hops.max` as a budget: keep it as small as your use case allows, and always set `type` and `direction` — an undirected, untyped `hops` query is the most expensive shape. An omitted `hops.max` means 10, and every query runs within the engine's query time budget.
 
 Apply `limit` conservatively and filter early on high-selectivity properties (e.g. `name`, `status`, `version`). Measure response times before and after adding hops to your query.
 
@@ -810,7 +810,7 @@ Apply `limit` conservatively and filter early on high-selectivity properties (e.
 
 ## Next steps
 
-- [Detecting Fraud Rings](/learn/tutorials/graph-modeling/fraud-rings) — `$cycle` and `hops` applied to money-laundering circle detection
-- [Choosing Relationship Types That Age Well](/learn/tutorials/graph-modeling/choosing-relationship-types) — when generic vs. typed edges matter
-- [Temporal Graphs: Modeling State and Event Time Together](/learn/tutorials/graph-modeling/temporal-graphs) — adding time dimension to any of these shapes
-- [SearchQuery Deep Dive](/learn/tutorials/search-and-queries/searchquery-advanced-patterns) — `$relation`, `$alias`, and `collect` patterns
+- [Detecting Fraud Rings](./fraud-rings.mdx) — `$cycle` and `hops` applied to money-laundering circle detection
+- [Choosing Relationship Types That Age Well](./choosing-relationship-types.mdx) — when generic vs. typed edges matter
+- [Temporal Graphs: Modeling State and Event Time Together](./temporal-graphs.mdx) — adding time dimension to any of these shapes
+- [SearchQuery Deep Dive](../search-and-queries/searchquery-advanced-patterns.mdx) — `$relation`, `$alias`, and `collect` patterns

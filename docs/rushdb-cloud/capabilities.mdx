@@ -1,0 +1,23 @@
+---
+title: What RushDB Cloud adds
+sidebar_label: Cloud features
+description: The features only RushDB Cloud has, such as managed embeddings, natural-language search and the REST API, and what to use on a self-hosted engine instead.
+sidebar_position: 2
+---
+
+# What RushDB Cloud adds
+
+RushDB Cloud runs the RushDB engine and adds the features below. On a self-hosted engine they are not available: the SDKs throw `CloudOnlyError` before sending anything, and the MCP server doesn't list the matching tools.
+
+| Feature | In RushDB Cloud | On a self-hosted engine |
+| --- | --- | --- |
+| **Managed embeddings** | Create a managed index on a property; Cloud embeds every write and backfills existing records, and embeds text `query` searches. | Create an external index and supply vectors from your own model. See [Bring Your Own Vectors](../learn/semantic-search/bring-your-own-vectors.mdx). |
+| **Natural-language search** | [`ai.search(prompt)`](../learn/search-query/smart-search.mdx) turns a request into a SearchQuery over your schema and runs it. | Build the SearchQuery yourself, or let an agent build it from `getSchemaMarkdown`. |
+| **Relationship-pattern suggestions** | [Cloud analyzes your schema](../learn/relationships/suggested-patterns.mdx) and proposes relationships to materialize, for your review. | Create relationships with attach or `relationships.createMany`. |
+| **Dashboard** | Browse and edit records, explore the graph, build queries, manage embedding and text indexes. | Use the SDKs, the engine's native protocol, or SQL tools over the PostgreSQL wire protocol. |
+| **Projects, workspaces and team access** | Separate projects, invite teammates, full-access and read-only API keys. | One engine per deployment; [tenants](../engine/data-model/tenants.md) and [tokens](../engine/connectivity/authentication.md) are yours to manage. |
+| **REST API** | [`https://api.rushdb.com/api/v1`](../learn/reference/rest-api/introduction.md) | The engine's [native HTTP protocol](../engine/connectivity/http-api.md). |
+| **Hosted MCP with OAuth** | `https://mcp.rushdb.com/mcp` for ChatGPT, Claude.ai and other web clients. | The local MCP server in [direct mode](../connect/mcp.mdx#self-hosted-engine-direct-mode), over stdio. |
+| **Operations** | RushDB runs, upgrades and backs up the engine. | You do: see [Operations](../engine/operations/README.md) in the engine manual. |
+
+Everything else — records, relationships, SearchQuery, aggregations, imports, transactions, keyword, vector and hybrid search, raw openCypher — is the engine's, and works the same in both. See the [SDK feature matrix](../connect/sdks.mdx#what-each-mode-offers).

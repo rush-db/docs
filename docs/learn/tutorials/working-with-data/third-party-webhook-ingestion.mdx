@@ -1,11 +1,12 @@
 ---
 sidebar_position: 30
-title: 'Webhook Ingestion from Third-Party Tools (Clay, Supabase, Superglue)'
+title: Webhook ingestion from Clay, Supabase and Superglue
+sidebar_label: Webhook ingestion from third-party tools (Clay, Supabase, Superglue)
 description: 'A beginner-friendly guide to send JSON or CSV from no-code and data platforms into RushDB using custom HTTP requests.'
 tags: [Ingestion, Webhooks, Getting Started, No-Code]
 ---
 
-# Webhook Ingestion from Third-Party Tools
+# Webhook ingestion from third-party tools
 
 Many tools can send data to a custom HTTP endpoint. That means you can connect your existing workflow to RushDB without writing a full app.
 
@@ -167,7 +168,7 @@ Tip: start with a single small batch, validate fields, then scale.
 
 Webhook systems may retry requests. Use an external stable ID (`externalId`) in each record so you can deduplicate and upsert safely.
 
-For stronger idempotency patterns, see [Event-Driven Ingestion from Webhooks and Queues](/learn/tutorials/working-with-data/event-driven-ingestion).
+For stronger idempotency patterns, see [Event-Driven Ingestion from Webhooks and Queues](./event-driven-ingestion.mdx).
 
 ## Optional: test from terminal first
 
@@ -191,8 +192,7 @@ curl -X POST "https://api.rushdb.com/api/v1/records/import/json" \
   }'
 ```
 
-## Related docs
-
-- [Importing data from external sources](/learn/tutorials/working-with-data/importing-data)
-- [Event-Driven Ingestion from Webhooks and Queues](/learn/tutorials/working-with-data/event-driven-ingestion)
-- [REST API introduction](/learn/reference/rest-api/introduction)
+## See also
+- [Importing data from external sources](./importing-data.mdx)
+- [Event-Driven Ingestion from Webhooks and Queues](./event-driven-ingestion.mdx)
+- [REST API introduction](../../reference/rest-api/introduction.md)

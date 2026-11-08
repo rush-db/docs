@@ -1,14 +1,15 @@
 ---
 sidebar_position: 3
-title: Agents
-displayed_sidebar: docs
+title: Use RushDB with AI agents
+sidebar_label: Agents
+description: "Set up RushDB as an AI agent's data layer and persistent memory through the MCP server, agent skills, a custom harness, or native memory providers."
 ---
 
-# Use RushDB with AI Agents
+# Use RushDB with AI agents
 
 RushDB gives agents a structured data layer, a traversable graph, and persistent memory. Choose the shortest setup that matches your agent.
 
-## Fastest Setup: Give the Agent the Guide
+## Fastest setup: Give the agent the guide
 
 For an MCP-capable agent, send:
 
@@ -18,12 +19,12 @@ Fetch https://rushdb.com/agent-setup and follow the instructions exactly.
 
 The machine-readable setup guide walks the agent through MCP connection, schema discovery, memory labels, nested record linking, recall patterns, and semantic search.
 
-## Coding Assistant: MCP + Skills + Memory
+## Coding assistant: MCP + skills + memory
 
 For Claude Desktop, Cursor, VS Code Copilot, OpenClaw, or another local coding agent:
 
-1. [Connect the local MCP server](/connect/mcp#local-mcp-api-key).
-2. [Install RushDB Agent Skills](/connect/skills).
+1. [Connect the local MCP server](./mcp.mdx) — to RushDB Cloud with an API key, or to your own engine in direct mode.
+2. [Install RushDB Agent Skills](./skills.mdx).
 3. Start a new agent session.
 4. Send:
 
@@ -31,9 +32,9 @@ For Claude Desktop, Cursor, VS Code Copilot, OpenClaw, or another local coding a
 Set up RushDB as my persistent memory layer.
 ```
 
-The agent calls `getSchemaMarkdown`, creates a `SESSION`, and validates recall. For the full bootstrap prompt and recommended labels, follow the [Agent Memory Quickstart](/learn/agent-memory/quickstart).
+The agent calls `getSchemaMarkdown`, creates a `SESSION`, and validates recall. For the full bootstrap prompt and recommended labels, follow the [Agent Memory Quickstart](../learn/agent-memory/quickstart.mdx).
 
-## Custom Agent Harness
+## Custom agent harness
 
 For an application-controlled agent, choose the interface based on where orchestration lives:
 
@@ -42,18 +43,39 @@ For an application-controlled agent, choose the interface based on where orchest
 | MCP tools      | Your framework already supports MCP tool discovery and invocation        |
 | TypeScript SDK | Your harness runs in Node.js, the browser, or an edge-compatible runtime |
 | Python SDK     | Your harness runs in Python                                              |
-| REST API       | You need language-neutral HTTP integration                               |
+| REST API       | You need language-neutral HTTP integration with RushDB Cloud             |
+| Native protocol | You run your own engine and need language-neutral HTTP integration      |
 
-[Connect with an SDK or REST →](/connect/sdks)
+[Connect with an SDK →](./sdks.mdx)
 
-## Native Memory Providers
+## Native memory providers
 
 MCP exposes model-directed tools. Native providers additionally recall before inference, persist completed turns, participate in session/compaction lifecycle, and fail open when remote memory is unavailable.
 
 | Runtime      | Native integration                                                                                 |
 | ------------ | -------------------------------------------------------------------------------------------------- |
-| OpenClaw     | [Additive RushDB memory plugin](/connect/openclaw-memory) — preserves local Markdown/SQLite memory |
-| Hermes Agent | [RushDB MemoryProvider](/connect/hermes-memory) — automatic prefetch and non-blocking durable sync |
+| OpenClaw     | [Additive RushDB memory plugin](./openclaw-memory.mdx) — preserves local Markdown/SQLite memory |
+| Hermes Agent | [RushDB MemoryProvider](./hermes-memory.mdx) — automatic prefetch and non-blocking durable sync |
+
+Both build on [`@rushdb/agent-memory-contract`](https://www.npmjs.com/package/@rushdb/agent-memory-contract), the provider-neutral TypeScript boundary for agent memory: the `AgentMemoryEvent v1` model, deterministic ids, scope filters, idempotent writes and semantic recall. Use it to build a native integration for another runtime; see the [Agent Memory Event Contract](../learn/agent-memory/event-contract.mdx).
+
+Recall is a vector search. On RushDB Cloud, memories are embedded for you. On a self-hosted engine, the integrations need an embedding model of your own: the native providers take an OpenAI-compatible endpoint, and the contract takes an `embedder`:
+
+```typescript
+import { RushDBAgentMemory } from '@rushdb/agent-memory-contract'
+
+const memory = new RushDBAgentMemory({
+  engineUrl: 'http://127.0.0.1:3000',
+  engineToken: process.env.RUSHDB_ENGINE_TOKEN,
+  embedder: {
+    dimensions: 1536,
+    embed: async (texts) =>
+      (await openai.embeddings.create({ model: 'text-embedding-3-small', input: texts })).data.map((d) => d.embedding)
+  }
+})
+
+await memory.ensureIndexes() // creates external indexes of the embedder's dimensions
+```
 
 At the start of each agent session:
 
@@ -73,12 +95,12 @@ Ask your agent:
 
 > Search RushDB for `SESSION` records. Show the most recent one and summarize any linked decisions or tasks.
 
-If you have not bootstrapped memory yet, use the [Agent Memory Quickstart](/learn/agent-memory/quickstart) first.
+If you have not bootstrapped memory yet, use the [Agent Memory Quickstart](../learn/agent-memory/quickstart.mdx) first.
 
-## Next Steps
+## Next steps
 
-- [Agent Memory Quickstart](/learn/agent-memory/quickstart)
-- [Schema Self-Awareness](/learn/agent-memory/schema-self-awareness)
-- [Agent-Safe Query Planning](/learn/tutorials/agent-memory/agent-safe-query-planning)
-- [Using RushDB Agent Skills in OpenClaw](/learn/tutorials/agent-memory/agent-skills-with-openclaw)
-- [Agent Memory Event Contract](/learn/agent-memory/event-contract)
+- [Agent Memory Quickstart](../learn/agent-memory/quickstart.mdx)
+- [Schema Self-Awareness](../learn/agent-memory/schema-self-awareness.mdx)
+- [Agent-Safe Query Planning](../learn/tutorials/agent-memory/agent-safe-query-planning.mdx)
+- [Using RushDB Agent Skills in OpenClaw](../learn/tutorials/agent-memory/agent-skills-with-openclaw.mdx)
+- [Agent Memory Event Contract](../learn/agent-memory/event-contract.mdx)

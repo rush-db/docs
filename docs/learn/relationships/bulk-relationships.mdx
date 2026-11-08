@@ -1,18 +1,19 @@
 ---
 sidebar_position: 2
-title: Bulk Relationships
+title: Bulk relationships
+description: Connect or disconnect many RushDB records at once by matching property keys between labels, for data imported from CSV, MongoDB exports or external APIs.
 ---
 
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Bulk Relationships
+# Bulk relationships
 
 Connect or disconnect many records at once by matching on property keys. Useful after importing flat data from CSV, MongoDB exports, or external APIs where related records arrive separately with reference fields.
 
 ---
 
-## Bulk Create by Key Match
+## Bulk create by key match
 
 Connect records by matching a property on the source label to a property on the target label. All pairs where the values are equal are linked.
 
@@ -83,7 +84,7 @@ curl -X POST https://api.rushdb.com/api/v1/relationships/create-many \
 
 ---
 
-## Bulk Delete by Key Match
+## Bulk delete by key match
 
 Same shape as `createMany`. Removes relationships where the key values match.
 
@@ -134,7 +135,7 @@ curl -X POST https://api.rushdb.com/api/v1/relationships/delete-many \
 
 ---
 
-## Many-to-Many (Cartesian)
+## Many-to-many (cartesian)
 
 Connect or disconnect **all** records matching source conditions with **all** records matching target conditions.
 
@@ -225,6 +226,6 @@ curl -X POST https://api.rushdb.com/api/v1/relationships/delete-many \
 
 ## See also
 
-- [Connect Records](/learn/relationships/connect-records) — attach / detach individual record pairs
-- [Import Data](/learn/records-and-queries/import-data) — nested JSON auto-creates relationships on import
-- [Find & Query — Relationship Traversal](/learn/records-and-queries/find-and-query#relationship-traversal) — filter records via graph edges
+- [Connect Records](./connect-records.mdx) — attach / detach individual record pairs
+- [Import Data](../records-and-queries/import-data.mdx) — nested JSON auto-creates relationships on import
+- [Find & Query — Relationship Traversal](../records-and-queries/find-and-query.mdx#relationship-traversal) — filter records via graph edges

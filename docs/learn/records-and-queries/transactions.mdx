@@ -1,6 +1,8 @@
 ---
 sidebar_position: 1
-title: Transactions
+title: Group writes in transactions
+sidebar_label: Transactions
+description: Group RushDB writes into an atomic transaction that commits or rolls back as one unit, using the SDK pattern, timeouts and the supported operations.
 ---
 
 import Tabs from '@site/src/components/LanguageTabs'
@@ -10,9 +12,11 @@ import TabItem from '@theme/TabItem'
 
 Group multiple write operations into an atomic unit — all succeed together or all roll back together.
 
+Transactions work the same way on RushDB Cloud and on a self-hosted engine: the engine **stages** each write and applies them all at commit. Until then, nobody sees them, and reads in the transaction see the committed data. Records are named by id, and the engine resolves each id inside the transaction, so you can update, delete and link records created earlier in the same transaction.
+
 ---
 
-## Basic Pattern
+## Basic pattern
 
 <Tabs groupId="programming-language">
   <TabItem value="python" label="Python" default>
@@ -91,7 +95,7 @@ ACTOR_ID=$(curl -s -X POST https://api.rushdb.com/api/v1/records \
   -d '{"label": "ACTOR", "data": {"name": "Leonardo DiCaprio"}, "options": {"returnResult": true}}' | jq -r '.data.__id')
 
 # 3. Link
-curl -X POST https://api.rushdb.com/api/v1/records/$MOVIE_ID/relationships \
+curl -X POST https://api.rushdb.com/api/v1/relationships/$MOVIE_ID \
   -H "Authorization: Bearer $RUSHDB_API_KEY" \
   -H "Content-Type: application/json" \
   -H "X-Transaction-Id: $TX_ID" \
@@ -107,7 +111,7 @@ curl -X POST https://api.rushdb.com/api/v1/tx/$TX_ID/commit \
 
 ---
 
-## API Reference
+## API reference
 
 <Tabs groupId="programming-language">
   <TabItem value="python" label="Python" default>
@@ -152,10 +156,12 @@ Add `X-Transaction-Id: $TX_ID` to any create, update, delete, or relationship re
 
 Uncommitted transactions are automatically rolled back after the TTL expires.
 
-| Parameter   | Value       |
-| ----------- | ----------- |
-| Default TTL | `5 000` ms  |
-| Maximum TTL | `30 000` ms |
+| Parameter   | RushDB Cloud | Self-hosted engine                                                    |
+| ----------- | ------------ | --------------------------------------------------------------------- |
+| Default TTL | `5 000` ms   | `transactions.default-ttl-seconds` (60 s)                              |
+| Maximum TTL | `55 000` ms  | `transactions.max-age-seconds` (60 s); a larger `ttl` is capped        |
+
+`autocommit: true` commits a transaction whose TTL elapses instead of discarding it.
 
 <Tabs groupId="programming-language">
   <TabItem value="python" label="Python" default>
@@ -183,28 +189,33 @@ curl -X POST https://api.rushdb.com/api/v1/tx \
 
 | Field | Type     | Description                              |
 | ----- | -------- | ---------------------------------------- |
-| `ttl` | `number` | TTL in ms. Default: `5000`. Max: `30000` |
+| `ttl` | `number` | TTL in ms. Default: `5000`. Max: `55000` |
+| `autocommit` | `boolean` | Commit instead of rolling back when the TTL elapses. Default: `false` |
 
   </TabItem>
 </Tabs>
 
 ---
 
-## Supported Operations
+## Supported operations
 
-All record and relationship write operations support transactions:
+| Category      | Staged in a transaction                                                                                  |
+| ------------- | -------------------------------------------------------------------------------------------------------- |
+| Records       | `create` · `update` · `set` · `delete_by_id` / `deleteById`                                              |
+| Relationships | `attach`                                                                                                 |
+| Imports       | `import_json` / `importJson` · `import_csv` / `importCsv` (they report counts, not records, until commit) |
 
-| Category      | Operations                                                                                            |
-| ------------- | ----------------------------------------------------------------------------------------------------- |
-| Records       | `create` / `create_many` / `createMany` · `update` · `set` · `delete` / `delete_by_id` / `deleteById` |
-| Relationships | `attach` / `detach`                                                                                   |
-| Reads         | `find` (within transaction — reads your uncommitted writes)                                           |
+These writes are **refused** inside a transaction, because the engine cannot stage them: deleting records by query (`delete`), `detach`, `relationships.createMany` / `deleteMany`, upserts and merge imports, writes with inline vectors, and property deletes. RushDB Cloud answers them with `400 Bad Request` and rolls the transaction back; in direct mode the SDK throws `DirectModeError` before sending anything. Run them outside the transaction.
+
+Reads (`find`, `findById`, …) see committed data, not the transaction's staged writes. A staged write returns its record as the transaction sees it.
+
+A commit can fail with a **conflict** when another commit changed a record this transaction wrote; RushDB Cloud returns `409 Conflict`. Begin a new transaction and retry. See [Transactions](../../engine/query/transactions.md) in the engine manual for isolation and retry details.
 
 ---
 
 ## See also
 
-- [Store Records](/learn/records-and-queries/store-records) — in-transaction create, update, delete examples
-- [Connect Records](/learn/relationships/connect-records) — in-transaction attach, detach examples
-- [Find & Query](/learn/records-and-queries/find-and-query) — in-transaction read examples
-- [TypeScript Transaction type](/learn/reference/typescript/Transaction)
+- [Store Records](./store-records.mdx) — in-transaction create, update, delete examples
+- [Connect Records](../relationships/connect-records.mdx) — in-transaction attach, detach examples
+- [Find & Query](./find-and-query.mdx) — in-transaction read examples
+- [TypeScript Transaction type](../reference/typescript/Transaction.md)

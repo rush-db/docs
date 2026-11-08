@@ -1,12 +1,14 @@
 ---
 sidebar_position: 4
-title: Export Data
+title: Export records to CSV
+sidebar_label: Export data
+description: Export RushDB records as CSV from the SDKs, filtered and sorted with the same where, orderBy, skip, limit and labels parameters as a SearchQuery.
 ---
 
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Export Data
+# Export data
 
 Export records as CSV. Accepts the same `where`, `orderBy`, `skip`, `limit`, and `labels` parameters as a search query — filtering and sorting apply before export.
 
@@ -111,5 +113,5 @@ curl -X POST https://api.rushdb.com/api/v1/records/export/csv \
 
 ## See also
 
-- [Find & Query](/learn/records-and-queries/find-and-query) — search and filter records before export
-- [Import Data](/learn/records-and-queries/import-data) — bring CSV or JSON data in
+- [Find & Query](./find-and-query.mdx) — search and filter records before export
+- [Import Data](./import-data.mdx) — bring CSV or JSON data in

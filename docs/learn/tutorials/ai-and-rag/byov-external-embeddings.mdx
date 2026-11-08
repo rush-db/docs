@@ -1,6 +1,6 @@
 ---
 sidebar_position: 35
-title: 'Bring Your Own Vectors (BYOV) — External Embeddings'
+title: 'Bring your own vectors (BYOV) — external embeddings'
 description: Use your own embedding model to generate vectors and store them in RushDB, then search with queryVector instead of query text.
 tags: [AI, BYOV, Embeddings, TypeScript, Python]
 ---
@@ -8,7 +8,7 @@ tags: [AI, BYOV, Embeddings, TypeScript, Python]
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Bring Your Own Vectors (BYOV) — External Embeddings
+# Bring your own vectors (BYOV) — external embeddings
 
 By default, RushDB generates embeddings for you using the configured server-side embedding model. With BYOV you generate the vectors yourself — using any model, any provider, even a locally fine-tuned one — and push them alongside your records. RushDB stores and indexes them, and you search with a pre-computed `queryVector` instead of a raw query string.
 
@@ -355,6 +355,6 @@ vectors=[
 
 ## Next steps
 
-- [Hybrid Retrieval](/learn/tutorials/ai-and-rag/hybrid-retrieval) — `where` filters + semantic ranking in one call
-- [GraphRAG](/learn/tutorials/ai-and-rag/graphrag) — use BYOV embeddings in a retrieval-augmented generation pipeline with graph traversal
-- [RAG Evaluation](/learn/tutorials/ai-and-rag/rag-evaluation) — benchmark precision before and after swapping embedding models
+- [Hybrid Retrieval](./hybrid-retrieval.mdx) — `where` filters + semantic ranking in one call
+- [GraphRAG](./graphrag.mdx) — use BYOV embeddings in a retrieval-augmented generation pipeline with graph traversal
+- [RAG Evaluation](./rag-evaluation.mdx) — benchmark precision before and after swapping embedding models

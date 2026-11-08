@@ -1,12 +1,13 @@
 ---
 sidebar_position: 3
-title: Relationship Properties
+title: Relationship properties
+description: Store data on RushDB relationships themselves, such as a role or a start date, update it, and filter records and relationships by their edge properties.
 ---
 
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Relationship Properties
+# Relationship properties
 
 Relationships can carry their own data. When you connect records, you can attach **properties to the edge itself** — the role of an actor in a movie, the confidence of an inferred link, the date a membership started. The connection stops being a bare pointer and becomes a fact in its own right.
 
@@ -17,28 +18,26 @@ graph LR
 
 Without edge properties, data _about the connection_ has nowhere natural to live — you would either denormalize it onto one of the records or mint an intermediate record just to hold it. Edge properties keep it where it belongs: on the relationship.
 
-## Where Edge Properties Live
+## Where edge properties live
 
 Record properties and relationship properties are stored differently, and the difference matters:
 
 |                                    | Record properties                      | Relationship properties                              |
 | ---------------------------------- | -------------------------------------- | ---------------------------------------------------- |
-| Stored on                          | Property nodes linked to the record    | Directly on the relationship edge                    |
+| Belongs to                         | The record, and its label's catalog    | The relationship, and its type's shape in the catalog |
 | Visible in schema                  | Yes — labels, types, ranges via schema | Yes — summarized per relationship type in the schema |
 | Filterable via                     | `records.find()` `where`               | `relationships.find()` `where`                       |
-| Semantic (vector) indexing         | Supported for string properties        | Not supported                                        |
+| Vector and text indexing           | Supported for string properties        | Not supported                                        |
 | Aggregations (`select`, `groupBy`) | Supported                              | Not supported                                        |
 
-In graph terms: a record's properties are part of RushDB's property-centric meta-graph, while edge properties are plain key-value pairs on the edge — lightweight, local to the connection, and read or filtered only when you query relationships.
+In graph terms: a record's properties are part of RushDB's property catalog, indexed and aggregated per label, while edge properties describe the connection itself — local to it, and read or filtered when you query relationships.
 
 ```mermaid
 graph LR
-  P1["Property node<br/>name: title"] -. "VALUE" .-> M["MOVIE"]
-  M -- "STARS_IN<br/>role: lead" --> A["ACTOR"]
-  P2["Property node<br/>name: name"] -. "VALUE" .-> A
+  M["MOVIE<br/>title: Inception"] -- "STARS_IN<br/>role: lead" --> A["ACTOR<br/>name: Leonardo DiCaprio"]
 ```
 
-## Attach with Properties
+## Attach with properties
 
 Pass `properties` alongside `type` and `direction` when connecting records. Every edge created by the call gets the same properties.
 
@@ -80,7 +79,7 @@ await db.records.attach({
   <TabItem value="shell" label="Shell">
 
 ```bash
-curl -X POST https://api.rushdb.com/api/v1/records/$MOVIE_ID/relationships \
+curl -X POST https://api.rushdb.com/api/v1/relationships/$MOVIE_ID \
   -H "Authorization: Bearer $RUSHDB_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -94,7 +93,7 @@ curl -X POST https://api.rushdb.com/api/v1/records/$MOVIE_ID/relationships \
   </TabItem>
 </Tabs>
 
-Bulk creation accepts the same field — every edge created by the operation receives the shared properties. See [Bulk Relationships](/learn/relationships/bulk-relationships) for the matching semantics:
+Bulk creation accepts the same field — every edge created by the operation receives the shared properties. See [Bulk Relationships](./bulk-relationships.mdx) for the matching semantics:
 
 ```bash
 curl -X POST https://api.rushdb.com/api/v1/relationships/create-many \
@@ -108,18 +107,79 @@ curl -X POST https://api.rushdb.com/api/v1/relationships/create-many \
   }'
 ```
 
-### Updating Properties
+## Update properties
 
-- **`attach`** replaces the edge: an existing relationship of the same type between the pair is recreated, so the new `properties` object is the complete new state. Re-attach with the full set of properties you want to keep.
+`relationships.update()` changes the properties of existing relationships without recreating them. `set` writes values, `unset` removes names, and every other property is kept. It updates the relationships of one `type` from the source to each target (or the reverse with `direction: 'in'`); pairs without such a relationship are skipped, and the response counts the ones changed in `updated`. It needs RushDB 3.0.4 or newer and can't run inside a transaction.
+
+<Tabs groupId="programming-language">
+  <TabItem value="python" label="Python" default>
+
+`db.relationships.update()`
+
+```python
+db.relationships.update(
+    movie,
+    actor,
+    type="STARS_IN",
+    set={"billing": 2, "since": "2010-07-16T10:00:00.000Z"},
+    unset=["scenes"],
+    types={"since": "datetime"}
+)
+```
+
+  </TabItem>
+  <TabItem value="typescript" label="TypeScript">
+
+`db.relationships.update()`
+
+```typescript
+await db.relationships.update({
+  source: 'movie-id-123',
+  target: 'actor-id-456',
+  type: 'STARS_IN',
+  set: { billing: 2, since: '2010-07-16T10:00:00.000Z' },
+  unset: ['scenes'],
+  types: { since: 'datetime' }
+})
+```
+
+  </TabItem>
+  <TabItem value="shell" label="Shell">
+
+```bash
+curl -X PATCH https://api.rushdb.com/api/v1/relationships/$MOVIE_ID \
+  -H "Authorization: Bearer $RUSHDB_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "targetIds": "$ACTOR_ID",
+    "type": "STARS_IN",
+    "set": { "billing": 2, "since": "2010-07-16T10:00:00.000Z" },
+    "unset": ["scenes"],
+    "types": { "since": "datetime" }
+  }'
+```
+
+  </TabItem>
+</Tabs>
+
+The other writes treat existing edges differently:
+
+- **`attach`** replaces the edge: an existing relationship of the same type between the pair is recreated, so the new `properties` object is the complete new state.
 - **Bulk `create-many`** merges into existing edges: keys you pass are written, keys you don't pass are preserved.
 
-### Allowed Values and Reserved Names
+### Datetimes
 
-Values must be primitives (`string`, `number`, `boolean`, `null`) or homogeneous arrays of primitives. Nested objects are rejected with a `400`.
+JSON has no datetime type, so a datetime is sent as an ISO 8601 string and marked in `types`: `{ "since": "datetime" }`. Without the mark the value is stored as a plain string. The value must be an ISO 8601 date or datetime, or the request is rejected with a `400` before anything is written; `types` may only name properties in `set`. A datetime at exactly midnight UTC reads back as the date alone (`2010-07-16`).
+
+Datetime properties compare chronologically in `relationships.find()`, so `{ "since": { "$gte": "2010-01-01" } }` works as expected.
+
+### Allowed values and reserved names
+
+Values must be primitives (`string`, `number`, `boolean`, `null`), datetimes (see [Datetimes](#datetimes)) or homogeneous arrays of primitives. Nested objects and arrays of datetimes are rejected with a `400`.
 
 These names are reserved and cannot be used as edge property keys: `type`, `direction`, `id`, `elementId`, `projectId`, `sourceId`, `targetId`, `sourceLabel`, `targetLabel`, and anything starting with `__RUSHDB__`.
 
-## Search by Edge Properties
+## Search by edge properties
 
 `relationships.find()` takes a relationship-scoped query: `where` filters the **edge**, while `source` and `target` filter the endpoint records. Inside `where`, `type` maps to the relationship type, `direction` constrains direction, and every other key is matched against edge properties.
 
@@ -178,9 +238,9 @@ curl -X POST https://api.rushdb.com/api/v1/relationships/search \
   </TabItem>
 </Tabs>
 
-### Supported Operators
+### Supported operators
 
-Edge property predicates support the familiar [SearchQuery operators](/learn/search-query/where-operators#relationship-queries):
+Edge property predicates support the familiar [SearchQuery operators](../search-query/where-operators.md#relationship-queries):
 
 | Category         | Operators                                                     |
 | ---------------- | ------------------------------------------------------------- |
@@ -203,7 +263,7 @@ const { data } = await db.relationships.find({
 })
 ```
 
-### Response Shape
+### Response shape
 
 Each result is a relationship object — edge properties come back under `properties`:
 
@@ -215,11 +275,14 @@ Each result is a relationship object — edge properties come back under `proper
   "targetLabel": "ACTOR",
   "type": "STARS_IN",
   "direction": "out",
-  "properties": { "role": "lead", "billing": 1 }
+  "properties": { "role": "lead", "billing": 1, "since": "2010-07-16T10:00:00.000Z" },
+  "propertyTypes": { "role": "string", "billing": "number", "since": "datetime" }
 }
 ```
 
-### Filtering Records vs Filtering Relationships
+Datetime properties come back as ISO 8601 strings, and `propertyTypes` names each property's stored type so a datetime can be told apart from a string (RushDB 3.0.4 and newer).
+
+### Filtering records vs filtering relationships
 
 `relationships.find()` returns **edges**. To return **records** filtered through their connections, use `records.find()` with `$relation` — note that `$relation` matches by relationship `type` and `direction` only; edge-property predicates are available exclusively in `relationships.find()`:
 
@@ -239,13 +302,13 @@ await db.relationships.find({
 })
 ```
 
-## Edge Properties in Your Schema
+## Edge properties in your schema
 
-The project schema summarizes edge properties per relationship type — property names, inferred types, exact min/max for numbers and datetimes, and sample values — so both the dashboard and AI agents can discover them alongside the rest of your schema. See [Discover Your Schema](/learn/records-and-queries/discover-your-schema).
+The project schema summarizes edge properties per relationship type — property names, inferred types, exact min/max for numbers and datetimes, and sample values — so both the dashboard and AI agents can discover them alongside the rest of your schema. See [Discover Your Schema](../records-and-queries/discover-your-schema.mdx).
 
-What edge properties are **not**: they are never promoted to Property nodes, they cannot be semantically (vector) indexed, and they don't participate in record aggregations. If a value needs full-text/semantic search or heavy aggregation, model it as a record property instead.
+What edge properties are **not**: they are not record properties, they cannot be vector or text indexed, and they don't participate in record aggregations. If a value needs full-text/semantic search or heavy aggregation, model it as a record property instead.
 
-## When to Use Edge Properties
+## When to use edge properties
 
 | Use edge properties for                                | Use record properties for                         |
 | ------------------------------------------------------ | ------------------------------------------------- |

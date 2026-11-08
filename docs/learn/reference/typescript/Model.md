@@ -1,10 +1,13 @@
 ---
+title: Model class (TypeScript SDK)
+sidebar_label: Model
+description: "Reference for the Model class in the RushDB TypeScript SDK: define a label schema, find and create records through it, and type results of related queries."
 sidebar_position: 1
 ---
 
 # Model
 
-The `Model` class represents a schema-defined entity in RushDB. It provides methods to perform CRUD operations and manage [relationships](/learn/relationships) between [records](/learn/records-and-queries/store-records). Models are identified by [labels](/learn/records-and-queries/labels-and-properties) in the database.
+The `Model` class represents a schema-defined entity in RushDB. It provides methods to perform CRUD operations and manage [relationships](../../relationships/index.mdx) between [records](../../records-and-queries/store-records.mdx). Models are identified by [labels](../../records-and-queries/labels-and-properties.mdx) in the database.
 
 ## Usage
 
@@ -26,7 +29,7 @@ const UserModel = new Model('User', UserSchema)
 const StrictUserModel = new Model('User', UserSchema, { validateTargetLabel: true })
 ```
 
-## Type Parameters
+## Type parameters
 
 | Parameter                | Description                                                       |
 | ------------------------ | ----------------------------------------------------------------- |
@@ -112,7 +115,7 @@ readonly recordsArrayInstance!: DBRecordsArrayInstance<S>
 
 Type helper for an array of record instances. Similar to a single record instance but supports batch or bulk operations, allowing efficient management of multiple records simultaneously.
 
-### Type-only properties on Model
+### Type-only properties on model
 
 These helpers are available for typing only and are not populated at runtime. They exist to let you derive precise types from a model without constructing values in code.
 
@@ -126,7 +129,7 @@ Properties that are type-only:
 
 Practical usage examples:
 
-```ts
+```typescript
 // DO: derive types using typeof
 export type UserRecord = typeof UserModel.record
 export type UserRecordResult<T extends Record<PropertyKey, any> = never> = typeof UserModel.recordInstance & {
@@ -153,7 +156,7 @@ How it works:
 
 Example:
 
-```ts
+```typescript
 // Self-group on an aggregated value
 const deals = await DealModel.find({
   select: {
@@ -169,7 +172,7 @@ const firstRow = deals.data[0] as DealAggRow
 
 Notes:
 
-- Use this pattern whenever [`select`](/learn/search-query/select-expressions) and/or [`groupBy`](/learn/search-query/group-by) change the returned columns.
+- Use this pattern whenever [`select`](../../search-query/select-expressions.md) and/or [`groupBy`](../../search-query/group-by.md) change the returned columns.
 - For regular record fetches (no aggregation/grouping), prefer the plain `typeof Model.recordInstance` without augmenting `data`.
 
 ## Methods
@@ -334,7 +337,7 @@ Attaches a relationship between records.
 
 **Returns**: Promise resolving to the result of the attach operation
 
-## Type Definitions
+## Type definitions
 
 ### InferType
 
@@ -352,11 +355,11 @@ Helper type that infers the type structure from a Model instance.
 
 To get first-class IDE autocomplete and end-to-end type safety that respects your model schemas (including nested related-queries), augment the SDK’s empty `Models` interface with your app’s models.
 
-### 1) Define your models and export a Models map
+### 1) Define your models and export a models map
 
 Create a file like `types.ts` in your app and export a mapping of label → schema, plus any handy derived types:
 
-```ts
+```typescript
 // types.ts
 
 import { SearchQuery, Model } from '@rushdb/javascript-sdk'
@@ -394,11 +397,11 @@ Notes:
 - The property for uniqueness is `unique` in the SDK.
 - Adjust any import aliases like `@/common/...` to match your project setup.
 
-### 2) Augment the SDK’s Models interface
+### 2) Augment the SDK’s models interface
 
 Create a project-level declaration file (for example `index.d.ts`) that merges your `Models` into the SDK. Make sure this file is included by your tsconfig (see next section):
 
-```ts
+```typescript
 // index.d.ts (path can be anything, just ensure tsconfig includes it)
 import {} from '@rushdb/javascript-sdk'
 
@@ -450,7 +453,7 @@ Common gotchas:
 
 With the augmentation in place, related objects in `where` become schema-aware:
 
-```ts
+```typescript
 const posts = await db.records.find({
   labels: ['post'],
   where: {

@@ -1,33 +1,152 @@
 ---
 sidebar_position: 2
-title: Discover Your Schema
+title: Discover your schema
+description: "Get your RushDB project's schema with the db.ai methods, as Markdown for LLM prompts or as JSON: labels, property types, value ranges and relationships."
 ---
 
 import Tabs from '@site/src/components/LanguageTabs'
+import ThemeTabs from '@theme/Tabs'
 import TabItem from '@theme/TabItem'
 
-# Discover Your Schema
+# Discover your schema
 
 RushDB is **self-aware** — it continuously understands its own structure: labels, field types, value distributions, relationships, and semantic search readiness. The `db.ai` schema methods expose this as either Markdown (for LLM injection) or structured JSON (for schema UIs, autocomplete, or property-ID lookups).
 
 ---
 
-## What the Schema Contains
+## What the schema contains
 
 The schema is RushDB's always-current answer to "what does this project's data look like?" — computed from the graph itself, never declared upfront.
 
 | Component                       | Description                                                                                             |
 | ------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| **Label inventory**             | All label names in the project, with record counts                                                      |
-| **Property manifest per label** | Property name, type, and either sample values (strings/booleans) or a min–max range (numbers/datetimes) |
-| **Relationship map**            | Which labels connect to which, via which relationship type, and in which direction                      |
-| **Semantic index status**       | Which properties have embedding indexes and whether they are ready for `db.records.vectorSearch()`      |
+| **Label inventory**             | All label names in the project with record counts, largest first                                        |
+| **Property manifest per label** | Property ID, name, type, whether it holds arrays, how many records have it, and either sample values (strings, booleans) or a min–max range (numbers, datetimes) |
+| **Relationship map**            | Which labels connect to which, via which relationship type, in which direction, how many relationships, and the properties they carry |
+| **Semantic index status**       | Which properties have vector indexes and whether they are ready for `db.records.vectorSearch()`         |
 
-Building an AI agent? [Schema Self-Awareness](/learn/agent-memory/schema-self-awareness) shows what the rendered output looks like and how to inject it into LLM context.
+Building an AI agent? [Schema Self-Awareness](../agent-memory/schema-self-awareness.mdx) shows what the rendered output looks like and how to inject it into LLM context.
+
+### Example output
+
+The schema of the `Order` label in a small shop, as RushDB Cloud returns it for `{ "labels": ["Order"] }`. Orders link to the user who placed them and to the products they contain, with a `quantity` on each `CONTAINS` relationship.
+
+<ThemeTabs groupId="schema-format">
+  <TabItem value="markdown" label="Markdown" default>
+
+```text
+# Graph Schema
+
+## Labels
+
+| Label | Count |
+|-------|------:|
+| `Order` | 5 |
 
 ---
 
-## Get Schema as Markdown
+## `Order` (5 records)
+
+### Properties
+
+| Property | ID | Type | Values / Range | Semantic Search |
+|----------|----|------|----------------|-----------------|
+| `createdAt` | `p000000000000000b` | datetime | `2026-10-02T09:15:00.000Z`..`2026-11-03T11:00:00.000Z` | — |
+| `status` | `p0000000000000009` | string | `paid`, `shipped`, `pending`, `cancelled` | — |
+| `total` | `p000000000000000a` | number | `79.8`..`499` | — |
+
+### Relationships
+
+| Traversal | Count | Edge Properties |
+|-----------|------:|-----------------|
+| `(Order)-[:CONTAINS]->(Product)` | 6 | `quantity:number` |
+| `(Order)-[:PLACED_BY]->(User)` | 5 | — |
+
+### Relationship Properties
+
+| Traversal | Property | Type | Values / Range | Relationships |
+|-----------|----------|------|----------------|--------------:|
+| `(Order)-[:CONTAINS]->(Product)` | `quantity` | number | `1`..`2` | 6 |
+```
+
+  </TabItem>
+  <TabItem value="json" label="JSON">
+
+```json
+[
+  {
+    "label": "Order",
+    "count": 5,
+    "properties": [
+      {
+        "id": "p000000000000000b",
+        "name": "createdAt",
+        "type": "datetime",
+        "recordsCount": 5,
+        "isArray": false,
+        "min": "2026-10-02T09:15:00.000Z",
+        "max": "2026-11-03T11:00:00.000Z"
+      },
+      {
+        "id": "p0000000000000009",
+        "name": "status",
+        "type": "string",
+        "recordsCount": 5,
+        "isArray": false,
+        "values": [
+          "paid",
+          "shipped",
+          "pending",
+          "cancelled"
+        ],
+        "min": "cancelled",
+        "max": "shipped"
+      },
+      {
+        "id": "p000000000000000a",
+        "name": "total",
+        "type": "number",
+        "recordsCount": 5,
+        "isArray": false,
+        "min": 79.8,
+        "max": 499
+      }
+    ],
+    "relationships": [
+      {
+        "label": "Product",
+        "type": "CONTAINS",
+        "direction": "out",
+        "count": 6,
+        "properties": [
+          {
+            "name": "quantity",
+            "type": "number",
+            "relationshipsCount": 6,
+            "min": 1,
+            "max": 2
+          }
+        ]
+      },
+      {
+        "label": "User",
+        "type": "PLACED_BY",
+        "direction": "out",
+        "count": 5
+      }
+    ]
+  }
+]
+```
+
+  </TabItem>
+</ThemeTabs>
+
+The full example, with all three labels and a vector index, is in [Schema self-awareness](../agent-memory/schema-self-awareness.mdx#what-the-agent-receives).
+
+---
+
+## Get schema as Markdown
 
 The **recommended format for LLM context injection** — compact, token-efficient, and ready to paste into a system prompt.
 
@@ -48,7 +167,7 @@ schema = response.data
 # Scope to specific labels
 order_response = db.ai.get_schema_markdown({"labels": ["Order"]})
 
-# Bypass the 1-hour cache and force a fresh recalculation
+# Recalculate now instead of using the cached schema (RushDB Cloud)
 fresh_response = db.ai.get_schema_markdown({"force": True})
 ```
 
@@ -66,7 +185,7 @@ const { data: orderSchema } = await db.ai.getSchemaMarkdown({
   labels: ['Order']
 })
 
-// Bypass the 1-hour cache and force a fresh recalculation
+// Recalculate now instead of using the cached schema (RushDB Cloud)
 const { data: freshSchema } = await db.ai.getSchemaMarkdown({ force: true })
 ```
 
@@ -88,7 +207,7 @@ curl -X POST https://api.rushdb.com/api/v1/ai/schema/md \
   -H "Authorization: Bearer $RUSHDB_API_KEY" \
   -d '{"labels": ["Order"]}'
 
-# Force cache bypass
+# Recalculate now instead of using the cached schema
 curl -X POST https://api.rushdb.com/api/v1/ai/schema/md \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $RUSHDB_API_KEY" \
@@ -100,16 +219,14 @@ curl -X POST https://api.rushdb.com/api/v1/ai/schema/md \
 | Field    | Type       | Required | Description                                                                  |
 | -------- | ---------- | -------- | ---------------------------------------------------------------------------- |
 | `labels` | `string[]` | no       | Restrict output to specific labels. Omit (or pass `[]`) for the full schema. |
-| `force`  | `boolean`  | no       | Bypass the 1-hour cache and force a full recalculation.                      |
+| `force`  | `boolean`  | no       | Recalculate now instead of serving the cached schema (RushDB Cloud).         |
 
   </TabItem>
 </Tabs>
 
-See a complete rendered example — graph, Markdown, and JSON side by side — in [Schema Self-Awareness](/learn/agent-memory/schema-self-awareness#what-the-agent-receives).
-
 ---
 
-## Get Schema (Structured JSON)
+## Get schema (structured JSON)
 
 Returns the same schema as a structured array — useful for schema UIs, autocomplete, or looking up property IDs for `db.properties.values()`.
 
@@ -136,7 +253,7 @@ genres = db.properties.values(genre_prop["id"])
 indexed = [p for p in book_schema["properties"] if p.get("vectorIndexes")]
 # indexed[0]["vectorIndexes"][0]["status"] == "ready" → queryable with db.records.vector_search()
 
-# Bypass the 1-hour cache
+# Recalculate now instead of using the cached schema (RushDB Cloud)
 fresh_response = db.ai.get_schema({"force": True})
 ```
 
@@ -157,13 +274,13 @@ const {
   data: [bookSchema]
 } = await db.ai.getSchema({ labels: ['Book'] })
 const genreProp = bookSchema.properties.find((p) => p.name === 'genre')
-const { data: genres } = await db.properties.values({ id: genreProp.id })
+const { data: genres } = await db.properties.values(genreProp.id)
 
 // Identify semantically-searchable properties
 const indexed = bookSchema.properties.filter((p) => p.vectorIndexes?.length)
 // indexed[0].vectorIndexes[0].status === 'ready' → queryable with db.records.vectorSearch()
 
-// Bypass the 1-hour cache
+// Recalculate now instead of using the cached schema (RushDB Cloud)
 const { data: fresh } = await db.ai.getSchema({ force: true })
 ```
 
@@ -194,44 +311,49 @@ curl -X POST https://api.rushdb.com/api/v1/ai/schema \
 ```typescript
 type SchemaItem = {
   label: string
-  count: number
+  count: number // records with this label; items are sorted by count, largest first
   properties: SchemaProperty[]
   relationships: SchemaRelationship[]
 }
 
 type SchemaProperty = {
-  id: string // use with db.properties.values()
+  id: string // use with db.properties.values(); the same name and type share one ID across labels
   name: string
-  type: string // 'string' | 'number' | 'boolean' | 'datetime'
-  isArray?: boolean // true when records store this property as an array of primitive values
-  values?: Array<string | number> // up to 10 samples (string/boolean only)
-  min?: number | string // number/datetime only
+  type: string // 'string' | 'number' | 'boolean' | 'datetime' | 'null'
+  recordsCount?: number // records of this label that have the property
+  isArray?: boolean // true when records store the property as an array of values
+  values?: Array<string | number> // strings: up to 10 samples; booleans: ['true', 'false']
+  min?: number | string // numbers and datetimes (ISO 8601); alphabetical on non-array strings and booleans
   max?: number | string
-  /** Non-empty when embedding indexes exist — property is queryable with db.records.vectorSearch() */
+  /** Present when the property has vector indexes; a 'ready' one is queryable with db.records.vectorSearch() */
   vectorIndexes?: SchemaVectorIndex[]
 }
 
 type SchemaVectorIndex = {
   id: string
+  name: string // e.g. 'Product.description.external.3.cosine'
   sourceType: string // 'managed' | 'external'
   similarityFunction: string // 'cosine' | 'euclidean'
   dimensions: number
-  status: string // 'pending' | 'indexing' | 'ready' | 'error'
-  modelKey: string
+  // RushDB Cloud: 'pending' | 'indexing' | 'awaiting_vectors' | 'ready' | 'error'
+  // Self-hosted engine: 'behind' until every record has a vector, then 'ready'
+  status: string
+  modelKey: string // the embedding model of a managed index; '' for an external one
 }
 
 type SchemaRelationship = {
-  label: string
+  label: string // the label at the other end
   type: string
-  direction: 'in' | 'out'
-  count?: number
+  direction: 'in' | 'out' // 'out': this label is the source
+  count?: number // relationships of this type between the two labels
   properties?: Array<{
     name: string
     type: string
+    relationshipsCount?: number
+    // RushDB Cloud only: sample values or a range, as for record properties
     values?: Array<string | number | boolean>
     min?: number | string
     max?: number | string
-    relationshipsCount: number
   }>
 }
 ```
@@ -241,14 +363,14 @@ type SchemaRelationship = {
 ## Caching
 
 :::note Caching
-Both methods share a **1-hour cache** per project. The first call after TTL expiry triggers a full graph scan; all subsequent calls within the hour are instant. Pass `{ force: true }` to bypass the cache and trigger an immediate recalculation.
+On RushDB Cloud, both schema endpoints share one cached schema per project, kept for an hour. After that, a call still gets the cached schema straight away while a refresh runs in the background, so no call waits for a recalculation unless the project has no cached schema yet or you pass `force: true`. `force` waits for a schema that includes every write made before the call. With an SDK in direct mode there is no cache: each call reads the engine's catalog.
 :::
 
 ---
 
 ## See also
 
-- [Schema Self-Awareness](/learn/agent-memory/schema-self-awareness) — inject the schema into LLM context, dynamic query construction, and Agent Skills
-- [Labels & Properties](/learn/records-and-queries/labels-and-properties) — enumerate schema at a low level
-- [Semantic Search](/learn/semantic-search) — use indexed properties for similarity search
-- [Manage Embedding Indexes](/learn/semantic-search/manage-indexes) — view index status in schema output
+- [Schema Self-Awareness](../agent-memory/schema-self-awareness.mdx) — inject the schema into LLM context, dynamic query construction, and Agent Skills
+- [Labels & Properties](./labels-and-properties.mdx) — enumerate schema at a low level
+- [Semantic Search](../semantic-search/semantic-search.mdx) — use indexed properties for similarity search
+- [Manage Embedding Indexes](../semantic-search/manage-indexes.mdx) — view index status in schema output

@@ -1,6 +1,6 @@
 ---
 sidebar_position: 25
-title: 'Versioning Records Without Losing Queryability'
+title: 'Versioning records without losing queryability'
 description: Compare in-place mutation, append-only versions, and hybrid versioning approaches — and how to query latest state while preserving historical analysis.
 tags: [Lineage, Versioning, Transactions, TypeScript, Python]
 ---
@@ -8,7 +8,7 @@ tags: [Lineage, Versioning, Transactions, TypeScript, Python]
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Versioning Records Without Losing Queryability
+# Versioning records without losing queryability
 
 Any mutable record in your system has a versioning question: what do you do when it changes and you still need to answer questions about the past?
 
@@ -207,15 +207,7 @@ async function addVersion(docId: string, newBody: string, authorId: string) {
       tx
     )
 
-    // Move CURRENT_VERSION edge
-    await db.records.detach(
-      {
-        source: docResult.data[0],
-        target: current,
-        options: { type: 'CURRENT_VERSION' }
-      },
-      tx
-    )
+    // Point CURRENT_VERSION at the new version
     await db.records.attach(
       {
         source: docResult.data[0],
@@ -232,6 +224,13 @@ async function addVersion(docId: string, newBody: string, authorId: string) {
     )
 
     await db.tx.commit(tx)
+
+    // A detach can't be staged in a transaction: drop the old edge once the commit succeeded
+    await db.records.detach({
+      source: docResult.data[0],
+      target: current,
+      options: { typeOrTypes: 'CURRENT_VERSION' }
+    })
     return newVersion
   } catch (err) {
     await db.tx.rollback(tx)
@@ -292,11 +291,13 @@ def add_version(doc_id: str, new_body: str, author_id: str):
         }, transaction=tx)
 
         doc_result = db.records.find({"labels": ["DOCUMENT"], "where": {"$id": doc_id}})
-        db.records.detach(doc_result.data[0].id, current.id, {"type": "CURRENT_VERSION"}, transaction=tx)
         db.records.attach(doc_result.data[0].id, new_version.id, {"type": "CURRENT_VERSION", "direction": "out"}, transaction=tx)
         db.records.attach(new_version.id, current.id, {"type": "SUPERSEDED_BY", "direction": "out"}, transaction=tx)
 
         db.tx.commit(tx)
+
+        # A detach can't be staged in a transaction: drop the old edge once the commit succeeded
+        db.records.detach(doc_result.data[0].id, current.id, {"typeOrTypes": "CURRENT_VERSION"})
         return new_version
     except Exception:
         db.tx.rollback(tx)
@@ -345,7 +346,7 @@ curl -s -X POST "$BASE/records/search" \
 
 ## Approach 3: Hybrid (mutable state + immutable events)
 
-Keep the entity's current state queryable in one record while logging all changes as immutable EVENT records. This is the pattern from [Audit Trails](/learn/tutorials/use-cases/audit-trails) and [Temporal Graphs](/learn/tutorials/graph-modeling/temporal-graphs). Choose this when:
+Keep the entity's current state queryable in one record while logging all changes as immutable EVENT records. This is the pattern from [Audit Trails](../use-cases/audit-trails.mdx) and [Temporal Graphs](./temporal-graphs.mdx). Choose this when:
 
 - You need efficient current-state queries (no traversal to find latest version)
 - You need a history log (who changed what, when)
@@ -373,6 +374,6 @@ Append-only VERSION chains grow linearly with edit frequency. If documents are e
 
 ## Next steps
 
-- [Audit Trails](/learn/tutorials/use-cases/audit-trails) — immutable event log alongside mutable state
-- [Temporal Graphs](/learn/tutorials/graph-modeling/temporal-graphs) — point-in-time reconstruction
-- [Compliance and Retention Patterns](/learn/tutorials/use-cases/compliance-retention) — archival and deletion
+- [Audit Trails](../use-cases/audit-trails.mdx) — immutable event log alongside mutable state
+- [Temporal Graphs](./temporal-graphs.mdx) — point-in-time reconstruction
+- [Compliance and Retention Patterns](../use-cases/compliance-retention.mdx) — archival and deletion

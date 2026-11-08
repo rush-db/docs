@@ -1,8 +1,11 @@
 ---
+title: Delete records REST API
+sidebar_label: Delete records
+description: Delete one RushDB record by ID, or every record that matches a query, through the record delete endpoints of the RushDB Cloud REST API.
 sidebar_position: 7
 ---
 
-# Delete Records
+# Delete records
 
 ## Delete by ID
 
@@ -13,7 +16,7 @@ curl -X DELETE https://api.rushdb.com/api/v1/records/movie-123 \
   -H "Authorization: Bearer $RUSHDB_API_KEY"
 ```
 
-## Bulk Delete
+## Bulk delete
 
 `POST /api/v1/records/delete`
 
