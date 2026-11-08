@@ -1798,6 +1798,68 @@ html[data-theme='dark'] .sidebar-link-icon--brand {
   }
 }
 
+/* ── Cookie consent ────────────────────────────────────────────────────── */
+/* The website's cookie notice: a small floating panel in the bottom-right
+   corner, full width at the bottom on phones. Non-modal; below the search
+   dialog. */
+
+.rd-cookie-consent {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: var(--z-chrome);
+  width: 320px;
+  padding: 16px;
+  border: 1px solid var(--lp-border);
+  background: var(--lp-raised);
+  box-shadow: var(--rd-shadow-floating);
+}
+
+.rd-cookie-consent__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: -6px -8px 8px 0;
+}
+
+.rd-cookie-consent__text {
+  margin: 0 0 16px;
+}
+
+.rd-cookie-consent__text a {
+  color: var(--lp-text);
+  text-decoration: underline;
+  text-decoration-color: var(--lp-subtle);
+  text-underline-offset: 2px;
+  transition: color var(--rd-duration-fast) ease;
+}
+
+.rd-cookie-consent__text a:hover {
+  color: var(--lp-accent);
+}
+
+.rd-cookie-consent__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.rd-cookie-consent__actions > button {
+  flex: 1;
+  height: var(--rd-control-height);
+  cursor: pointer;
+}
+
+@media (max-width: 759px) {
+  .rd-cookie-consent {
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    border-width: 1px 0 0;
+  }
+}
+
 /* ── Landing components (cards, tags, tutorial index) ──────────────────── */
 
 .rd-card {
