@@ -41,6 +41,20 @@ const alternateDocsOptions = {
   remarkPlugins: alternateVersion === '2.x' && DEFAULT_DOCS_VERSION === '3.x' ? [require('./plugins/prefix-legacy-doc-links.cjs')] : []
 }
 
+// Analytics run only when GTM_ID is set at build time (production deploys).
+// The consent default goes into <head>; GTM itself loads after the reader
+// accepts cookies (src/analytics.ts, src/components/CookieConsent.tsx).
+const gtmId = process.env.GTM_ID?.trim() || undefined
+const consentDefault = `window.dataLayer = window.dataLayer || [];
+function gtag(){window.dataLayer.push(arguments);}
+gtag('consent', 'default', {
+  analytics_storage: 'denied',
+  ad_storage: 'denied',
+  ad_user_data: 'denied',
+  ad_personalization: 'denied',
+  wait_for_update: 500
+});`
+
 const config: Config = {
   markdown: {
     mermaid: true,
@@ -97,8 +111,11 @@ const config: Config = {
           }
         ]
       })
-    }
+    },
+    ...(gtmId ? [{ tagName: 'script', attributes: {}, innerHTML: consentDefault }] : [])
   ],
+  customFields: { gtmId },
+  clientModules: [require.resolve('./src/analytics.ts')],
   // Geist for reading, Geist Mono for structure and code (the website's faces).
   stylesheets: [
     'https://fonts.googleapis.com/css2?family=Geist:wght@400;500;700&family=Geist+Mono:wght@400;500;700&display=swap'
@@ -139,7 +156,6 @@ const config: Config = {
         }))
       }
     ],
-    ['@docusaurus/plugin-google-gtag', { trackingID: process.env.GTM_ID || 'GTM-XXXXX', anonymizeIP: true }],
     [
       require('./plugins/agent-readable.cjs'),
       {

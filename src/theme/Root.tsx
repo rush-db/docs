@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import SearchModal from '@site/src/components/SearchModal'
+import CookieConsent from '@site/src/components/CookieConsent'
 
 export default function Root({ children }: { children: React.ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false)
@@ -24,6 +25,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
     <>
       {children}
       <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+      <CookieConsent />
     </>
   )
 }

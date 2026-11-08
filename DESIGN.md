@@ -174,6 +174,7 @@ H2 and H3 are set in Geist rather than the blog's 14px mono capitals: reference 
 | Tag / badge | `rd-tag`: `t-micro`, 1px border. |
 | Filter chip | `rd-filter`: 28px, 1px border, mono 12px; pressed = accent fill. |
 | Search | One trigger style; the modal is `lp-raised`, square, with a focus trap. |
+| Cookie consent | `CookieConsent`: the website's cookie notice. A 320px `lp-raised` panel in the bottom-right corner (full width at the bottom under 760px) with `--rd-shadow-floating`; a `t-label` "Cookies" and a Dismiss icon button, `t-small` text, then Accept (primary) and Decline (ghost) at equal width. Non-modal, under the search dialog. Its Accept is the one exception to one primary button per screen. Shown only when `GTM_ID` is set at build time and the reader has not chosen yet. |
 | Diagrams | Mermaid with token colours, square nodes and Geist (overrides in `custom.css`). |
 
 ## Do's and don'ts
