@@ -22,6 +22,7 @@ const sidebars: SidebarsConfig = {
           ['connect/sql-and-cypher', 'sql'],
           ['connect/mcp', 'mcp'],
           ['connect/langchain', 'langchain'],
+          ['connect/debezium', 'debezium'],
           ['connect/skills', 'skills'],
           ['connect/agents', 'agents'],
           ['connect/openclaw-memory', 'openclaw'],

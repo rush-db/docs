@@ -15,6 +15,7 @@ Start with the path that matches how you work. Every path below works with **Rus
 | Teach an AI agent correct RushDB workflows           | [Install Agent Skills](#install-agent-skills)     | ✓     | ✓           |
 | Add persistent memory to an agent                    | [Agent memory](#agent-memory)                     | ✓     | ✓           |
 | Build RAG or agents with LangChain or LangGraph      | [LangChain & LangGraph](#langchain--langgraph)    | ✓     | ✓           |
+| Sync an existing database (change data capture)      | [Debezium](#debezium)                             | ✓     | ✓           |
 | Query with PostgreSQL or Neo4j drivers, or gRPC      | [SQL and Cypher clients](./sql-and-cypher.mdx)    | —     | ✓           |
 
 ---
@@ -124,6 +125,19 @@ graph = builder.compile(checkpointer=RushDBSaver(client=client), store=RushDBSto
 ```
 
 [Set up LangChain & LangGraph →](./langchain.mdx)
+
+---
+
+## Debezium
+
+Keep RushDB in sync with PostgreSQL, MySQL, MongoDB, SQL Server, Oracle and other databases: Debezium Server with the RushDB sink streams every insert, update and delete, with no Kafka.
+
+```bash
+docker run --rm -v $PWD/config:/debezium/config -e RUSHDB_API_KEY=... \
+  ghcr.io/rush-db/debezium-server-rushdb:latest
+```
+
+[Set up Debezium →](./debezium.mdx)
 
 ---
 
