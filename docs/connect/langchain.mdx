@@ -1,0 +1,227 @@
+---
+title: LangChain & LangGraph
+description: Use RushDB as a LangChain vector store and hybrid retriever, and as a LangGraph memory store and checkpointer, on RushDB Cloud or a self-hosted engine.
+---
+
+import Tabs from '@site/src/components/LanguageTabs'
+import TabItem from '@theme/TabItem'
+
+# LangChain & LangGraph
+
+`langchain-rushdb` (Python) and `@rushdb/langchain` (TypeScript) plug RushDB into LangChain and LangGraph:
+
+| Component               | Interface                       | Use it for                                                                 |
+| ----------------------- | ------------------------------- | -------------------------------------------------------------------------- |
+| `RushDBVectorStore`     | LangChain `VectorStore`         | RAG over documents with filterable metadata, applied before ranking        |
+| `RushDBHybridRetriever` | LangChain retriever             | Vector + BM25 keyword search fused in the engine (RRF or DBSF)             |
+| `RushDBStore`           | LangGraph `BaseStore`           | Long-term agent memory: namespaces, filters, semantic search, TTL          |
+| `RushDBSaver`           | LangGraph `BaseCheckpointSaver` | Thread state: resume after interrupts, human-in-the-loop, time travel      |
+
+All four work on **RushDB Cloud** and on a **self-hosted RushDB engine** with the same code. Only the client you pass in differs.
+
+## Install
+
+<Tabs groupId="programming-language">
+<TabItem value="python" label="Python">
+
+```bash
+pip install langchain-rushdb
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```bash
+npm install @rushdb/langchain @rushdb/javascript-sdk @langchain/core @langchain/langgraph-checkpoint
+```
+
+</TabItem>
+</Tabs>
+
+## Connect
+
+Every class takes a RushDB SDK client. When you omit it, the client is built from the environment.
+
+<Tabs groupId="programming-language">
+<TabItem value="python" label="Python">
+
+```python
+import os
+
+from rushdb import RushDB
+
+client = RushDB(os.environ["RUSHDB_API_KEY"])  # RushDB Cloud
+# client = RushDB(os.environ["RUSHDB_ENGINE_TOKEN"], direct=True, engine_url="http://127.0.0.1:3000")
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+import RushDB from '@rushdb/javascript-sdk'
+
+const client = new RushDB(process.env.RUSHDB_API_KEY!) // RushDB Cloud
+// const client = new RushDB(process.env.RUSHDB_ENGINE_TOKEN!, { direct: true, engineUrl: 'http://127.0.0.1:3000' })
+```
+
+</TabItem>
+</Tabs>
+
+| Mode               | Environment variables                                                                       |
+| ------------------ | ------------------------------------------------------------------------------------------- |
+| RushDB Cloud       | `RUSHDB_API_KEY`, optional `RUSHDB_URL`                                                     |
+| Self-hosted engine | `RUSHDB_ENGINE_URL`, `RUSHDB_ENGINE_TOKEN`, optional `RUSHDB_SCOPE` on a multitenant engine |
+
+Setting both groups is an error, so a deployment never picks a mode by accident.
+
+## Vector store and hybrid retrieval
+
+<Tabs groupId="programming-language">
+<TabItem value="python" label="Python">
+
+```python
+from langchain_openai import OpenAIEmbeddings
+from langchain_rushdb import RushDBHybridRetriever, RushDBVectorStore
+
+store = RushDBVectorStore(
+    OpenAIEmbeddings(model="text-embedding-3-small"),
+    client=client,
+    hybrid=True,  # also keep a BM25 text index
+)
+store.add_texts(
+    ["RushDB stores JSON as a graph", "LangGraph persists agent state"],
+    metadatas=[{"topic": "db", "year": 2026}, {"topic": "agents", "year": 2025}],
+)
+
+store.similarity_search("graph database", k=2, filter={"year": {"$gte": 2026}})
+
+retriever = RushDBHybridRetriever(vectorstore=store, k=5, fusion="rrf")
+retriever.invoke("how are agent checkpoints stored?")
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+import { OpenAIEmbeddings } from '@langchain/openai'
+import { RushDBHybridRetriever, RushDBVectorStore } from '@rushdb/langchain'
+
+const store = new RushDBVectorStore(new OpenAIEmbeddings({ model: 'text-embedding-3-small' }), {
+  client,
+  hybrid: true
+})
+await store.addDocuments([
+  { pageContent: 'RushDB stores JSON as a graph', metadata: { topic: 'db', year: 2026 } },
+  { pageContent: 'LangGraph persists agent state', metadata: { topic: 'agents', year: 2025 } }
+])
+
+await store.similaritySearch('graph database', 2, { year: { $gte: 2026 } })
+
+const retriever = new RushDBHybridRetriever({ vectorstore: store, k: 5, fusion: 'rrf' })
+await retriever.invoke('how are agent checkpoints stored?')
+```
+
+</TabItem>
+</Tabs>
+
+Each document is one record (label `LC_DOCUMENT` by default). It holds the text, the full metadata, and the metadata's top-level values as filterable properties. Filters use the LangChain form:
+
+| Operators                                   | Notes                                    |
+| ------------------------------------------- | ---------------------------------------- |
+| equality, `$eq`, `$ne`, `$in`, `$nin`       | strings, numbers, booleans               |
+| `$gt`, `$gte`, `$lt`, `$lte`                | numbers and ISO-8601 datetimes           |
+| `$exists`, `$contains`, `$startsWith`, `$endsWith` |                                   |
+| `$and`, `$or`, `$not`                       |                                          |
+
+An unsupported filter raises an error; it is never ignored. To use the full [where syntax](../learn/search-query/where-operators.md), including conditions on related records, pass a raw RushDB filter as `where`.
+
+The hybrid retriever uses the engine's [hybrid search](../learn/semantic-search/hybrid-search.mdx): the filter is applied first, then the vector and keyword rankings are fused.
+
+## Long-term memory store
+
+<Tabs groupId="programming-language">
+<TabItem value="python" label="Python">
+
+```python
+from langchain_rushdb import RushDBStore
+
+store = RushDBStore(
+    client=client,
+    index={"dims": 1536, "embed": "openai:text-embedding-3-small", "fields": ["text"]},
+    ttl={"default_ttl": 60 * 24 * 30},  # minutes
+)
+store.put(("users", "u1", "memories"), "m1", {"text": "Prefers dark mode", "kind": "pref"})
+store.search(("users", "u1"), query="ui preferences", filter={"kind": "pref"})
+
+graph = builder.compile(store=store)
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+import { OpenAIEmbeddings } from '@langchain/openai'
+import { RushDBStore } from '@rushdb/langchain'
+
+const store = new RushDBStore({
+  client,
+  index: { dims: 1536, embeddings: new OpenAIEmbeddings({ model: 'text-embedding-3-small' }), fields: ['text'] }
+})
+await store.put(['users', 'u1', 'memories'], 'm1', { text: 'Prefers dark mode', kind: 'pref' })
+await store.search(['users', 'u1'], { query: 'ui preferences', filter: { kind: 'pref' } })
+
+const graph = builder.compile({ store })
+```
+
+</TabItem>
+</Tabs>
+
+RushDB records have no native expiry. Expired items are hidden from every read, and `sweep()` deletes them. Start the sweeper to run `sweep()` periodically. In TypeScript, the TTL is set per store (`ttl: { defaultTtl }`, in minutes), because LangGraph.js's `put` takes no TTL.
+
+## Checkpointer
+
+<Tabs groupId="programming-language">
+<TabItem value="python" label="Python">
+
+```python
+from langchain_rushdb import RushDBSaver
+
+graph = builder.compile(checkpointer=RushDBSaver(client=client))
+graph.invoke(inputs, {"configurable": {"thread_id": "t-1"}})
+```
+
+</TabItem>
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+import { RushDBSaver } from '@rushdb/langchain'
+
+const graph = builder.compile({ checkpointer: new RushDBSaver({ client }) })
+await graph.invoke(inputs, { configurable: { thread_id: 't-1' } })
+```
+
+</TabItem>
+</Tabs>
+
+Each checkpoint write is one RushDB transaction, so a graph can resume from a different process or machine. A checkpoint is read back by the language that wrote it, because LangGraph's Python and JavaScript serializers differ. Both packages share the record layout, so either one can list and delete any thread.
+
+## Cloud and self-hosted
+
+|                                       | RushDB Cloud | Self-hosted |
+| ------------------------------------- | :----------: | :---------: |
+| Vector store, hybrid retriever        | ✓            | ✓           |
+| Memory store, checkpointer            | ✓            | ✓           |
+| Your own LangChain `Embeddings`       | ✓            | ✓           |
+| RushDB-managed embeddings (`"managed"`) | ✓          | —           |
+
+A self-hosted engine never computes embeddings. Passing `"managed"` instead of an `Embeddings` object works only on RushDB Cloud, and raises an error against a self-hosted engine.
+
+## Data layout
+
+The connector writes ordinary records, so you can inspect and query them in the dashboard, with [SearchQuery](../learn/search-query/search-query.md) or with SQL. The labels and properties are specified in the repository's [record layout](https://github.com/rush-db/langchain-rushdb/blob/main/spec/README.md).
+
+## Next steps
+
+- [Hybrid Search](../learn/semantic-search/hybrid-search.mdx): how fusion and prefetch work
+- [Bring Your Own Vectors](../learn/semantic-search/bring-your-own-vectors.mdx): external vector indexes
+- [Agent Memory Quickstart](../learn/agent-memory/quickstart.mdx): memory through MCP instead of a framework

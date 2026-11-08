@@ -18,11 +18,12 @@
     "sync:engine-manual": "node scripts/sync-engine-manual.mjs",
     "check:engine-manual": "node scripts/sync-engine-manual.mjs --check",
     "verify:v3-quickstart": "node scripts/verify-v3-quickstart.mjs",
-    "verify:v3-clients": "node scripts/verify-v3-clients.mjs"
+    "verify:v3-clients": "node scripts/verify-v3-clients.mjs",
+    "lint:design": "node scripts/check-design.mjs && node scripts/sentence-case.mjs --check",
+    "audit:ui": "node scripts/audit-ui.mjs"
   },
   "dependencies": {
     "@docusaurus/core": "^3.8.1",
-    "@docusaurus/plugin-client-redirects": "^3.8.1",
     "@docusaurus/plugin-content-docs": "^3.10.2",
     "@docusaurus/preset-classic": "^3.8.1",
     "@docusaurus/theme-common": "^3.10.2",
@@ -42,6 +43,7 @@
     "tailwindcss": "^4.3.2"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.11.0",
     "@docusaurus/module-type-aliases": "^3.8.1",
     "@docusaurus/tsconfig": "^3.8.1",
     "@docusaurus/types": "^3.8.1",
@@ -50,6 +52,7 @@
     "@types/react-dom": "19.1.0",
     "neo4j-driver": "^6.2.0",
     "pg": "^8.23.1",
+    "playwright": "1.56.1",
     "prettier": "^3.4.2",
     "typescript": "5.7.2"
   },

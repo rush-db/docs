@@ -27,20 +27,21 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Server
 }
 
-const BORDER_CLASS = 'border-[var(--ifm-color-emphasis-200)]'
+const BORDER_CLASS = 'border-lp-border'
 
 // ── Badge config ───────────────────────────────────────────────────────────────
 
 type BadgeVariant = 'beginner' | 'intermediate' | 'advanced' | 'cloud' | 'self-hosted' | 'byoc' | 'required'
 
-const BADGE_STYLES: Record<BadgeVariant, { label: string; bg: string; color: string }> = {
-  beginner: { label: 'Beginner', bg: '#16a34a', color: '#fff' },
-  intermediate: { label: 'Intermediate', bg: '#d97706', color: '#fff' },
-  advanced: { label: 'Advanced', bg: '#dc2626', color: '#fff' },
-  cloud: { label: 'Cloud', bg: '#3f81ff', color: '#fff' },
-  'self-hosted': { label: 'Self-Hosted', bg: '#7c3aed', color: '#fff' },
-  byoc: { label: 'BYOC', bg: '#0891b2', color: '#fff' },
-  required: { label: 'Required', bg: '#475569', color: '#fff' }
+/** Badges are outlined mono labels; colour is reserved for status (DESIGN.md). */
+const BADGE_STYLES: Record<BadgeVariant, { label: string; className: string }> = {
+  beginner: { label: 'Beginner', className: 'text-lp-muted' },
+  intermediate: { label: 'Intermediate', className: 'text-lp-muted' },
+  advanced: { label: 'Advanced', className: 'text-lp-muted' },
+  cloud: { label: 'Cloud', className: 'text-lp-text' },
+  'self-hosted': { label: 'Self-hosted', className: 'text-lp-text' },
+  byoc: { label: 'BYOC', className: 'text-lp-text' },
+  required: { label: 'Required', className: 'text-lp-warning' }
 }
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -78,32 +79,29 @@ export function DeployMethodCard({
       className={cn(
         'group flex flex-col border',
         BORDER_CLASS,
-        'bg-[var(--ifm-card-background-color)] p-6 text-inherit no-underline',
-        'transition-[background-color,border-color] duration-150 ease-out',
-        'hover:bg-[var(--ifm-color-emphasis-100)] hover:no-underline focus:no-underline'
+        'bg-lp-surface p-6 text-inherit no-underline',
+        'transition-colors',
+        'hover:border-lp-text hover:no-underline focus:no-underline'
       )}
     >
       {/* Header row */}
       <div className="mb-4 flex items-start justify-between gap-3">
-        <h3 className="m-0 text-[16px] font-bold leading-snug text-[var(--ifm-font-color-base)]">{title}</h3>
+        <h3 className="m-0 text-base font-medium text-lp-text">{title}</h3>
         <div className="flex shrink-0 items-center gap-2">
           {time && (
-            <span className="flex items-center gap-1 text-[11px] text-[var(--ifm-color-emphasis-500)]">
+            <span className="flex items-center gap-1 text-2xs text-lp-subtle">
               <Clock size={11} strokeWidth={2} />
               {time}
             </span>
           )}
-          <span
-            className="px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide"
-            style={{ backgroundColor: b.bg, color: b.color }}
-          >
+          <span className={cn('t-micro border border-current px-2 py-0.5 uppercase', b.className)}>
             {b.label}
           </span>
         </div>
       </div>
 
       {/* Description */}
-      <p className="mb-4 text-sm leading-relaxed text-[var(--ifm-color-emphasis-700)]">{description}</p>
+      <p className="mb-4 text-sm text-lp-body">{description}</p>
 
       {/* Prerequisites + Commands */}
       {(prerequisites.length > 0 || commands.length > 0) && (
@@ -116,16 +114,16 @@ export function DeployMethodCard({
         >
           {prerequisites.length > 0 && (
             <div>
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[var(--ifm-color-emphasis-500)]">
+              <p className="mb-2 t-label">
                 Prerequisites
               </p>
               <ul className="m-0 list-none space-y-1.5 p-0">
                 {prerequisites.map((p) => (
                   <li
                     key={p}
-                    className="flex items-center gap-1.5 text-[13px] text-[var(--ifm-color-emphasis-700)]"
+                    className="flex items-center gap-1.5 text-sm text-lp-body"
                   >
-                    <Check size={12} strokeWidth={2.5} className="shrink-0 text-[var(--ifm-color-primary)]" />
+                    <Check size={12} strokeWidth={2.5} className="shrink-0 text-lp-accent" />
                     {p}
                   </li>
                 ))}
@@ -134,21 +132,21 @@ export function DeployMethodCard({
           )}
           {commands.length > 0 && (
             <div>
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[var(--ifm-color-emphasis-500)]">
+              <p className="mb-2 t-label">
                 Key Commands
               </p>
               <ul className="m-0 list-none space-y-1.5 p-0">
                 {commands.map((cmd) => (
                   <li
                     key={cmd}
-                    className="flex items-start gap-1.5 font-mono text-[12px] text-[var(--ifm-color-emphasis-700)]"
+                    className="flex items-start gap-1.5 font-mono text-xs text-lp-body"
                   >
                     <Terminal
                       size={12}
                       strokeWidth={2}
-                      className="mt-0.5 shrink-0 text-[var(--ifm-color-emphasis-500)]"
+                      className="mt-0.5 shrink-0 text-lp-subtle"
                     />
-                    <code className="m-0 truncate bg-transparent p-0 text-[12px]">{cmd}</code>
+                    <code className="m-0 truncate bg-transparent p-0 text-xs">{cmd}</code>
                   </li>
                 ))}
               </ul>
@@ -163,7 +161,7 @@ export function DeployMethodCard({
           {tags.map((t) => (
             <span
               key={t}
-              className="bg-[var(--ifm-color-emphasis-100)] px-2 py-0.5 text-[11px] text-[var(--ifm-color-emphasis-600)]"
+              className="rd-tag"
             >
               {t}
             </span>
@@ -172,7 +170,7 @@ export function DeployMethodCard({
       )}
 
       {/* CTA */}
-      <span className="mt-auto flex items-center gap-1.5 text-[13px] font-semibold text-[var(--ifm-color-emphasis-600)] transition-colors duration-150 ease-out group-hover:text-[var(--ifm-font-color-base)]">
+      <span className="mt-auto flex items-center gap-1.5 text-sm font-medium text-lp-muted transition-colors group-hover:text-lp-text">
         View full guide <ArrowRight size={14} />
       </span>
     </Link>
@@ -198,7 +196,7 @@ type DeployButton = {
 export function DeployCrossLinks({ prefix, links }: { prefix?: string; links: CrossLink[] }) {
   return (
     <div className={cn('not-prose mt-8 border-t pt-6', BORDER_CLASS)}>
-      {prefix && <p className="mb-3 text-sm text-[var(--ifm-color-emphasis-600)]">{prefix}</p>}
+      {prefix && <p className="mb-3 text-sm text-lp-muted">{prefix}</p>}
       <div className="flex flex-wrap gap-3">
         {links.map((l) => (
           <Link
@@ -207,8 +205,8 @@ export function DeployCrossLinks({ prefix, links }: { prefix?: string; links: Cr
             className={cn(
               'flex items-center gap-1.5 border',
               BORDER_CLASS,
-              'bg-[var(--ifm-card-background-color)] px-4 py-2 text-[13px] font-semibold text-inherit no-underline',
-              'transition-[background-color] duration-150 ease-out hover:bg-[var(--ifm-color-emphasis-100)] hover:no-underline'
+              'bg-lp-surface px-4 py-2 text-sm font-medium text-inherit no-underline',
+              'transition-[background-color] hover:border-lp-text hover:no-underline'
             )}
           >
             {l.label} <ArrowRight size={13} />
@@ -230,13 +228,13 @@ export function DeployButtonGroup({ buttons }: { buttons: DeployButton[] }) {
             key={button.href}
             to={button.href}
             className={cn(
-              'inline-flex items-center gap-2 border px-4 py-2 text-sm font-semibold no-underline',
-              'transition-[background-color,border-color,color] duration-150 ease-out hover:no-underline',
+              't-button inline-flex items-center gap-2 border px-4 py-2 no-underline',
+              'transition-colors hover:no-underline',
               variant === 'primary' ?
-                'border-[var(--ifm-color-primary)] bg-[var(--ifm-color-primary)] text-[var(--rushdb-on-primary)] hover:text-[var(--rushdb-on-primary)]'
+                'rd-button--primary'
               : cn(
                   BORDER_CLASS,
-                  'bg-[var(--ifm-card-background-color)] text-inherit hover:bg-[var(--ifm-color-emphasis-100)]'
+                  'bg-lp-surface text-inherit hover:border-lp-text'
                 )
             )}
           >
@@ -274,47 +272,38 @@ export function DeployMethodRow({
       className={cn(
         'group flex flex-col border',
         BORDER_CLASS,
-        'bg-[var(--ifm-card-background-color)] p-6 text-inherit no-underline',
-        'transition-[background-color,border-color] duration-150 ease-out',
-        'hover:bg-[var(--ifm-color-emphasis-100)] hover:no-underline focus:no-underline'
+        'bg-lp-surface p-6 text-inherit no-underline',
+        'transition-colors',
+        'hover:border-lp-text hover:no-underline focus:no-underline'
       )}
     >
       {/* Header: icon + title/badges/description + time */}
       <div className="mb-4 flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           {Icon && (
-            <div
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-              style={{ backgroundColor: b.bg }}
-            >
-              <Icon size={18} color="#fff" strokeWidth={2} />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center border border-lp-border text-lp-text">
+              <Icon size={18} strokeWidth={2} aria-hidden="true" />
             </div>
           )}
           <div>
             <div className="mb-1 flex flex-wrap items-center gap-2">
-              <h3 className="m-0 text-[16px] font-bold leading-snug text-[var(--ifm-font-color-base)]">
+              <h3 className="m-0 text-base font-medium text-lp-text">
                 {title}
               </h3>
               {recommended && (
-                <span
-                  className="px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide"
-                  style={{ backgroundColor: '#16a34a', color: '#fff' }}
-                >
+                <span className="t-micro border border-lp-accent bg-lp-accent px-2 py-0.5 uppercase text-lp-bg">
                   Recommended
                 </span>
               )}
-              <span
-                className="px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide"
-                style={{ backgroundColor: b.bg, color: b.color }}
-              >
+              <span className={cn('t-micro border border-current px-2 py-0.5 uppercase', b.className)}>
                 {b.label}
               </span>
             </div>
-            <p className="m-0 text-sm leading-relaxed text-[var(--ifm-color-emphasis-700)]">{description}</p>
+            <p className="m-0 text-sm text-lp-body">{description}</p>
           </div>
         </div>
         {time && (
-          <span className="flex shrink-0 items-center gap-1 text-[11px] text-[var(--ifm-color-emphasis-500)]">
+          <span className="flex shrink-0 items-center gap-1 text-2xs text-lp-subtle">
             <Clock size={11} strokeWidth={2} />
             {time}
           </span>
@@ -332,16 +321,16 @@ export function DeployMethodRow({
         >
           {prerequisites.length > 0 && (
             <div>
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[var(--ifm-color-emphasis-500)]">
+              <p className="mb-2 t-label">
                 Prerequisites
               </p>
               <ul className="m-0 list-none space-y-1.5 p-0">
                 {prerequisites.map((p) => (
                   <li
                     key={p}
-                    className="flex items-center gap-1.5 text-[13px] text-[var(--ifm-color-emphasis-700)]"
+                    className="flex items-center gap-1.5 text-sm text-lp-body"
                   >
-                    <Check size={12} strokeWidth={2.5} className="shrink-0 text-[var(--ifm-color-primary)]" />
+                    <Check size={12} strokeWidth={2.5} className="shrink-0 text-lp-accent" />
                     {p}
                   </li>
                 ))}
@@ -350,21 +339,21 @@ export function DeployMethodRow({
           )}
           {commands.length > 0 && (
             <div>
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[var(--ifm-color-emphasis-500)]">
+              <p className="mb-2 t-label">
                 Key Commands
               </p>
               <ul className="m-0 list-none space-y-1.5 p-0">
                 {commands.map((cmd) => (
                   <li
                     key={cmd}
-                    className="flex items-start gap-1.5 font-mono text-[12px] text-[var(--ifm-color-emphasis-700)]"
+                    className="flex items-start gap-1.5 font-mono text-xs text-lp-body"
                   >
                     <Terminal
                       size={12}
                       strokeWidth={2}
-                      className="mt-0.5 shrink-0 text-[var(--ifm-color-emphasis-500)]"
+                      className="mt-0.5 shrink-0 text-lp-subtle"
                     />
-                    <code className="m-0 bg-transparent p-0 text-[12px]">{cmd}</code>
+                    <code className="m-0 bg-transparent p-0 text-xs">{cmd}</code>
                   </li>
                 ))}
               </ul>
@@ -380,14 +369,14 @@ export function DeployMethodRow({
             {tags.map((t) => (
               <span
                 key={t}
-                className="bg-[var(--ifm-color-emphasis-100)] px-2 py-0.5 text-[11px] text-[var(--ifm-color-emphasis-600)]"
+                className="rd-tag"
               >
                 {t}
               </span>
             ))}
           </div>
         : <div />}
-        <span className="flex shrink-0 items-center gap-1.5 text-[13px] font-semibold text-[var(--ifm-color-emphasis-600)] transition-colors duration-150 ease-out group-hover:text-[var(--ifm-font-color-base)]">
+        <span className="flex shrink-0 items-center gap-1.5 text-sm font-medium text-lp-muted transition-colors group-hover:text-lp-text">
           View full guide <ArrowRight size={14} />
         </span>
       </div>

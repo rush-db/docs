@@ -1,14 +1,14 @@
 ---
 sidebar_position: 10
-title: 'Thinking in Graphs: From Tables to Traversals'
-description: Map the same product, customer, and order dataset from relational and document mental models into RushDB's graph model, then translate common business questions into multi-hop queries.
+title: 'Thinking in graphs: From tables to traversals'
+description: "Map one product, customer and order dataset from relational and document models into RushDB's graph, then answer business questions with multi-hop queries."
 tags: [Concepts, Graph Modeling, SearchQuery]
 ---
 
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Thinking in Graphs: From Tables to Traversals
+# Thinking in graphs: From tables to traversals
 
 Most developers arrive at a graph database carrying mental models built from SQL tables or JSON documents. Both are useful starting points. Neither maps directly to the query patterns that make graphs worth using.
 
@@ -204,9 +204,9 @@ LENS_ID=$(curl -s -X POST "$BASE/records" \
   | jq -r '.data.__id')
 
 # Link product to category
-curl -s -X POST "$BASE/records/$LENS_ID/relations" \
+curl -s -X POST "$BASE/relationships/$LENS_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$PHOTO_ID\"],\"options\":{\"type\":\"IN_CATEGORY\"}}"
+  -d "{\"targetIds\":[\"$PHOTO_ID\"],\"type\":\"IN_CATEGORY\"}"
 ```
 
 </TabItem>
@@ -520,7 +520,7 @@ curl -s -X POST "$BASE/records/search" \
 </TabItem>
 </Tabs>
 
-### Q5: Which products in the Photography category have been both ordered and reviewed?
+### Q5: Which products in the photography category have been both ordered and reviewed?
 
 <Tabs groupId="programming-language">
 <TabItem value="typescript" label="TypeScript">
@@ -608,12 +608,12 @@ curl -s -X POST "$BASE/records/search" \
 
 ## Production caveat
 
-Relationship traversal queries become expensive when each hop fans out to thousands of related records. Before deploying traversal-heavy queries in production, scope them aggressively with `limit` on the leaf label and property filters that eliminate most candidates early. The [`SearchQuery Deep Dive`](/learn/tutorials/search-and-queries/searchquery-advanced-patterns) tutorial covers aggregation and traversal optimization in more detail.
+Relationship traversal queries become expensive when each hop fans out to thousands of related records. Before deploying traversal-heavy queries in production, scope them aggressively with `limit` on the leaf label and property filters that eliminate most candidates early. The [`SearchQuery Deep Dive`](../search-and-queries/searchquery-advanced-patterns.mdx) tutorial covers aggregation and traversal optimization in more detail.
 
 ---
 
 ## Next steps
 
-- [Choosing Relationship Types That Age Well](/learn/tutorials/graph-modeling/choosing-relationship-types) — when to use generic edges versus typed relationships
-- [SearchQuery Deep Dive](/learn/tutorials/search-and-queries/searchquery-advanced-patterns) — aggregation, collect, and groupBy patterns
-- [RushDB as a Memory Layer](/learn/tutorials/agent-memory/memory-layer) — using the same graph primitives for agent memory
+- [Choosing Relationship Types That Age Well](./choosing-relationship-types.mdx) — when to use generic edges versus typed relationships
+- [SearchQuery Deep Dive](../search-and-queries/searchquery-advanced-patterns.mdx) — aggregation, collect, and groupBy patterns
+- [RushDB as a Memory Layer](../agent-memory/memory-layer.mdx) — using the same graph primitives for agent memory

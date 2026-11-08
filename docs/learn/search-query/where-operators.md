@@ -1,4 +1,7 @@
 ---
+title: SearchQuery where operators
+sidebar_label: Where
+description: "Filter RushDB SearchQuery records with where: string, number, boolean and datetime operators, $exists, logical grouping, relationship traversal and $cycle."
 sidebar_position: 1
 ---
 
@@ -23,11 +26,11 @@ The `where` clause is defined in the `where` key of the SearchQuery DTO:
 }
 ```
 
-## Basic Operators
+## Basic operators
 
 RushDB provides various operators for different data types to create precise conditions for filtering records.
 
-### Primitive Value Matching
+### Primitive value matching
 
 The simplest form of filtering is direct equality matching:
 
@@ -60,7 +63,7 @@ The simplest form of filtering is direct equality matching:
 }
 ```
 
-### String Operators
+### String operators
 
 #### $contains
 
@@ -146,7 +149,7 @@ The `$ne` operator checks if a string field is not equal to the specified value.
 }
 ```
 
-### Number Operators
+### Number operators
 
 #### $gt
 
@@ -246,7 +249,7 @@ The `$ne` operator checks if a number field is not equal to the specified value.
 }
 ```
 
-### Boolean Operators
+### Boolean operators
 
 #### Direct matching
 
@@ -272,7 +275,7 @@ The `$ne` operator checks if a boolean field is not equal to the specified value
 }
 ```
 
-### Datetime Operators
+### Datetime operators
 
 RushDB provides specialized operators for filtering records based on datetime values.
 
@@ -378,7 +381,7 @@ You can also use array operators with datetime values:
 }
 ```
 
-## Field Existence Operator
+## Field existence operator
 
 ### $exists
 
@@ -501,7 +504,7 @@ The `$type` operator is particularly useful when:
 - Building queries that need to handle fields that might contain different types of values
 - Filtering records before applying type-specific operations
 
-## Logical Grouping Operators
+## Logical grouping operators
 
 When you need to create complex conditions, logical grouping operators allow you to combine multiple conditions.
 
@@ -579,7 +582,7 @@ The `$xor` operator (exclusive OR) returns records that match exactly one of the
 }
 ```
 
-### Nested Logical Grouping
+### Nested logical grouping
 
 Logical operators can be nested to create complex conditions:
 
@@ -596,13 +599,17 @@ Logical operators can be nested to create complex conditions:
 }
 ```
 
-## Relationship Queries
+## Relationship queries
 
 One of the most powerful features of RushDB is its ability to query based on relationships between records.
 
-> **Note:** The underlying mechanism in RushDB works as follows: when the SearchQuery parser encounters a nested object that is neither a flat object nor contains criteria operators (like $gt, $contains, etc.), it interprets this object as a related record reference, using the provided key as the desired label for the related record.
+:::note
 
-### Basic Relationship Queries
+The underlying mechanism in RushDB works as follows: when the SearchQuery parser encounters a nested object that is neither a flat object nor contains criteria operators (like $gt, $contains, etc.), it interprets this object as a related record reference, using the provided key as the desired label for the related record.
+
+:::
+
+### Basic relationship queries
 
 To filter records based on related records, use the label of the related record as a key:
 
@@ -620,7 +627,7 @@ To filter records based on related records, use the label of the related record 
 
 This will find records named "Tech Corp" that are connected to at least one DEPARTMENT record named "Engineering" with a headcount of at least 10.
 
-### Relationship Direction
+### Relationship direction
 
 You can specify the direction of the relationship using the `$relation` operator:
 
@@ -651,7 +658,7 @@ You can also use a simplified syntax for specifying just the relationship type. 
 }
 ```
 
-### Multi-Level Relationships
+### Multi-level relationships
 
 You can query through multiple levels of relationships:
 
@@ -686,7 +693,7 @@ graph LR
 
 Nested label blocks are the right tool when each level is a **different** label. When the same pattern repeats — an org chart, a category tree, a dependency graph — use variable-length traversal instead.
 
-### Variable-Length Traversal (`hops`)
+### Variable-length traversal (`hops`)
 
 Add `hops` to `$relation` to match related records **up to N hops away** along one relationship pattern, without knowing (or naming) the intermediate records:
 
@@ -718,14 +725,14 @@ Key semantics:
 
 - `type` and `direction` constrain **every hop**; the nested label constrains only the **endpoint** record. Intermediate records are anonymous and unconstrained.
 - Omitting `type` means "any relationship between records" — each hop may even use a different relationship type. RushDB automatically excludes its internal property metadata edges, so untyped traversal never leaves your data model.
-- `hops.max` is capped per deployment (`RUSHDB_MAX_TRAVERSAL_HOPS`, default 10). Omitting `max` requests **unbounded** traversal (`*min..`), which is only allowed on self-hosted deployments and projects with a custom Neo4j instance — bounded there by the transaction timeout.
+- An omitted `hops.max` means 10. Set `max` explicitly to follow longer chains; every query still runs within the engine's query time budget.
 - Deeper nesting composes naturally: a nested label block under a `hops` endpoint continues from that endpoint.
 
-> **Performance:** variable-length traversal explores every matching path. Keep `max` as small as your use case allows, and prefer setting `direction` — an undirected, untyped `hops` query is the most expensive shape.
+> **Performance:** variable-length traversal visits every record within `max` hops of each candidate record (each record once, stopping at the first match), so its cost grows with how connected your graph is: cheap on chains and trees, steep on densely connected graphs, where a few hops already reach most records. Keep `max` as small as your use case allows, and prefer setting `direction` — an undirected, untyped `hops` query is the most expensive shape.
 
 > **Aggregation caveat:** multihop matching produces one row per _path_. `$count` and `$collect` deduplicate by default, but `$sum`/`$avg` over a multihop alias will count an endpoint once per path leading to it.
 
-### Cycle Detection (`$cycle`)
+### Cycle detection (`$cycle`)
 
 `$cycle` is a record-level predicate that finds records sitting on a **closed path back to themselves** — fraud rings, circular ownership, dependency cycles. Its value is the traversal spec itself:
 
@@ -752,7 +759,7 @@ Rules and semantics:
 - `$cycle` can also be placed inside a label block to anchor the cycle at a **related** record: `ACCOUNT: { country: "US", $cycle: { ... } }`.
 - Cypher trail semantics apply: each _relationship_ is used once per path, but a path may revisit a record through a different relationship — figure-eight shapes count as cycles.
 
-### Aliasing for Aggregations
+### Aliasing for aggregations
 
 When you need to reference related records in aggregations, use the `$alias` operator:
 
@@ -770,9 +777,9 @@ When you need to reference related records in aggregations, use the `$alias` ope
 }
 ```
 
-> For more detailed information about aggregations, including available functions and advanced usage, see [Select Expressions](/learn/search-query/select-expressions).
+> For more detailed information about aggregations, including available functions and advanced usage, see [Select Expressions](./select-expressions.md).
 
-### ID Filtering
+### ID filtering
 
 You can filter by record ID using the special `$id` operator:
 
@@ -799,11 +806,11 @@ The `$id` operator supports all the string comparison operators:
 }
 ```
 
-## Logical Grouping with Relationships
+## Logical grouping with relationships
 
 You can combine logical operators with relationships to create powerful queries.
 
-### $or with Relationships
+### $or with relationships
 
 ```typescript
 {
@@ -826,7 +833,7 @@ You can combine logical operators with relationships to create powerful queries.
 
 This will find records connected to either a DEPARTMENT named "Engineering" OR a DEPARTMENT named "Product".
 
-### $and with Relationships
+### $and with relationships
 
 ```typescript
 {
@@ -849,7 +856,7 @@ This will find records connected to either a DEPARTMENT named "Engineering" OR a
 
 This will find records connected to both a DEPARTMENT named "Engineering" AND a PROJECT with a budget of at least 10000.
 
-### Mixed Logical Operations
+### Mixed logical operations
 
 You can combine different logical operators:
 
@@ -878,7 +885,7 @@ You can combine different logical operators:
 }
 ```
 
-### Nested Logical Operations within Relationships
+### Nested logical operations within relationships
 
 You can use logical operators inside relationship queries:
 
@@ -901,7 +908,7 @@ You can use logical operators inside relationship queries:
 }
 ```
 
-## Complete Examples
+## Complete examples
 
 <details>
 <summary>Basic filtering with multiple conditions</summary>
@@ -1025,7 +1032,7 @@ This query finds active users who have provided an email address but no phone nu
 }
 ```
 
-This query finds records related to documents about neural networks that have chunks mentioning "embedding". For semantic (embedding-based) search, use the dedicated [AI search endpoint](/learn/reference/rest-api/ai-and-vectors/search).
+This query finds records related to documents about neural networks that have chunks mentioning "embedding". For semantic (embedding-based) search, use the dedicated [AI search endpoint](../reference/rest-api/ai-and-vectors/search.md).
 
 </details>
 
@@ -1056,7 +1063,7 @@ This query finds records created in 2023 by authors with a reputation of at leas
 
 </details>
 
-## Additional Notes
+## Additional notes
 
 - Field names are case-sensitive.
 - Missing fields are not included in the result. For example, searching for `{ active: true }` won't match records that don't have an `active` field.

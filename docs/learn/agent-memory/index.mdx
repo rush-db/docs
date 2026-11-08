@@ -1,15 +1,16 @@
 ---
 sidebar_position: 1
-title: Agent Memory Overview
+title: Agent memory overview
+description: "How RushDB works as structured memory for AI agents: episodic records and relationships, vector properties, the live schema, and the retrieval stack over them."
 ---
 
-# Agent Memory Overview
+# Agent memory overview
 
 RushDB is designed from the ground up as a **structured memory store for AI agents**. Unlike flat vector databases or document stores, RushDB gives agents three distinct memory layers — each addressing a different dimension of knowledge — and a retrieval stack that composes them at query time.
 
 ---
 
-## One Primitive, Any Architecture
+## One primitive, any architecture
 
 Most AI memory solutions ship with a predefined set of entity types — `User`, `Memory`, `Fact`, `Episode` — and a retrieval pipeline built around those types. If your use case fits the mold, you're productive quickly. If it doesn't, you spend time working around the framework rather than building your product.
 
@@ -21,7 +22,7 @@ Because there's no fixed schema to lock you in, you can change, extend, or compl
 
 ---
 
-## The Three Memory Layers
+## The three memory layers
 
 | Layer          | What it stores                                                          | RushDB primitive               |
 | -------------- | ----------------------------------------------------------------------- | ------------------------------ |
@@ -29,27 +30,27 @@ Because there's no fixed schema to lock you in, you can change, extend, or compl
 | **Semantic**   | Meaning encoded as dense vectors (embeddings)                           | Vector Properties + AI Indexes |
 | **Structural** | Schema: what labels exist, what properties they carry, how they connect | Schema API                     |
 
-### Episodic Memory — Records and Relationships
+### Episodic memory — records and relationships
 
 Every discrete piece of knowledge is a **Record**: a typed key-value object carrying a label, properties, and a system-generated ID. Records connect to one another via **Relationships**, forming a traversable knowledge graph. An agent can store anything from a conversation turn to a product entity as a record, then retrieve it by property values, label, or graph traversal.
 
-→ [Store Records](/learn/records-and-queries/store-records) · [Connect Records](/learn/relationships/connect-records)
+→ [Store Records](../records-and-queries/store-records.mdx) · [Connect Records](../relationships/connect-records.mdx)
 
-### Semantic Memory — Vector Properties
+### Semantic memory — vector properties
 
-A subset of record properties carry dense vector representations (embeddings). A vector-indexed property is simultaneously a semantic index over every record it connects to. Embeddings can be supplied by the application (Bring Your Own Vector) or generated automatically by RushDB.
+A subset of record properties carry dense vector representations (embeddings). A vector-indexed property is simultaneously a semantic index over every record it connects to. Embeddings can be supplied by the application (Bring Your Own Vectors — the way on a self-hosted engine) or generated automatically by RushDB Cloud (managed embeddings).
 
-→ [Manage Embedding Indexes](/learn/semantic-search/manage-indexes) · [Semantic Search](/learn/semantic-search) · [Smart Search](/learn/search-query/smart-search)
+→ [Manage Embedding Indexes](../semantic-search/manage-indexes.mdx) · [Semantic Search](../semantic-search/semantic-search.mdx) · [Smart Search](../search-query/smart-search.mdx) (RushDB Cloud)
 
-### Structural Memory — Schema
+### Structural memory — schema
 
 The **Schema API** returns a live snapshot of the graph's schema: all labels, all properties per label with types and value ranges, and the full relationship map. An agent calls this once per session to bootstrap awareness of what is in the database — no hardcoded schema, no external documentation required.
 
-→ [Discover Your Schema](/learn/records-and-queries/discover-your-schema) · [Schema Self-Awareness](/learn/agent-memory/schema-self-awareness)
+→ [Discover Your Schema](../records-and-queries/discover-your-schema.mdx) · [Schema Self-Awareness](./schema-self-awareness.mdx)
 
 ---
 
-## The Retrieval Stack
+## The retrieval stack
 
 A well-designed agent retrieval pipeline uses all three layers in sequence:
 
@@ -71,7 +72,7 @@ Agent
 
 ---
 
-## Retrieval Approach Comparison
+## Retrieval approach comparison
 
 | Approach                               | When to use                                                      | Mechanism                                |
 | -------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------- |
@@ -81,7 +82,7 @@ Agent
 
 ---
 
-## Self-Awareness Without External Documentation
+## Self-awareness without external documentation
 
 A central design goal of RushDB is that agents should be able to operate against an unknown or evolving knowledge graph **without any out-of-band schema documentation**. Two mechanisms make this possible:
 
@@ -98,16 +99,16 @@ Boot → call schema → understand what exists in the graph
 
 ---
 
-## What's Next
+## What's next
 
 The rest of the Learn section covers the building blocks and query primitives that make this memory model work:
 
 | Section                                                            | What you'll learn                                                             |
 | ------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| [Quickstart](/learn/agent-memory/quickstart)                       | Connect the MCP server, run the bootstrap prompt, validate in 5 min           |
-| [Schema Self-Awareness](/learn/agent-memory/schema-self-awareness) | Schema API, `__proptypes`, dynamic query construction                         |
-| [Records & Queries](/learn/records-and-queries/store-records)      | Store, import, update, delete, and search records                             |
-| [SearchQuery reference](/learn/search-query)                       | `where`, `select`, `groupBy`, `orderBy`, pagination — the full query language |
-| [Relationships](/learn/relationships/connect-records)              | Attach edges between records, bulk-connect by key, traverse in queries        |
-| [Semantic Search](/learn/semantic-search)                          | Meaning-based recall — embedding indexes, similarity scoring, pre-filter      |
-| [Transactions](/learn/records-and-queries/transactions)            | ACID guarantees for multi-step memory writes                                  |
+| [Quickstart](./quickstart.mdx)                       | Connect the MCP server, run the bootstrap prompt, validate in 5 min           |
+| [Schema Self-Awareness](./schema-self-awareness.mdx) | Schema API, `__proptypes`, dynamic query construction                         |
+| [Records & Queries](../records-and-queries/store-records.mdx)      | Store, import, update, delete, and search records                             |
+| [SearchQuery reference](../search-query/search-query.md)                       | `where`, `select`, `groupBy`, `orderBy`, pagination — the full query language |
+| [Relationships](../relationships/connect-records.mdx)              | Attach edges between records, bulk-connect by key, traverse in queries        |
+| [Semantic Search](../semantic-search/semantic-search.mdx)                          | Meaning-based recall — embedding indexes, similarity scoring, pre-filter      |
+| [Transactions](../records-and-queries/transactions.mdx)            | ACID guarantees for multi-step memory writes                                  |

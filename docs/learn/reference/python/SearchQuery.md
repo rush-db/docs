@@ -1,12 +1,15 @@
 ---
+title: SearchQuery type (Python SDK)
+sidebar_label: SearchQuery
+description: "Reference for the SearchQuery dictionary in the RushDB Python SDK: labels, pagination, order, where clauses, select expressions and groupBy, with examples."
 sidebar_position: 4
 ---
 
 # SearchQuery
 
-`SearchQuery` is a dictionary type that defines the structure for querying [records](/learn/records-and-queries/store-records) in RushDB. It provides a flexible way to filter, sort, paginate, and shape results. For more information on search concepts, see the [search documentation](/learn/search-query).
+`SearchQuery` is a dictionary type that defines the structure for querying [records](../../records-and-queries/store-records.mdx) in RushDB. It provides a flexible way to filter, sort, paginate, and shape results. For more information on search concepts, see the [search documentation](../../search-query/search-query.md).
 
-## Query Shape
+## Query shape
 
 ```python
 search_query = {
@@ -20,7 +23,7 @@ search_query = {
 }
 ```
 
-## Query Components
+## Query components
 
 ### Labels
 
@@ -44,7 +47,7 @@ Specifies which record types to search. Multiple labels are combined with OR. If
 { "orderBy": "asc" }                     # global direction
 ```
 
-### Where Clause
+### Where clause
 
 The `where` dictionary filters records based on property values and relationships.
 
@@ -238,7 +241,7 @@ result = db.records.find({
 
 ##### Variable-length traversal (`hops`)
 
-Add `hops` to `$relation` to match records up to N hops away. A number means exactly N hops; a `{"min": ..., "max": ...}` dict is a range (`min` defaults to `1`). `type` and `direction` apply to every hop; property criteria and the block's label constrain only the final record — intermediates are anonymous. `max` is capped per deployment (`RUSHDB_MAX_TRAVERSAL_HOPS`, default 10); omitting it requests unbounded traversal, allowed only on self-hosted deployments or projects with a custom Neo4j instance:
+Add `hops` to `$relation` to match records up to N hops away. A number means exactly N hops; a `{"min": ..., "max": ...}` dict is a range (`min` defaults to `1`). `type` and `direction` apply to every hop; property criteria and the block's label constrain only the final record — intermediates are anonymous. An omitted `max` means 10; set `max` explicitly to follow longer chains:
 
 ```python
 # Employees whose management chain (up to 4 hops) contains Alice
@@ -275,13 +278,13 @@ result = db.records.find({
 })
 ```
 
-See [Variable-Length Traversal and Cycle Detection](/learn/search-query/where-operators#variable-length-traversal-hops) for full semantics.
+See [Variable-Length Traversal and Cycle Detection](../../search-query/where-operators.md#variable-length-traversal-hops) for full semantics.
 
-## Select Expressions
+## Select expressions
 
 Each key of the `select` dict maps to either a **field reference** (string) or an **expression** (`$`-prefixed operator object).
 
-### Field References
+### Field references
 
 Copy a field value into the output row:
 
@@ -325,7 +328,7 @@ result = db.records.find({
 })
 ```
 
-### $collect Options
+### $collect options
 
 Two forms — `from` (alias-based) and `label` (inline traversal, preferred for nesting):
 
@@ -367,7 +370,7 @@ Two forms — `from` (alias-based) and `label` (inline traversal, preferred for 
 }
 ```
 
-### $collect for Hierarchies
+### $collect for hierarchies
 
 Label-based `$collect` supports unlimited nesting via nested `select`:
 
@@ -403,7 +406,7 @@ org_tree = db.records.find({
 # Output: [{ "departments": [{ "name": "Eng", "projects": [{ "name": "Platform", "employees": [...] }] }] }]
 ```
 
-### $timeBucket — Time-Series Aggregation
+### $timeBucket — time-series aggregation
 
 ```python
 # Daily order count
@@ -446,7 +449,7 @@ bi_monthly = db.records.find({
 
 `groupBy` operates in two modes:
 
-### Mode A — Dimensional (one row per distinct value)
+### Mode A — dimensional (one row per distinct value)
 
 Entries are `"$alias.propertyName"` strings. Each distinct value combination becomes its own output row.
 
@@ -472,7 +475,7 @@ pivot = db.records.find({
 })
 ```
 
-### Mode B — Self-group (one row with global KPIs)
+### Mode B — self-group (one row with global KPIs)
 
 Put the **select output key names** themselves into `groupBy` (not `$alias.field` paths).
 
@@ -490,7 +493,7 @@ kpis = db.records.find({
 # Output: [{ "totalSalary": 4875000, "headcount": 95, "avgSalary": 51315 }]
 ```
 
-## Critical Rules
+## Critical rules
 
 > **Never set `limit` when `select` is present** (except to cap root records in per-record flat queries). `limit` restricts the record scan, so `$sum`/`$avg`/etc. cover only the first N rows and return wrong results.
 >
@@ -514,9 +517,9 @@ kpis = db.records.find({
 >
 > For self-group queries, always include `orderBy` on a `select` output key to trigger late ordering (ORDER BY + LIMIT runs after the full aggregation scan).
 
-## Usage Examples
+## Usage examples
 
-### Basic Filter
+### Basic filter
 
 ```python
 result = db.records.find({
@@ -525,7 +528,7 @@ result = db.records.find({
 })
 ```
 
-### Complex Logical Filter
+### Complex logical filter
 
 ```python
 result = db.records.find({
@@ -544,7 +547,7 @@ result = db.records.find({
 })
 ```
 
-### Datetime Range
+### Datetime range
 
 ```python
 result = db.records.find({
@@ -555,7 +558,7 @@ result = db.records.find({
 })
 ```
 
-### Filter by Record ID
+### Filter by record ID
 
 ```python
 result = db.records.find({
@@ -563,7 +566,7 @@ result = db.records.find({
 })
 ```
 
-### Relationship Traversal with Select Expressions
+### Relationship traversal with select expressions
 
 ```python
 result = db.records.find({
@@ -584,7 +587,7 @@ result = db.records.find({
 })
 ```
 
-### Time-Series ($timeBucket)
+### Time-series ($timeBucket)
 
 ```python
 result = db.records.find({
@@ -598,7 +601,7 @@ result = db.records.find({
 })
 ```
 
-### Pagination and Sorting
+### Pagination and sorting
 
 ```python
 page2 = db.records.find({

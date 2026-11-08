@@ -1,12 +1,13 @@
 ---
 sidebar_position: 1
-title: Store Records
+title: Store records
+description: Create, upsert, update, replace and delete RushDB records from the Python and TypeScript SDKs, with merge strategies, precise type control and transactions.
 ---
 
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Store Records
+# Store records
 
 A **Record** is a typed key-value node with a label. Records are the fundamental unit of data in RushDB — like a document in a document store, but with seamless relationship traversal built in.
 
@@ -14,7 +15,7 @@ Each record has system properties (`__id`, `__label`, `__proptypes`) plus your o
 
 ---
 
-## Create a Record
+## Create a record
 
 <Tabs groupId="programming-language">
   <TabItem value="python" label="Python" default>
@@ -62,14 +63,14 @@ curl -X POST https://api.rushdb.com/api/v1/records \
 
 ---
 
-## Create Multiple Records
+## Create multiple records
 
 <Tabs groupId="programming-language">
   <TabItem value="python" label="Python" default>
 
 `db.records.create_many()`
 
-Flat rows only — no nested objects. For nested data use [`import_json`](/learn/records-and-queries/import-data).
+Flat rows only — no nested objects. For nested data use [`import_json`](./import-data.mdx).
 
 ```python
 result = db.records.create_many(
@@ -87,7 +88,7 @@ result = db.records.create_many(
 
 `db.records.createMany()`
 
-Flat rows only — no nested objects. For nested data use [`importJson`](/learn/records-and-queries/import-data).
+Flat rows only — no nested objects. For nested data use [`importJson`](./import-data.mdx).
 
 ```typescript
 const result = await db.records.createMany({
@@ -123,7 +124,7 @@ curl -X POST https://api.rushdb.com/api/v1/records/import/json \
 
 ---
 
-## Upsert (Create or Update)
+## Upsert (create or update)
 
 Creates a new record if no match is found, or updates the existing record if matched.
 
@@ -189,7 +190,7 @@ curl -X POST https://api.rushdb.com/api/v1/records \
 
 ---
 
-## Partial Update
+## Partial update
 
 Updates only the specified fields; all other fields are preserved.
 
@@ -240,7 +241,7 @@ curl -X PATCH https://api.rushdb.com/api/v1/records/movie-123 \
 
 ---
 
-## Full Replacement
+## Full replacement
 
 Replaces all fields. Fields not in `data` are removed.
 
@@ -304,7 +305,7 @@ curl -X PUT https://api.rushdb.com/api/v1/records/movie-123 \
 
 ---
 
-## Delete Records
+## Delete records
 
 ### Delete by ID
 
@@ -354,7 +355,7 @@ curl -X DELETE https://api.rushdb.com/api/v1/records/movie-123 \
   </TabItem>
 </Tabs>
 
-### Bulk Delete
+### Bulk delete
 
 Delete all records matching a query.
 
@@ -428,7 +429,7 @@ All write methods accept an `options` object:
 
 ---
 
-## Precise Type Control
+## Precise type control
 
 By default, RushDB infers property types. Use `PropertyDraft` / `properties` array for explicit control.
 
@@ -494,7 +495,7 @@ curl -X POST https://api.rushdb.com/api/v1/records \
 
 ---
 
-## In a Transaction
+## In a transaction
 
 <Tabs groupId="programming-language">
   <TabItem value="python" label="Python" default>
@@ -567,7 +568,7 @@ curl -X POST https://api.rushdb.com/api/v1/tx/$TX_ID/commit \
 
 ---
 
-## TypeScript: Via Model
+## TypeScript: Via model
 
 ```typescript
 const MovieModel = new Model('MOVIE', {
@@ -596,8 +597,8 @@ await MovieModel.delete({ where: { genre: 'temp' } })
 
 ## See also
 
-- [Import Data](/learn/records-and-queries/import-data) — import nested JSON or CSV (auto-creates relationships)
-- [Find & Query](/learn/records-and-queries/find-and-query) — search and filter records
-- [Connect Records](/learn/relationships/connect-records) — attach and detach relationships
-- [Transactions](/learn/records-and-queries/transactions) — ACID guarantees for multi-step writes
-- [Write Records with Vectors](/learn/semantic-search/write-with-vectors) — attach embedding vectors
+- [Import Data](./import-data.mdx) — import nested JSON or CSV (auto-creates relationships)
+- [Find & Query](./find-and-query.mdx) — search and filter records
+- [Connect Records](../relationships/connect-records.mdx) — attach and detach relationships
+- [Transactions](./transactions.mdx) — ACID guarantees for multi-step writes
+- [Write Records with Vectors](../semantic-search/write-with-vectors.mdx) — attach embedding vectors

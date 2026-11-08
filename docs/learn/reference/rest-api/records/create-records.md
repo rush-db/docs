@@ -1,10 +1,13 @@
 ---
+title: Create records REST API
+sidebar_label: Create records
+description: Create records with POST /api/v1/records in the RushDB Cloud REST API, upsert by matching properties, control property types, and write in a transaction.
 sidebar_position: 1
 ---
 
-# Create Records
+# Create records
 
-## Create a Record
+## Create a record
 
 `POST /api/v1/records`
 
@@ -106,4 +109,4 @@ curl -X POST https://api.rushdb.com/api/v1/tx/$TX_ID/commit \
 
 ## See also
 
-- [Writing Records with Vectors](/learn/reference/rest-api/ai-and-vectors/write-with-vectors) — attach embedding vectors when creating or upserting records
+- [Writing Records with Vectors](../ai-and-vectors/write-with-vectors.md) — attach embedding vectors when creating or upserting records

@@ -1,12 +1,13 @@
 ---
+description: "Use groupBy with select in a RushDB SearchQuery to pivot and summarize records: group keys, aliases, self-grouping, collect, ordering and limitations."
 sidebar_position: 8
 ---
 
-# Grouping Search Results
+# Grouping search results
 
 The `groupBy` option in a SearchQuery lets you pivot, summarize, and compute metrics on records instead of returning a raw list. It works together with the `select` clause. If no select expressions are provided, `groupBy` is ignored. The legacy `aggregate` clause is deprecated and should only be used for vector similarity until select supports it.
 
-## Core Principles
+## Core principles
 
 1. Each entry in `groupBy` must reference an **alias** followed by a property: `"$alias.property"`.
 2. The root record always has the implicit alias `$record`.
@@ -16,7 +17,7 @@ The `groupBy` option in a SearchQuery lets you pivot, summarize, and compute met
 4. Grouping changes the shape from a collected list of root records to one row per distinct combination of group keys.
 5. Nested hierarchy is not auto-generated; to build nested structures, mix `collect` for arrays with grouping on a parent level.
 
-## Syntax Overview
+## Syntax overview
 
 ```typescript
 {
@@ -40,7 +41,7 @@ Result (conceptual):
 ]
 ```
 
-## Declaring Aliases for Related Records
+## Declaring aliases for related records
 
 To group by related data, first traverse it in `where` and assign an alias via `$alias`:
 
@@ -61,7 +62,7 @@ To group by related data, first traverse it in `where` and assign an alias via `
 }
 ```
 
-## Multiple Group Keys (Pivot Style)
+## Multiple group keys (pivot style)
 
 ```typescript
 {
@@ -74,7 +75,7 @@ To group by related data, first traverse it in `where` and assign an alias via `
 
 Produces one row per (category, active) combination.
 
-## Grouping Only by an Aggregated Value (Self Group)
+## Grouping only by an aggregated value (self group)
 
 Sometimes you only want the aggregated metric itself (e.g. total sum or total count) without grouping by any actual property of the records. RushDB supports a lightweight pattern for this: list the aggregation key name itself inside `groupBy`.
 
@@ -134,7 +135,7 @@ Avoid if:
 - You actually need per-dimension breakdown (then group by a property instead)
 - The metric might be extremely large cardinality (self-group is for single or tiny row counts)
 
-## Mixing `collect` with Grouping
+## Mixing `collect` with grouping
 
 Use `collect` to retain arrays inside grouped rows:
 
@@ -153,7 +154,7 @@ Use `collect` to retain arrays inside grouped rows:
 
 Each row: `{ name: <departmentName>, employees: [...], employeeCount: N }`.
 
-## Grouping by Deeply Nested Aliases
+## Grouping by deeply nested aliases
 
 ```typescript
 {
@@ -170,7 +171,7 @@ Each row: `{ name: <departmentName>, employees: [...], employeeCount: N }`.
 }
 ```
 
-## Default Uniqueness & Counting Behavior
+## Default uniqueness & counting behavior
 
 - `collect` is **unique by default**; set `unique: false` to keep duplicates.
 - `count` without `field` counts distinct records for the specified alias.
@@ -181,7 +182,7 @@ Each row: `{ name: <departmentName>, employees: [...], employeeCount: N }`.
   }
   ```
 
-## Ordering Grouped Results
+## Ordering grouped results
 
 You can sort by aggregated fields or by grouped keys (since they appear in output rows):
 
@@ -195,7 +196,7 @@ orderBy: {
 }
 ```
 
-## Common Patterns
+## Common patterns
 
 | Scenario                                 | Approach                                                   |
 | ---------------------------------------- | ---------------------------------------------------------- |
@@ -205,7 +206,7 @@ orderBy: {
 | Pivot by category + active flag          | Two keys in `groupBy`                                      |
 | Group by related location (appointments) | Alias nested traversal then group by that alias field      |
 
-## Limitations & Tips
+## Limitations & tips
 
 - No hierarchical multi-pass grouping; emulate with `collect` arrays.
 - At least one `select` expression is required; otherwise grouping is ignored.
@@ -213,13 +214,13 @@ orderBy: {
 - Group keys appear in the result using only the property segment (e.g. `$record.stage` -> `stage`).
 - Keep group key count small for performance (high cardinality => more result rows).
 
-## Error Prevention Checklist
+## Error prevention checklist
 
 - Typo in alias? Ensure `$alias` appears exactly once at the traversal level.
 - Group field not appearing? Confirm property exists on that label and is projected (root properties automatically available; related ones via alias reference).
 - Unexpected duplicate rows? Add more group keys or remove unnecessary keys.
 
-## See Also
+## See also
 
-- [Select Expressions](/learn/search-query/select-expressions)
+- [Select Expressions](./select-expressions.md)
 - SDK references: TypeScript / Python / REST _get records_ pages

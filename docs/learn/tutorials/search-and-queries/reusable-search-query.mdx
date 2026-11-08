@@ -1,7 +1,7 @@
 ---
 sidebar_position: 4
 title: Reusable SearchQuery
-description: Learn the canonical SearchQuery shape reused across records, properties, labels, relationships, and values
+description: The canonical RushDB SearchQuery shape, and how to reuse one where clause across the records, properties, labels, relationships and values APIs.
 tags: [Search, Patterns, Querying]
 ---
 
@@ -22,7 +22,7 @@ You can reuse the same query logic across five perspectives on data:
 
 Once you learn SearchQuery once, you can apply it almost everywhere.
 
-## Canonical SearchQuery Shape
+## Canonical SearchQuery shape
 
 <Tabs groupId="programming-language">
 <TabItem value="typescript" label="TypeScript">
@@ -86,14 +86,14 @@ And paired with values exploration via `/api/v1/properties/:id/values`.
 
 `where` is resource-local. For records, labels, properties, exports, and deletes it filters Records. For `relationships.find`, `where` filters relationship edges (`type` plus user-defined edge properties); use `source` and `target` for endpoint Record filters.
 
-## Why It Matters
+## Why it matters
 
 - Reduced learning curve
 - Reusable filtering logic across endpoints
 - Predictable behavior for filtering, aggregation, and pagination
 - Easier AI-assisted query generation because the shape stays stable
 
-## One Intent, Five Perspectives
+## One intent, five perspectives
 
 SearchQuery's ultimate feature is intent reuse.
 
@@ -107,7 +107,7 @@ You can express one business question and view it from different perspectives:
 
 This means your app can move from listing to discovery to analytics without changing mental model.
 
-## Where Clause Essentials
+## Where clause essentials
 
 ### Primitive and operator filters
 
@@ -483,14 +483,14 @@ curl -X POST "https://api.rushdb.com/api/v1/records/search" \
 </TabItem>
 </Tabs>
 
-## Critical Limit Rules
+## Critical limit rules
 
 - Do not use `limit` in self-group KPI queries
 - Do not use `limit` in dimensional groupBy unless intentionally asking for top N groups
 - `limit` is valid for listing/browsing and per-record flat aggregation
 - For self-group KPI queries, include `orderBy` on the select key to force full-scan aggregation behavior
 
-## Reusable Patterns Across APIs
+## Reusable patterns across APIs
 
 ### 1. Search records
 
@@ -526,7 +526,7 @@ result = db.records.find({
 products = result.data
 ```
   </TabItem>
-  <TabItem value="shell" label="shell">
+  <TabItem value="shell" label="Shell">
 ```bash
 curl -X POST "https://api.rushdb.com/api/v1/records/search" \
   -H "Authorization: Bearer $RUSHDB_API_KEY" \
@@ -574,7 +574,7 @@ db.records.delete({
 })
 ```
   </TabItem>
-  <TabItem value="shell" label="shell">
+  <TabItem value="shell" label="Shell">
 ```bash
 curl -X PUT "https://api.rushdb.com/api/v1/records/delete" \
   -H "Authorization: Bearer $RUSHDB_API_KEY" \
@@ -617,7 +617,7 @@ created_relationships = db.relationships.find({
 })
 ```
   </TabItem>
-  <TabItem value="shell" label="shell">
+  <TabItem value="shell" label="Shell">
 ```bash
 # Find all CREATED relationships by users in the admin group
 curl -X POST "https://api.rushdb.com/api/v1/relationships/search" \
@@ -656,7 +656,7 @@ labels = db.labels.find({
 })
 ```
   </TabItem>
-  <TabItem value="shell" label="shell">
+  <TabItem value="shell" label="Shell">
 ```bash
 # Find all labels used on records in North America region
 curl -X POST "https://api.rushdb.com/api/v1/labels/search" \
@@ -694,7 +694,7 @@ product_props = db.properties.find({
 })
 ```
   </TabItem>
-  <TabItem value="shell" label="shell">
+  <TabItem value="shell" label="Shell">
 ```bash
 curl -X POST "https://api.rushdb.com/api/v1/properties/search" \
   -H "Authorization: Bearer $RUSHDB_API_KEY" \
@@ -719,26 +719,26 @@ Typical flow:
 2. Call `/api/v1/properties/:id/values` for value discovery in the same data context
 3. Feed returned canonical values back into your next SearchQuery (`$in`, `$nin`, exact match)
 
-## Common Pitfalls to Avoid
+## Common pitfalls to avoid
 
 - Using `limit` on KPI/self-group queries
 - Using traversal keys like `$label` instead of real label keys (`EMPLOYEE`, `PROJECT`)
 - Treating `groupBy` self-group keys as property paths instead of `select` key names
 - Using plain date strings with `$gt`/`$gte`/`$lt`/`$lte` instead of datetime component objects
 
-## API Reference Links
+## API reference links
 
 | Endpoint                        | Docs                                                               |
 | ------------------------------- | ------------------------------------------------------------------ |
-| `/api/v1/records/search`        | [Records API](/learn/reference/rest-api/records/get-records)       |
-| `/api/v1/records/delete`        | [Delete Records](/learn/reference/rest-api/records/delete-records) |
-| `/api/v1/relationships/search`  | [Relationships API](/learn/reference/rest-api/relationships)       |
-| `/api/v1/labels/search`         | [Labels API](/learn/reference/rest-api/labels)                     |
-| `/api/v1/properties/search`     | [Properties API](/learn/reference/rest-api/properties)             |
-| `/api/v1/properties/:id/values` | [Properties API](/learn/reference/rest-api/properties)             |
+| `/api/v1/records/search`        | [Records API](../../reference/rest-api/records/get-records.md)       |
+| `/api/v1/records/delete`        | [Delete Records](../../reference/rest-api/records/delete-records.md) |
+| `/api/v1/relationships/search`  | [Relationships API](../../reference/rest-api/relationships.md)       |
+| `/api/v1/labels/search`         | [Labels API](../../reference/rest-api/labels.md)                     |
+| `/api/v1/properties/search`     | [Properties API](../../reference/rest-api/properties.md)             |
+| `/api/v1/properties/:id/values` | [Properties API](../../reference/rest-api/properties.md)             |
 
-## Next Step
+## Next step
 
 If you want advanced examples (nested collect, multi-hop traversal, time buckets, KPI patterns), continue with the deep-dive tutorial:
 
-[SearchQuery Deep Dive: Advanced Patterns](/learn/tutorials/search-and-queries/searchquery-advanced-patterns)
+[SearchQuery Deep Dive: Advanced Patterns](./searchquery-advanced-patterns.mdx)

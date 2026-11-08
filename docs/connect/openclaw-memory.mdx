@@ -1,10 +1,9 @@
 ---
-title: OpenClaw Native Memory
-description: Add lifecycle-aware RushDB recall and persistence to OpenClaw without replacing its local memory.
-displayed_sidebar: docs
+title: OpenClaw native memory
+description: "Install @rushdb/openclaw-memory to add automatic RushDB recall before inference and persistence after each turn, alongside OpenClaw's local memory."
 ---
 
-# OpenClaw Native Memory
+# OpenClaw native memory
 
 `@rushdb/openclaw-memory` adds automatic, lifecycle-aware RushDB recall and persistence while leaving OpenClaw's local Markdown and SQLite memory active.
 
@@ -48,13 +47,33 @@ Set the API key in the gateway environment, then configure the plugin:
 }
 ```
 
-Required environment variable:
+Requires Node.js 22.14 or newer and OpenClaw 2026.8.1-beta.2 or newer.
+
+### RushDB Cloud
 
 ```bash
 export RUSHDB_API_KEY=your-project-api-key
 ```
 
-For self-hosting, also set `RUSHDB_API_URL`. Set `RUSHDB_MEMORY_SCOPE_SALT` so hashes of channel and participant identifiers cannot be correlated across deployments.
+Optionally set `RUSHDB_API_URL` to use a different RushDB Cloud API endpoint.
+
+### A self-hosted RushDB engine
+
+Memory recall is a vector search. RushDB Cloud embeds memories for you; a self-hosted engine does not, so give the plugin an OpenAI-compatible embedding provider:
+
+```bash
+export RUSHDB_ENGINE_URL="http://127.0.0.1:3000"
+export RUSHDB_ENGINE_TOKEN="your-engine-token"
+# export RUSHDB_ENGINE_SCOPE="tenant-1"   # only for an engine started with --multitenant
+export RUSHDB_EMBEDDING_API_KEY="sk-..."
+export RUSHDB_EMBEDDING_MODEL="text-embedding-3-small"
+export RUSHDB_EMBEDDING_DIMENSIONS="1536"
+# export RUSHDB_EMBEDDING_BASE_URL="https://api.openai.com/v1"   # any OpenAI-compatible endpoint
+```
+
+The same settings are accepted in the plugin config (`engineUrl`, `engineToken`, `engineScope`, `embeddingBaseUrl`, `embeddingApiKey`, `embeddingModel`, `embeddingDimensions`). With RushDB Cloud the embedding settings are optional: set them to embed on your side instead of with the managed model. Without a usable configuration the plugin stays disabled and logs why.
+
+Set `RUSHDB_MEMORY_SCOPE_SALT` in either mode so hashes of channel and participant identifiers cannot be correlated across deployments.
 
 ## Privacy behavior
 
@@ -73,7 +92,7 @@ Only the latest bounded user/assistant pair is captured. System messages, comple
 
 Completed episodes are first written to a local outbox at `~/.openclaw/rushdb-memory/outbox`. A background writer uses deterministic `eventId` values and RushDB `upsert` with `mergeBy: ["eventId"]`. If RushDB is unavailable, OpenClaw's reply and local memory continue normally and the outbox remains available for replay after restart.
 
-Managed embedding indexes are eventually consistent. A bounded recent-write cache supplies read-your-own-write recall until the `EPISODE.summary` index is ready.
+Embedding indexes fill asynchronously. A bounded recent-write cache supplies read-your-own-write recall until the `EPISODE.summary` index is ready.
 
 ## Verify
 
@@ -82,4 +101,4 @@ Managed embedding indexes are eventually consistent. A bounded recent-write cach
 3. Ask about the decision without explicitly calling a RushDB tool.
 4. Take RushDB offline and confirm the user conversation still completes.
 
-Use [MCP and Agent Skills](/learn/tutorials/agent-memory/agent-skills-with-openclaw) alongside the plugin when the model also needs explicit graph operations.
+Use [MCP and Agent Skills](../learn/tutorials/agent-memory/agent-skills-with-openclaw.mdx) alongside the plugin when the model also needs explicit graph operations.

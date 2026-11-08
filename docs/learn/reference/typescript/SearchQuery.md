@@ -1,12 +1,15 @@
 ---
+title: SearchQuery type (TypeScript SDK)
+sidebar_label: SearchQuery
+description: "Reference for the SearchQuery type in the RushDB TypeScript SDK: labels, pagination, order, where, select and groupBy clauses, with typed usage examples."
 sidebar_position: 8
 ---
 
 # SearchQuery
 
-`SearchQuery` is a type that defines the structure for querying [records](/learn/records-and-queries/store-records) in RushDB. It provides a flexible way to filter, sort, paginate, and compute metrics using `select` and `groupBy`. The legacy `aggregate` clause is deprecated and should only be used for vector similarity until `select` supports it. For more information on search concepts, see the [search documentation](/learn/search-query).
+`SearchQuery` is a type that defines the structure for querying [records](../../records-and-queries/store-records.mdx) in RushDB. It provides a flexible way to filter, sort, paginate, and compute metrics using `select` and `groupBy`. The legacy `aggregate` clause is deprecated and should only be used for vector similarity until `select` supports it. For more information on search concepts, see the [search documentation](../../search-query/search-query.md).
 
-## Type Definition
+## Type definition
 
 ```typescript
 export type SearchQuery<S extends Schema = any> = SearchQueryLabelsClause &
@@ -17,15 +20,15 @@ export type SearchQuery<S extends Schema = any> = SearchQueryLabelsClause &
   GroupByClause
 ```
 
-## Type Parameters
+## Type parameters
 
 | Parameter                   | Description                                                                                                                                                                                                                                                                                                                                                                                                 |
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `S extends Schema = Schema` | The schema type that defines the structure of the records being queried. `Schema` is `Record<string, SchemaField>` where `SchemaField = { type: 'boolean' \| 'datetime' \| 'number' \| 'string'; required?: boolean; multiple?: boolean; unique?: boolean; default?: ... }`. The default `Schema` (rather than `any`) preserves type safety while remaining permissive when no explicit schema is provided. |
 
-## Query Components
+## Query components
 
-### Labels Clause
+### Labels clause
 
 ```typescript
 export type SearchQueryLabelsClause = {
@@ -35,7 +38,7 @@ export type SearchQueryLabelsClause = {
 
 Specifies the labels (types) of records to search for. If omitted, only records with the model's label will be searched.
 
-### Pagination Clause
+### Pagination clause
 
 ```typescript
 export type PaginationClause = {
@@ -51,7 +54,7 @@ Controls pagination of the query results.
 | `limit`  | `number` | Maximum number of records to return |
 | `skip`   | `number` | Number of records to skip           |
 
-### Order Clause
+### Order clause
 
 ```typescript
 export type OrderClause<S extends Schema = Schema> = {
@@ -64,7 +67,7 @@ export type Order<S extends Schema = Schema> = OrderDirection | Partial<Record<k
 
 Specifies how to sort the query results.
 
-### Where Clause
+### Where clause
 
 ```typescript
 export type WhereClause<S extends Schema = Schema> = {
@@ -74,7 +77,7 @@ export type WhereClause<S extends Schema = Schema> = {
 
 Filters records based on property values and relationships.
 
-### Select Clause
+### Select clause
 
 ```typescript
 export type CollectExpr = {
@@ -140,9 +143,9 @@ export type SelectClause = {
 }
 ```
 
-The canonical output-shaping clause. See the [Select Expressions guide](/learn/search-query/select-expressions) for full documentation.
+The canonical output-shaping clause. See the [Select Expressions guide](../../search-query/select-expressions.md) for full documentation.
 
-### GroupBy Clause
+### GroupBy clause
 
 ```typescript
 export type GroupByClause = {
@@ -152,11 +155,11 @@ export type GroupByClause = {
 
 Shapes how aggregation output is grouped. See [GroupBy](#groupby) for the two supported modes.
 
-## Where Expressions
+## Where expressions
 
 The `where` property of a search query can include various expressions to filter records:
 
-### Property Expressions
+### Property expressions
 
 ```typescript
 export type PropertyExpression =
@@ -349,7 +352,7 @@ Filter records by their own ID directly inside the `where` clause:
 }
 ```
 
-### Logical Expressions
+### Logical expressions
 
 ```typescript
 export type LogicalExpression<T = PropertyExpression & Related> = RequireAtLeastOne<
@@ -377,7 +380,7 @@ export type NorExpression<T = PropertyExpression & Related> = {
 }
 ```
 
-### Related Records
+### Related records
 
 ```typescript
 export type Related<M extends Record<string, Model['schema']> = Models> =
@@ -424,7 +427,7 @@ Defines conditions on related records. The key of the nested object **is** the l
 }
 ```
 
-`hops` turns the traversal into a variable-length one: a number means exactly N hops, `{ min?, max? }` a range (`min` defaults to `1`). `type` and `direction` apply to every hop; property criteria and the nested label constrain only the final record — intermediates are anonymous. `max` is capped per deployment (`RUSHDB_MAX_TRAVERSAL_HOPS`, default 10); omitting it requests unbounded traversal, allowed only on self-hosted deployments or projects with a custom Neo4j instance:
+`hops` turns the traversal into a variable-length one: a number means exactly N hops, `{ min?, max? }` a range (`min` defaults to `1`). `type` and `direction` apply to every hop; property criteria and the nested label constrain only the final record — intermediates are anonymous. An omitted `max` means 10; set `max` explicitly to follow longer chains:
 
 ```typescript
 // Employees whose management chain (1–4 hops) contains Alice
@@ -451,9 +454,9 @@ Defines conditions on related records. The key of the nested object **is** the l
 }
 ```
 
-See [Variable-Length Traversal and Cycle Detection](/learn/search-query/where-operators#variable-length-traversal-hops) for full semantics.
+See [Variable-Length Traversal and Cycle Detection](../../search-query/where-operators.md#variable-length-traversal-hops) for full semantics.
 
-Learn more about [relationships in RushDB](/learn/relationships).
+Learn more about [relationships in RushDB](../../relationships/index.mdx).
 
 #### $xor and $nor operators
 
@@ -475,7 +478,7 @@ Learn more about [relationships in RushDB](/learn/relationships).
 
 ### Aggregation
 
-`select` expressions support all aggregation operations. See the [Select Expressions guide](/learn/search-query/select-expressions) for full documentation.
+`select` expressions support all aggregation operations. See the [Select Expressions guide](../../search-query/select-expressions.md) for full documentation.
 
 ```typescript
 // Count and sum via select expressions
@@ -495,7 +498,7 @@ const stats = await db.records.find({
 
 `groupBy` operates in two modes:
 
-### Mode A — Dimensional (one row per distinct value)
+### Mode A — dimensional (one row per distinct value)
 
 Entries are `'$alias.propertyName'` strings. Each distinct value becomes its own output row.
 
@@ -521,7 +524,7 @@ const pivot = await db.records.find({
 })
 ```
 
-### Mode B — Self-group (one row with global KPIs)
+### Mode B — self-group (one row with global KPIs)
 
 Put the **select key names** themselves into `groupBy` (not `$alias.field` paths).
 
@@ -544,7 +547,7 @@ const kpis = await db.records.find({
 For self-group queries, always add `orderBy` on a `select` output key. Without it the engine applies `LIMIT` before aggregation and produces mathematically wrong totals.
 :::
 
-## Critical Rules
+## Critical rules
 
 :::danger Do not combine `limit` with `select`
 Never set `limit` when `select` is present (except to cap root records in a per-record flat query). `limit` restricts the record scan, so metrics like `$sum` or `$avg` operate only on the first N rows and return wrong results. The legacy `aggregate` clause is deprecated and should only be used for vector similarity until select supports it.
@@ -569,9 +572,9 @@ const correct = await db.records.find({
 
 :::
 
-## Usage Examples
+## Usage examples
 
-### Basic Query
+### Basic query
 
 ```typescript
 // Find all users aged 30 or above
@@ -582,7 +585,7 @@ const users = await UserModel.find({
 })
 ```
 
-### Complex Filtering
+### Complex filtering
 
 ```typescript
 // Find active users with specific email domains
@@ -598,7 +601,7 @@ const users = await UserModel.find({
 })
 ```
 
-### Pagination and Sorting
+### Pagination and sorting
 
 ```typescript
 // Get the second page of users sorted by name
@@ -609,7 +612,7 @@ const users = await UserModel.find({
 })
 ```
 
-### Datetime Range Query
+### Datetime range query
 
 ```typescript
 // Records created in 2024
@@ -628,7 +631,7 @@ const q1 = await db.records.find({
 })
 ```
 
-### Filter by Record ID
+### Filter by record ID
 
 ```typescript
 // Find records from a known set of IDs
@@ -637,7 +640,7 @@ const records = await db.records.find({
 })
 ```
 
-### Filtering by Related Records
+### Filtering by related records
 
 ```typescript
 // Find users who authored a post (constrain relationship type + direction)
@@ -686,7 +689,7 @@ const stats = await db.records.find({
 })
 ```
 
-### TimeBucket — Time-Series Aggregation (using `select`)
+### TimeBucket — time-series aggregation (using `select`)
 
 ```typescript
 // Daily order count for 2024
@@ -724,7 +727,7 @@ const biMonthly = await db.records.find({
 })
 ```
 
-### Nested Collect (Hierarchical Output)
+### Nested collect (hierarchical output)
 
 Label-based `$collect` traverses inline — no `$alias` declarations needed. Use `$self` to reference the current level:
 

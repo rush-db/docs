@@ -1,6 +1,6 @@
 ---
 sidebar_position: 27
-title: 'Research Knowledge Graph: Papers, Authors, Topics, Citations'
+title: 'Research knowledge graph: Papers, authors, topics, citations'
 description: Build a scholarly graph supporting citation traversal, topical clustering, and author-centric discovery for research workflows.
 tags: [Domain Blueprint, AI Search, Relationships, TypeScript, Python]
 ---
@@ -8,7 +8,11 @@ tags: [Domain Blueprint, AI Search, Relationships, TypeScript, Python]
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Research Knowledge Graph: Papers, Authors, Topics, Citations
+# Research knowledge graph: Papers, authors, topics, citations
+
+:::note Managed embeddings
+This tutorial searches with a text `query`, which RushDB Cloud embeds with its managed model. On a self-hosted engine, create external indexes and pass a `queryVector` from your own embedding model instead — see [Bring Your Own Vectors](../../semantic-search/bring-your-own-vectors.mdx).
+:::
 
 Academic research is inherently graph-shaped. A paper has authors. Authors belong to institutions. Papers cite other papers. Papers cover topics. Topics overlap. A flat document store loses all of that structure.
 
@@ -268,9 +272,9 @@ P2=$(curl -s -X POST "$BASE/records/search" -H "$H" -H "Authorization: Bearer $T
   -d '{"labels":["PAPER"],"where":{"doi":"10.1000/xyz002"}}' | jq -r '.data[0].__id')
 
 # P2 cites P1
-curl -s -X POST "$BASE/records/$P2/relations" \
+curl -s -X POST "$BASE/relationships/$P2" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$P1\"],\"options\":{\"type\":\"CITES\",\"direction\":\"out\"}}"
+  -d "{\"targetIds\":[\"$P1\"],\"type\":\"CITES\",\"direction\":\"out\"}"
 ```
 
 </TabItem>
@@ -484,6 +488,6 @@ Citation graphs become highly connected over time. Deep traversal queries (paper
 
 ## Next steps
 
-- [Hybrid Retrieval](/learn/tutorials/ai-and-rag/hybrid-retrieval) — filter + semantic rank in one call
-- [Modeling Hierarchies, Networks, and Feedback Loops](/learn/tutorials/graph-modeling/modeling-hierarchies) — structural patterns for citation networks
-- [Data Lineage](/learn/tutorials/graph-modeling/data-lineage) — trace derived knowledge back to source papers
+- [Hybrid Retrieval](../ai-and-rag/hybrid-retrieval.mdx) — filter + semantic rank in one call
+- [Modeling Hierarchies, Networks, and Feedback Loops](../graph-modeling/modeling-hierarchies.mdx) — structural patterns for citation networks
+- [Data Lineage](../graph-modeling/data-lineage.mdx) — trace derived knowledge back to source papers

@@ -1,0 +1,171 @@
+---
+sidebar_position: 38
+title: 'RushDB Cloud or a self-hosted engine'
+description: Choose between RushDB Cloud and running the RushDB engine yourself — what each offers, how the SDKs connect to each, and how to move between them.
+tags: [Deployment, Self-Hosted, Cloud, TypeScript, Python]
+---
+
+import Tabs from '@site/src/components/LanguageTabs'
+import TabItem from '@theme/TabItem'
+
+# RushDB Cloud or a self-hosted engine
+
+RushDB runs in one of two ways, and the same SDKs, SearchQuery and MCP server work with both:
+
+- **RushDB Cloud** — the managed service at [app.rushdb.com](https://app.rushdb.com). It runs the RushDB engine for you and adds the dashboard, managed embeddings and the AI features.
+- **A self-hosted engine** — the Apache-2.0 `rushdb` binary, on your own machines. The engine is the part of RushDB you can self-host.
+
+---
+
+## What each offers
+
+|                                                        | **RushDB Cloud**                         | **Self-hosted engine**                                   |
+| ------------------------------------------------------ | ---------------------------------------- | -------------------------------------------------------- |
+| Who runs it                                            | RushDB                                   | You                                                      |
+| Connect with                                           | An API key                               | The engine URL and token (SDK `direct` mode)             |
+| Records, relationships, SearchQuery, aggregations      | ✓                                        | ✓                                                        |
+| Imports (JSON, CSV), CSV export, transactions          | ✓                                        | ✓                                                        |
+| Keyword (BM25) and hybrid search                       | ✓                                        | ✓                                                        |
+| Vector search with your own vectors                    | ✓                                        | ✓                                                        |
+| openCypher through `query.raw`                         | ✓                                        | ✓ (engine started with `--languages cypher,sql`)         |
+| Managed embeddings: text `query` search, managed indexes | ✓                                      | —                                                        |
+| Natural-language search (`ai.search`)                  | ✓                                        | —                                                        |
+| Relationship-pattern suggestions                       | ✓                                        | —                                                        |
+| Dashboard, projects, team access, REST API             | ✓                                        | —                                                        |
+| Remote MCP over HTTP with OAuth                        | ✓                                        | — (local stdio MCP in direct mode)                       |
+| SQL, ISO GQL, Gremlin, SQL/PGQ, Mongo-style statements | —                                        | ✓                                                        |
+| PostgreSQL wire, gRPC and Bolt listeners               | —                                        | ✓                                                        |
+| Engine-level tenants, backups, replication, metrics    | Operated by RushDB                       | ✓ — yours to configure                                   |
+
+---
+
+## When to choose each
+
+### RushDB Cloud — start here
+
+Choose Cloud when:
+
+- you want to be working in minutes, with nothing to operate;
+- you want RushDB to embed your text (managed embeddings) instead of running an embedding model yourself;
+- you want natural-language search, relationship suggestions, or the dashboard;
+- your team shares projects and access through one account.
+
+<Tabs groupId="programming-language">
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+import RushDB from '@rushdb/javascript-sdk'
+
+const db = new RushDB(process.env.RUSHDB_API_KEY!)
+```
+
+</TabItem>
+<TabItem value="python" label="Python">
+
+```python
+import os
+from rushdb import RushDB
+
+db = RushDB(os.environ["RUSHDB_API_KEY"])
+```
+
+</TabItem>
+</Tabs>
+
+Get an API key at [app.rushdb.com](https://app.rushdb.com).
+
+### Self-hosted engine — full control
+
+Choose a self-hosted engine when:
+
+- data must stay on infrastructure you operate;
+- you already produce embeddings with your own model, or don't need vector search;
+- you want SQL, the PostgreSQL wire protocol, Bolt, gRPC, or other query languages next to the RushDB API;
+- you want to run RushDB embedded in your own product or tests.
+
+Install and start the engine (see [Installation](../../../engine/getting-started/installation.md) for Homebrew, Docker, Cargo and release archives):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rush-db/rushdb/main/install.sh | sh
+RUSHDB_TOKEN="$(openssl rand -hex 32)" rushdb up --data-dir ./rushdb-data
+```
+
+Then connect the SDK in direct mode with the same token:
+
+<Tabs groupId="programming-language">
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+import RushDB from '@rushdb/javascript-sdk'
+
+const db = new RushDB(process.env.RUSHDB_TOKEN!, {
+  direct: true,
+  engineUrl: 'http://127.0.0.1:3000'
+})
+```
+
+</TabItem>
+<TabItem value="python" label="Python">
+
+```python
+import os
+from rushdb import RushDB
+
+db = RushDB(os.environ["RUSHDB_TOKEN"], direct=True, engine_url="http://127.0.0.1:3000")
+```
+
+</TabItem>
+</Tabs>
+
+In direct mode a Cloud-only method throws `CloudOnlyError` before sending anything, and no request ever goes to RushDB Cloud. For production, read [Deployment](../../../engine/operations/deployment.md), [Security](../../../engine/operations/security.md) and [Backup and restore](../../../engine/operations/backup-and-restore.md) in the engine manual.
+
+---
+
+## Write code that runs on both
+
+Everything except the Cloud-only features is the same call in both modes, so one codebase can run against Cloud in production and a local engine in tests:
+
+<Tabs groupId="programming-language">
+<TabItem value="typescript" label="TypeScript">
+
+```typescript
+import RushDB from '@rushdb/javascript-sdk'
+
+const db = process.env.RUSHDB_ENGINE_URL
+  ? new RushDB(process.env.RUSHDB_TOKEN!, { direct: true, engineUrl: process.env.RUSHDB_ENGINE_URL })
+  : new RushDB(process.env.RUSHDB_API_KEY!)
+```
+
+</TabItem>
+<TabItem value="python" label="Python">
+
+```python
+import os
+from rushdb import RushDB
+
+if os.environ.get("RUSHDB_ENGINE_URL"):
+    db = RushDB(os.environ["RUSHDB_TOKEN"], direct=True, engine_url=os.environ["RUSHDB_ENGINE_URL"])
+else:
+    db = RushDB(os.environ["RUSHDB_API_KEY"])
+```
+
+</TabItem>
+</Tabs>
+
+Keep vector search portable by searching with a `queryVector` from your own model; a text `query` needs Cloud's managed embeddings. Check `isCloudOnlyMethod('ai.search')` (Python `is_cloud_only_method`) to decide at runtime whether a feature is available.
+
+---
+
+## Moving between them
+
+- **Cloud → self-hosted:** export your data (`records.export` to CSV, or `records.find` pages as JSON), import it into the engine with `importJson` / `importCsv`, re-create embedding indexes as external indexes, and write your vectors. Replace managed text queries with `queryVector`.
+- **Self-hosted → Cloud:** import the same way into a Cloud project. External indexes keep working; switch a property to a managed index to have Cloud embed it.
+- **From a self-hosted RushDB 2.x deployment:** see [Upgrading from RushDB 2.x](../../../engine/operations/upgrading-from-2x.md) in the engine manual, and [Migrate from 2.x](../../../migration/from-2x.mdx) for the SDK changes.
+
+---
+
+## Next steps
+
+- [Get started](../../../get-started/index.mdx) — the shortest path on Cloud or on your own engine
+- [SDKs](../../../connect/sdks.mdx) — direct mode configuration and the feature matrix
+- [Engine manual](../../../engine/README.md) — everything about running `rushdb`

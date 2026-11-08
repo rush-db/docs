@@ -1,4 +1,4 @@
-// Runs the 3.x Quick Tutorial (docs-v3/get-started/quick-tutorial.mdx) against a
+// Runs the 3.x Quick Tutorial (docs/get-started/quick-tutorial.mdx) against a
 // real engine: the TypeScript steps, in direct mode, with the published SDK.
 //
 //   RUSHDB_BIN=/path/to/rushdb pnpm verify:v3-quickstart   # default ../rust-rushdb/target/debug/rushdb

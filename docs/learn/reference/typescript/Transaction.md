@@ -1,4 +1,7 @@
 ---
+title: Transaction class (TypeScript SDK)
+sidebar_label: Transaction
+description: "Reference for the Transaction class in the RushDB TypeScript SDK: commit or roll back a group of atomic writes and pass the transaction to SDK methods."
 ---
 
 # Transaction
@@ -40,7 +43,7 @@ const result = await transaction.commit()
 console.log(result.data.message) // "Transaction (id) has been successfully committed."
 ```
 
-### Roll Back
+### Roll back
 
 `rollback()`
 
@@ -68,7 +71,7 @@ try {
 }
 ```
 
-## Usage with SDK Methods
+## Usage with SDK methods
 
 Many SDK methods accept a `Transaction` instance as their last parameter, allowing you to include the operation within the transaction:
 
@@ -105,7 +108,7 @@ try {
 }
 ```
 
-## See Also
+## See also
 
-- [Transactions API Documentation](/learn/records-and-queries/transactions)
-- [RushDB Class Reference](/learn/reference/typescript/RushDB)
+- [Transactions API Documentation](../../records-and-queries/transactions.mdx)
+- [RushDB Class Reference](./RushDB.md)

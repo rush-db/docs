@@ -1,0 +1,170 @@
+---
+sidebar_position: 2
+title: Keyword search with BM25
+sidebar_label: Keyword search
+description: Declare a BM25 text index on a RushDB label and run keyword searches for names, codes and identifiers, with query syntax, scores and consistency options.
+---
+
+import Tabs from '@site/src/components/LanguageTabs'
+import TabItem from '@theme/TabItem'
+
+# Keyword search
+
+Keyword search ranks records by how well their text matches your keywords, using BM25 over a **text index**. Use it for search boxes, exact product names, error codes and identifiers: anything where the words themselves matter more than their meaning. It works the same on RushDB Cloud and on a self-hosted engine, and needs no embedding model.
+
+To combine keywords with meaning in one ranking, add a `text` leg to a vector search: see [Hybrid Search](./hybrid-search.mdx).
+
+---
+
+## Declare a text index
+
+A text index covers the records of one label and either one property, or every string of the record with `property: '*'` (strings inside arrays and nested objects included). It is built online; searches are accepted once its `status` is `ready`.
+
+<Tabs groupId="programming-language">
+  <TabItem value="python" label="Python" default>
+
+```python
+db.text_indexes.create({"label": "Article", "property": "body"})
+
+# every string of the record
+db.text_indexes.create({"label": "Ticket", "property": "*", "consistency": "immediate"})
+
+for index in db.text_indexes.find().data:
+    print(index["name"], index["status"], index["pending"])
+```
+
+  </TabItem>
+  <TabItem value="typescript" label="TypeScript">
+
+```typescript
+await db.textIndexes.create({ label: 'Article', property: 'body' })
+
+// every string of the record
+await db.textIndexes.create({ label: 'Ticket', property: '*', consistency: 'immediate' })
+
+const { data: indexes } = await db.textIndexes.find()
+indexes.forEach((index) => console.log(index.name, index.status, index.pending))
+```
+
+  </TabItem>
+  <TabItem value="shell" label="Shell">
+
+```bash
+curl -X POST https://api.rushdb.com/api/v1/text-indexes \
+  -H "Authorization: Bearer $RUSHDB_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"label": "Article", "property": "body"}'
+
+curl https://api.rushdb.com/api/v1/text-indexes \
+  -H "Authorization: Bearer $RUSHDB_API_KEY"
+```
+
+  </TabItem>
+</Tabs>
+
+| Field         | Required | Description                                                                                   |
+| ------------- | -------- | --------------------------------------------------------------------------------------------- |
+| `label`       | yes      | Label of the records to index.                                                                |
+| `property`    | yes      | A property name, or `*` for every string of the record.                                       |
+| `name`        | no       | Unique within the project. Defaults to `<label>.<property>.text` (`all` in place of `*`).      |
+| `consistency` | no       | `eventual` (default) or `immediate`, see below.                                               |
+
+`suggestName({ label, property })` (Python `suggest_name`) returns the default name a new index would get. Drop an index by name with `delete(name)`.
+
+### Consistency
+
+| `consistency`        | When a search sees a committed write                                         | Cost                                              |
+| -------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------- |
+| `eventual` (default) | Shortly after the commit: a background applier indexes changes within about 250 ms. | Writes and searches never wait for indexing. |
+| `immediate`          | Always: a search first indexes every queued change (read-your-writes).       | The first search after a burst of writes pays for indexing them. |
+
+Each index reports `pending`, the changes it has not applied yet.
+
+---
+
+## Search
+
+`db.records.textSearch()` / `POST /api/v1/search/text` returns full records, best first. `labels` and `where` select the candidates **before** ranking, so a record outside the filter never takes a top slot, and `total` counts every match, not just the page.
+
+<Tabs groupId="programming-language">
+  <TabItem value="python" label="Python" default>
+
+```python
+result = db.records.text_search({
+    "query": "graph database",
+    "labels": ["Article"],
+    "where": {"status": "published"},
+    "limit": 10,
+})
+
+print(result.total, result.meta["textSearch"])
+for record in result.data:
+    print(f"[{record.score:.3f}] {record.get('title')}")
+```
+
+  </TabItem>
+  <TabItem value="typescript" label="TypeScript">
+
+```typescript
+const result = await db.records.textSearch({
+  query: 'graph database',
+  labels: ['Article'],
+  where: { status: 'published' },
+  limit: 10
+})
+
+console.log(result.total, result.textSearch) // { matches, pending }
+result.data.forEach((record) => console.log(record.score, record.data.title))
+```
+
+  </TabItem>
+  <TabItem value="shell" label="Shell">
+
+```bash
+curl -X POST https://api.rushdb.com/api/v1/search/text \
+  -H "Authorization: Bearer $RUSHDB_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "graph database", "labels": ["Article"], "where": {"status": "published"}, "limit": 10}'
+```
+
+  </TabItem>
+</Tabs>
+
+| Parameter  | Type       | Default | Description                                                                          |
+| ---------- | ---------- | ------- | ------------------------------------------------------------------------------------ |
+| `query`    | `string`   | —       | Keywords, in the syntax below. A blank query matches nothing.                        |
+| `index`    | `string`   | —       | The text index, by name. Otherwise the one ready text index of the first label.      |
+| `property` | `string`   | —       | Narrows the choice of text index to one over this property.                          |
+| `labels`   | `string[]` | —       | Labels to search within.                                                             |
+| `where`    | `object`   | —       | Filter applied before ranking; every [where operator](../search-query/where-operators.md) works. |
+| `skip`     | `number`   | `0`     | Results to skip.                                                                     |
+| `limit`    | `number`   | `10`    | Maximum results.                                                                     |
+| `allTerms` | `boolean`  | `false` | Every unmarked keyword must match (AND) instead of any (OR).                         |
+| `phrase`   | `boolean`  | `false` | Match the whole query as one phrase; the syntax below is not interpreted.            |
+
+The result reports `matches` (records matching the keywords among the filtered ones) and `pending` (changes the index had not applied when the search ran): TypeScript `result.textSearch`, Python `result.meta["textSearch"]`, REST `meta.textSearch`.
+
+### Query syntax
+
+| Syntax                       | Meaning                                                          | Example                          |
+| ---------------------------- | ---------------------------------------------------------------- | -------------------------------- |
+| `a b`                        | Any term may match (OR); records matching more terms rank higher. | `quick fox`                      |
+| `"a b"`                      | Phrase: the terms adjacent, in order.                            | `"brown fox"`                    |
+| `+a`                         | `a` must match.                                                  | `+graph database`                |
+| `-a`                         | `a` must not match.                                              | `graph -relational`              |
+| `a AND b`, `a OR b`, `NOT a` | Boolean operators (upper case).                                  | `graph AND NOT sql`              |
+| `( … )`                      | Grouping.                                                        | `(graph OR network) AND storage` |
+
+Wrap terms containing `:`, `^`, `*`, `[`, `]`, `{`, `}`, `!` or `\` in double quotes.
+
+### Scores
+
+`__score` is a BM25 score. It is comparable only **within one result set**: don't compare it across queries or indexes, and don't add it to vector scores. Hybrid search fuses the two rankings for you.
+
+---
+
+## See also
+
+- [Hybrid Search](./hybrid-search.mdx) — keyword and vector ranking fused in one search
+- [Semantic Search](./semantic-search.mdx) — rank by meaning
+- [Full-text search in the engine manual](../../engine/indexes-and-search/full-text-search.md) — the engine's text indexes, statement-language search, and storage

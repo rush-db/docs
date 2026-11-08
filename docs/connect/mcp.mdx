@@ -1,23 +1,25 @@
 ---
 sidebar_position: 2
-title: MCP Server
-displayed_sidebar: docs
+title: Connect the RushDB MCP server
+sidebar_label: MCP server
+description: "Connect ChatGPT, Claude, Cursor or VS Code to RushDB through the MCP server: hosted OAuth, a local server with an API key, or direct mode to your own engine."
 ---
 
-# MCP Server
+# MCP server
 
-Give an AI assistant direct access to your RushDB project without writing integration code. RushDB supports hosted OAuth connections for web assistants and a local `npx` server for desktop and coding tools.
+Give an AI assistant direct access to your RushDB data without writing integration code. The RushDB MCP server (`@rushdb/mcp-server`) runs in three ways:
 
-| Mode                                          | Best for                        | Setup                   |
-| --------------------------------------------- | ------------------------------- | ----------------------- |
-| [Hosted OAuth](#hosted-oauth-no-installation) | ChatGPT, Claude.ai, web clients | Add one URL and sign in |
-| [Local MCP](#local-mcp-api-key)               | Claude Desktop, Cursor, VS Code | Add an MCP config block |
+| Mode                                                         | Best for                        | Connects to        | Setup                   |
+| ------------------------------------------------------------ | ------------------------------- | ------------------ | ----------------------- |
+| [Hosted OAuth](#hosted-oauth-no-installation)                | ChatGPT, Claude.ai, web clients | RushDB Cloud       | Add one URL and sign in |
+| [Local, Cloud API key](#local-mcp-api-key)                   | Claude Desktop, Cursor, VS Code | RushDB Cloud       | Add an MCP config block |
+| [Local, self-hosted engine](#self-hosted-engine-direct-mode) | Claude Desktop, Cursor, VS Code | Your own `rushdb` engine | Add an MCP config block |
 
-Reference: [MCP Server Reference](/learn/reference/mcp) · [All MCP Tools](/learn/reference/mcp/tools)
+Reference: [MCP Server Reference](../learn/reference/mcp/index.mdx) · [All MCP Tools](../learn/reference/mcp/tools.mdx)
 
 ---
 
-## Hosted OAuth: No Installation
+## Hosted OAuth: No installation
 
 Use this endpoint:
 
@@ -45,9 +47,9 @@ Always include `/mcp`. The root domain does not serve the MCP protocol.
 
 ---
 
-## Local MCP: RushDB Cloud API Key {#local-mcp-api-key}
+## Local MCP: RushDB Cloud API key {#local-mcp-api-key}
 
-Get a [project API key](/deploy/configuration/get-api-key), add the relevant configuration, then restart your client.
+Get an API key at [app.rushdb.com](https://app.rushdb.com), add the relevant configuration, then restart your client.
 
 ### Claude Desktop
 
@@ -85,7 +87,7 @@ Add `.cursor/mcp.json` in your project:
 }
 ```
 
-### VS Code: Copilot Agent Mode
+### VS Code: Copilot agent mode
 
 Add `.vscode/mcp.json`:
 
@@ -104,71 +106,100 @@ Add `.vscode/mcp.json`:
 }
 ```
 
-### Self-Hosted Platform Instance
+---
 
-Add `RUSHDB_API_URL` to the `env` block:
+## Self-hosted engine: Direct mode {#self-hosted-engine-direct-mode}
+
+Direct mode connects a local stdio MCP client to a RushDB engine you run. It needs no RushDB Cloud account, API key, dashboard or OAuth. Start the engine with a token:
+
+```bash
+export RUSHDB_TOKEN="$(openssl rand -hex 32)"
+rushdb up --data-dir ./rushdb-data
+```
+
+Then configure the MCP server with the same token:
 
 ```json
 {
-  "env": {
-    "RUSHDB_API_KEY": "your-api-key-here",
-    "RUSHDB_API_URL": "https://your-rushdb.example.com/api/v1"
+  "mcpServers": {
+    "rushdb": {
+      "command": "npx",
+      "args": ["-y", "@rushdb/mcp-server"],
+      "env": {
+        "RUSHDB_MODE": "direct",
+        "RUSHDB_ENGINE_URL": "http://127.0.0.1:3000",
+        "RUSHDB_ENGINE_TOKEN": "your-engine-token"
+      }
+    }
   }
 }
 ```
 
-## RushDB 3: A Self-Hosted Engine
+Direct mode offers every tool whose work the engine does:
+- schema discovery;
+- record reads and writes, with ordering, projections and aggregations;
+- relationships, labels and properties;
+- bulk import and CSV export;
+- text indexes and keyword search;
+- external vector indexes, with vector and hybrid search by a `queryVector` you supply.
 
-The 3.x MCP server can also connect to a self-hosted RushDB 3 engine (direct mode). See [MCP in the RushDB 3 documentation](/3.x/connect/mcp).
+The RushDB Cloud tools are not listed, and are refused if called: `smartSearch` (natural-language search), the relationship-pattern tools, and anything that needs managed embeddings (a text `query` for vector search, managed indexes).
+
+Direct mode runs over stdio only, on the same machine as the client: the MCP HTTP transport authenticates through RushDB Cloud's OAuth.
 
 ---
 
-## Verify the Connection
+## Verify the connection
 
 Ask your assistant:
 
 > Call `getSchemaMarkdown` and show me what labels exist in my RushDB project.
 
-A new project returns an empty schema. That still confirms the connection works.
+A new project or engine returns an empty schema. That still confirms the connection works.
 
 ---
 
-## Mandatory Workflow
+## Mandatory workflow
 
 RushDB MCP exposes a discovery-first workflow so agents query the schema that exists instead of guessing labels, fields, or operators:
 
 1. Call `getSchemaMarkdown` at the start of a session. It returns labels, property names and types, value ranges, and relationships.
-2. Classify the request as a listing, aggregation, traversal, semantic search, or mutation.
+2. Classify the request as a listing, aggregation, traversal, keyword or semantic search, or mutation.
 3. Call `getSearchQuerySpec` before building queries with dates, metrics, `groupBy`, relationship traversal, or vector search.
 4. Use the discovered label and property names exactly as returned. Labels are case-sensitive.
 
 Clients with MCP Prompts support can fetch `rushdb.queryBuilder` at session start. Other clients can call `getQueryBuilderPrompt` for the same instructions.
 
-## Local Configuration Reference
+## Local configuration reference
 
-| Variable         | Required | Default                         | Description                                      |
-| ---------------- | -------- | ------------------------------- | ------------------------------------------------ |
-| `RUSHDB_API_KEY` | yes      | —                               | RushDB project API key                           |
-| `RUSHDB_API_URL` | no       | `https://api.rushdb.com/api/v1` | Override for self-hosted or staging environments |
-
+| Variable              | Mode   | Required | Default                         | Description                                          |
+| --------------------- | ------ | -------- | ------------------------------- | ---------------------------------------------------- |
+| `RUSHDB_API_KEY`      | Cloud  | yes      | —                               | RushDB Cloud API key                                 |
+| `RUSHDB_API_URL`      | Cloud  | no       | `https://api.rushdb.com/api/v1` | A RushDB Cloud API endpoint other than the default   |
+| `RUSHDB_MODE`         | Direct | yes      | —                               | Set to `direct`                                      |
+| `RUSHDB_ENGINE_URL`   | Direct | yes      | —                               | The engine's base URL, e.g. `http://127.0.0.1:3000`  |
+| `RUSHDB_ENGINE_TOKEN` | Direct | yes      | —                               | The engine token                                     |
+| `RUSHDB_ENGINE_SCOPE` | Direct | no       | —                               | The tenant, on an engine started with `--multitenant` |
 
 :::tip Security
-Treat `RUSHDB_API_KEY` like a password. Inject it through your MCP client or an OS keychain, and do not commit it to version control.
+Treat `RUSHDB_API_KEY` and `RUSHDB_ENGINE_TOKEN` like passwords. Inject them through your MCP client or an OS keychain, and do not commit them to version control.
 :::
 
-## Essential Tools
+## Essential tools
 
-| Need                            | Start with                                                                              |
-| ------------------------------- | --------------------------------------------------------------------------------------- |
-| Discover a project schema       | `getSchemaMarkdown`, `getSchema`                                                        |
-| Build a precise query           | `getSearchQuerySpec`, `findRecords`                                                     |
-| Read or write records           | `getRecord`, `createRecord`, `updateRecord`, `setRecord`                                |
-| Connect records                 | `findRelationships`, `attachRelation`, `detachRelation`                                 |
-| Work in batches                 | `bulkCreateRecords`, `bulkDeleteRecords`, `exportRecords`                               |
-| Review inferred graph structure | `listRelationshipPatterns`, `analyzeRelationshipPatterns`, `approveRelationshipPattern` |
-| Add vector search               | `findEmbeddingIndexes`, `createEmbeddingIndex`, `vectorSearch`                          |
+| Need                                   | Start with                                                                              |
+| -------------------------------------- | --------------------------------------------------------------------------------------- |
+| Discover a schema                      | `getSchemaMarkdown`, `getSchema`                                                        |
+| Build a precise query                  | `getSearchQuerySpec`, `findRecords`                                                     |
+| Read or write records                  | `getRecord`, `createRecord`, `updateRecord`, `setRecord`                                |
+| Connect records                        | `findRelationships`, `attachRelation`, `detachRelation`                                 |
+| Work in batches                        | `bulkCreateRecords`, `bulkDeleteRecords`, `exportRecords`                               |
+| Keyword search                         | `createTextIndex`, `listTextIndexes`, `textSearch`                                      |
+| Vector and hybrid search               | `findEmbeddingIndexes`, `createEmbeddingIndex`, `vectorSearch`                          |
+| Natural-language search [Cloud]        | `smartSearch`                                                                           |
+| Review inferred graph structure [Cloud] | `listRelationshipPatterns`, `analyzeRelationshipPatterns`, `approveRelationshipPattern` |
 
-Each MCP tool publishes its input schema to the connected client. See [All MCP Tools](/learn/reference/mcp/tools) for the complete catalog and use the client tool inspector when you need the full JSON schema.
+Each MCP tool publishes its input schema to the connected client. See [All MCP Tools](../learn/reference/mcp/tools.mdx) for the complete catalog.
 
 ## Troubleshooting
 
@@ -176,21 +207,20 @@ Each MCP tool publishes its input schema to the connected client. See [All MCP T
 | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | Hosted connector cannot discover actions | Confirm the URL is `https://mcp.rushdb.com/mcp`, including `/mcp`, then remove and recreate the connector. |
 | Local MCP reports a missing API key      | Set `RUSHDB_API_KEY` in the MCP client's `env` block and restart the client.                               |
-| Local MCP cannot reach RushDB            | Verify `RUSHDB_API_URL`, or remove it to restore the hosted default.                                       |
+| Direct mode cannot reach the engine      | Check `RUSHDB_ENGINE_URL` with `curl $RUSHDB_ENGINE_URL/health`, and that the token matches the engine's.  |
+| A tool is missing in direct mode         | It needs RushDB Cloud; see the [tool catalog](../learn/reference/mcp/tools.mdx).                           |
 | A query uses the wrong label or property | Call `getSchemaMarkdown` again and use the case-sensitive names it returns.                                |
 | A structured query fails validation      | Call `getSearchQuerySpec` and rebuild the query from the documented operators.                             |
 
-For OAuth diagnostics, verify that `/.well-known/openid-configuration` returns JSON, `/.well-known/jwks.json` returns keys, and `/mcp` responds as an MCP endpoint.
-
 ---
 
-## Make the Agent More Effective
+## Make the agent more effective
 
-Install [RushDB Agent Skills](/connect/skills) after MCP connection. Skills teach the agent discovery-first querying, graph modeling, faceted search, and persistent memory patterns.
+Install [RushDB Agent Skills](./skills.mdx) after the MCP connection. Skills teach the agent discovery-first querying, graph modeling, faceted search, and persistent memory patterns.
 
-## Next Steps
+## Next steps
 
-- [Browse the complete MCP tools reference](/learn/reference/mcp/tools)
-- [Install Agent Skills](/connect/skills)
-- [Bootstrap persistent agent memory](/learn/agent-memory/quickstart)
-- [Use RushDB with AI agents](/connect/agents)
+- [Browse the complete MCP tools reference](../learn/reference/mcp/tools.mdx)
+- [Install Agent Skills](./skills.mdx)
+- [Bootstrap persistent agent memory](../learn/agent-memory/quickstart.mdx)
+- [Use RushDB with AI agents](./agents.mdx)

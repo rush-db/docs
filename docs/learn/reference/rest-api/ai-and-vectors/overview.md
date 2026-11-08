@@ -1,9 +1,10 @@
 ---
 sidebar_position: 0
-title: Overview
+title: AI and semantic search REST API
+description: "Overview of the RushDB Cloud AI endpoints: graph schema discovery as Markdown or JSON, embedding indexes, and semantic search over indexed properties."
 ---
 
-# AI & Semantic Search
+# AI & semantic search
 
 RushDB is a **self-aware memory layer for agents, humans, and apps**. It continuously understands its own structure — labels, fields, value distributions, relationships — and exposes that knowledge so agents can reason over real data without hallucinating schema details, and apps can retrieve semantically relevant context on demand.
 
@@ -59,19 +60,19 @@ The AI API covers three capabilities:
 | Topic                                                                                  | Description                                                                    |
 | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | [Schema](#graph-schema)                                                                | Schema discovery with `POST /api/v1/ai/schema/md` and `POST /api/v1/ai/schema` |
-| [Indexing](/learn/reference/rest-api/ai-and-vectors/indexing)                          | Create and manage managed embedding indexes                                    |
-| [Advanced Indexing — BYOV](/learn/reference/rest-api/ai-and-vectors/advanced-indexing) | Bring Your Own Vectors: external indexes, inline writes                        |
-| [Semantic Search](/learn/reference/rest-api/ai-and-vectors/search)                     | Query by meaning with `POST /api/v1/ai/search`                                 |
-| [Writing with Vectors](/learn/reference/rest-api/ai-and-vectors/write-with-vectors)    | Attach vectors at create / upsert / importJson time                            |
+| [Indexing](./indexing.md)                          | Create and manage managed embedding indexes                                    |
+| [Advanced Indexing — BYOV](./advanced-indexing.md) | Bring Your Own Vectors: external indexes, inline writes                        |
+| [Semantic Search](./search.md)                     | Query by meaning with `POST /api/v1/ai/search`                                 |
+| [Writing with Vectors](./write-with-vectors.md)    | Attach vectors at create / upsert / importJson time                            |
 | [Agent Skills](#agent-skills)                                                          | Installable skills that teach any compatible agent to use RushDB               |
 
 ---
 
-## Graph Schema
+## Graph schema
 
 The schema endpoints expose a live snapshot of your database structure — without any manual schema definitions.
 
-### Get Schema (Markdown)
+### Get schema (Markdown)
 
 `POST /api/v1/ai/schema/md`
 
@@ -82,50 +83,66 @@ Returns the full schema as compact Markdown — the **recommended format for LLM
 | Field    | Type             | Required | Description                                                                  |
 | -------- | ---------------- | -------- | ---------------------------------------------------------------------------- |
 | `labels` | array of strings | no       | Restrict output to specific labels. Omit (or pass `[]`) for the full schema. |
-| `force`  | boolean          | no       | Bypass the 1-hour cache and force a full recalculation.                      |
+| `force`  | boolean          | no       | Recalculate now instead of serving the cached schema.                        |
 
-#### Example Request
+#### Example request
 
 ```bash
 curl -X POST https://api.rushdb.com/api/v1/ai/schema/md \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $RUSHDB_API_KEY" \
-  -d '{}'
+  -d '{"labels": ["Order"]}'
 ```
 
-#### Example Response
+#### Example response
+
+The Markdown arrives as a JSON string in `data`:
+
+```json
+{
+  "data": "# Graph Schema\n\n## Labels\n\n| Label | Count |\n|-------|------:|\n| `Order` | 5 |\n\n---\n\n## `Order` (5 records)\n\n### Properties\n\n| Property | ID | Type | Values / Range | Semantic Search |\n|----------|----|------|----------------|-----------------|\n| `createdAt` | `p000000000000000b` | datetime | `2026-10-02T09:15:00.000Z`..`2026-11-03T11:00:00.000Z` | — |\n| `status` | `p0000000000000009` | string | `paid`, `shipped`, `pending`, `cancelled` | — |\n| `total` | `p000000000000000a` | number | `79.8`..`499` | — |\n\n### Relationships\n\n| Traversal | Count | Edge Properties |\n|-----------|------:|-----------------|\n| `(Order)-[:CONTAINS]->(Product)` | 6 | `quantity:number` |\n| `(Order)-[:PLACED_BY]->(User)` | 5 | — |\n\n### Relationship Properties\n\n| Traversal | Property | Type | Values / Range | Relationships |\n|-----------|----------|------|----------------|--------------:|\n| `(Order)-[:CONTAINS]->(Product)` | `quantity` | number | `1`..`2` | 6 |",
+  "success": true
+}
+```
+
+The same `data`, rendered:
 
 ```text
 # Graph Schema
 
 ## Labels
 
-| Label     | Count |
-|-----------|------:|
-| `Order`   |  1840 |
-| `User`    |   312 |
-| `Product` |    95 |
+| Label | Count |
+|-------|------:|
+| `Order` | 5 |
 
 ---
 
-## `Order` (1840 records)
+## `Order` (5 records)
 
 ### Properties
 
-| Property    | Type     | Values / Range                         | Semantic Search                  |
-|-------------|----------|----------------------------------------|----------------------------------|
-| `status`    | string   | `pending`, `paid`, `shipped` (+2 more) | —                                |
-| `total`     | number   | `4.99`..`2499.00`                      | —                                |
-| `name`      | string   | `Widget A`, `Widget B` (+8 more)       | `managed` cosine 1536d [ready]   |
-| `createdAt` | datetime | `2024-01-03`..`2026-02-27`             | —                                |
+| Property | ID | Type | Values / Range | Semantic Search |
+|----------|----|------|----------------|-----------------|
+| `createdAt` | `p000000000000000b` | datetime | `2026-10-02T09:15:00.000Z`..`2026-11-03T11:00:00.000Z` | — |
+| `status` | `p0000000000000009` | string | `paid`, `shipped`, `pending`, `cancelled` | — |
+| `total` | `p000000000000000a` | number | `79.8`..`499` | — |
 
 ### Relationships
 
-| Type        | Direction | Other Label |
-|-------------|-----------|-------------|
-| `PLACED_BY` | out       | `User`      |
-| `CONTAINS`  | out       | `Product`   |
+| Traversal | Count | Edge Properties |
+|-----------|------:|-----------------|
+| `(Order)-[:CONTAINS]->(Product)` | 6 | `quantity:number` |
+| `(Order)-[:PLACED_BY]->(User)` | 5 | — |
+
+### Relationship Properties
+
+| Traversal | Property | Type | Values / Range | Relationships |
+|-----------|----------|------|----------------|--------------:|
+| `(Order)-[:CONTAINS]->(Product)` | `quantity` | number | `1`..`2` | 6 |
 ```
+
+The **ID** column holds each property's ID for `GET /api/v1/properties/:id/values`. **Traversal** rows read from the section's label: `->` is an outgoing relationship, `<-` an incoming one. A full example with three labels and a vector index is in [Schema self-awareness](../../../agent-memory/schema-self-awareness.mdx#what-the-agent-receives).
 
 #### Filtered request (single label)
 
@@ -140,7 +157,7 @@ Returns only the `Order` section. The underlying cache still covers the full sch
 
 ---
 
-### Get Schema (JSON)
+### Get schema (JSON)
 
 `POST /api/v1/ai/schema`
 
@@ -151,55 +168,95 @@ Returns the same schema as a structured JSON array. Each element describes one l
 | Field    | Type             | Required | Description                                             |
 | -------- | ---------------- | -------- | ------------------------------------------------------- |
 | `labels` | array of strings | no       | Restrict to specific labels. Omit for the full schema.  |
-| `force`  | boolean          | no       | Bypass the 1-hour cache and force a full recalculation. |
+| `force`  | boolean          | no       | Recalculate now instead of serving the cached schema.   |
 
-#### Response Schema
+#### Example response
+
+For `{"labels": ["Order"]}`, the same data as the Markdown example above:
 
 ```json
-[
-  {
-    "label": "Order",
-    "count": 1840,
-    "properties": [
-      { "id": "prop_abc123", "name": "status", "type": "string", "values": ["pending", "paid", "shipped"] },
-      { "id": "prop_def456", "name": "total", "type": "number", "min": 4.99, "max": 2499.0 },
-      {
-        "id": "prop_xyz789",
-        "name": "name",
-        "type": "string",
-        "values": ["Widget A", "Widget B"],
-        "vectorIndexes": [
-          {
-            "id": "idx_001",
-            "sourceType": "managed",
-            "similarityFunction": "cosine",
-            "dimensions": 1536,
-            "status": "ready",
-            "modelKey": "text-embedding-3-small"
-          }
-        ]
-      }
-    ],
-    "relationships": [
-      { "label": "User", "type": "PLACED_BY", "direction": "out" },
-      { "label": "Product", "type": "CONTAINS", "direction": "out" }
-    ]
-  }
-]
+{
+  "data": [
+    {
+      "label": "Order",
+      "count": 5,
+      "properties": [
+        {
+          "id": "p000000000000000b",
+          "name": "createdAt",
+          "type": "datetime",
+          "recordsCount": 5,
+          "isArray": false,
+          "min": "2026-10-02T09:15:00.000Z",
+          "max": "2026-11-03T11:00:00.000Z"
+        },
+        {
+          "id": "p0000000000000009",
+          "name": "status",
+          "type": "string",
+          "recordsCount": 5,
+          "isArray": false,
+          "values": [
+            "paid",
+            "shipped",
+            "pending",
+            "cancelled"
+          ],
+          "min": "cancelled",
+          "max": "shipped"
+        },
+        {
+          "id": "p000000000000000a",
+          "name": "total",
+          "type": "number",
+          "recordsCount": 5,
+          "isArray": false,
+          "min": 79.8,
+          "max": 499
+        }
+      ],
+      "relationships": [
+        {
+          "label": "Product",
+          "type": "CONTAINS",
+          "direction": "out",
+          "count": 6,
+          "properties": [
+            {
+              "name": "quantity",
+              "type": "number",
+              "relationshipsCount": 6,
+              "min": 1,
+              "max": 2
+            }
+          ]
+        },
+        {
+          "label": "User",
+          "type": "PLACED_BY",
+          "direction": "out",
+          "count": 5
+        }
+      ]
+    }
+  ],
+  "success": true
+}
 ```
 
-- `properties[].id` — pass to `GET /api/v1/properties/:id/values` to enumerate all distinct values
-- `properties[].values` — up to 10 samples (string/boolean only)
-- `properties[].min` / `.max` — range info (number/datetime only)
-- `properties[].vectorIndexes` — non-empty when one or more embedding indexes exist for this property; each entry has `id`, `sourceType`, `similarityFunction`, `dimensions`, `status`, and `modelKey`. Use `POST /api/v1/ai/search` to query semantically.
-- `relationships[].direction` — `out` = this label is source; `in` = this label is target
-- `relationships[].count` — number of observed edges for that relationship pattern
-- `relationships[].properties` — optional summaries of user-defined edge properties discovered on that pattern
+- `count`: records with the label. Items are sorted by count, largest first.
+- `properties[].id`: pass to `GET /api/v1/properties/:id/values` to list every distinct value. A property with the same name and type has the same ID under every label.
+- `properties[].recordsCount`: records of this label that have the property. `isArray` is `true` when they store it as an array.
+- `properties[].values`: up to 10 sample values for strings; `["true", "false"]` for booleans.
+- `properties[].min` / `.max`: the range of numbers and datetimes (ISO 8601). Non-array strings and booleans also get an alphabetical min and max.
+- `properties[].vectorIndexes`: present when the property has vector indexes. Each has `id`, `name`, `sourceType`, `similarityFunction`, `dimensions`, `status` (`pending`, `indexing`, `awaiting_vectors`, `ready` or `error`) and `modelKey`. Query a `ready` one with `POST /api/v1/ai/search`.
+- `relationships[].direction`: `out` when this label is the source, `in` when it is the target. `count` is the number of relationships of that type between the two labels.
+- `relationships[].properties`: the properties stored on those relationships, with `relationshipsCount` and, like record properties, sample `values` or a `min` / `max` range.
 
 ---
 
 :::note Caching
-Both endpoints share a **1-hour cache** on the ProjectNode. First call after TTL expiry triggers a full graph scan; all subsequent calls within the hour are instant. Pass `"force": true` in the request body to bypass the cache and trigger an immediate recalculation.
+Both endpoints share one cached schema per project, kept for an hour. After that, a call still gets the cached schema straight away while a refresh runs in the background, so no call waits for a recalculation unless the project has no cached schema yet or the body has `"force": true`. `force` waits for a schema that includes every write made before the call.
 :::
 
 :::tip Agent quickstart
@@ -208,12 +265,12 @@ Call `POST /api/v1/ai/schema/md` first in every AI session. Without it, models w
 
 ---
 
-## Agent Skills
+## Agent skills
 
 `@rushdb/skills` is a collection of [Agent Skills](https://agentskills.io) — installable instructions that teach any skills-compatible AI agent (Claude, GitHub Copilot, Cursor, Windsurf, and others) to use RushDB efficiently, without manual system prompt engineering.
 
 ```bash
-npx skills add rush-db/rushdb --path packages/skills
+npx skills add rush-db/skills
 ```
 
 | Skill                    | What it teaches                                                                                                                                                   |
@@ -228,5 +285,5 @@ npx skills add rush-db/rushdb --path packages/skills
 Each skill bundles a `SKILL.md` with concise instructions and optional reference files (like the full SearchQuery spec) that the agent loads on demand.
 
 :::note MCP server vs. Agent Skills
-The [MCP server](/connect/mcp) gives agents direct tool access to RushDB at runtime. Agent Skills teach agents _how_ to use those tools correctly — they complement each other.
+The [MCP server](../../../../connect/mcp.mdx) gives agents direct tool access to RushDB at runtime. Agent Skills teach agents _how_ to use those tools correctly — they complement each other.
 :::

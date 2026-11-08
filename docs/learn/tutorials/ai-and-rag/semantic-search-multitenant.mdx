@@ -1,6 +1,6 @@
 ---
 sidebar_position: 14
-title: 'Semantic Search for Multi-Tenant Products'
+title: 'Semantic search for multi-tenant products'
 description: Build tenant-safe semantic retrieval using RushDB's project-scoped prefilter and exact cosine similarity ranking — without global index assumptions.
 tags: [AI, Search, Multi-Tenant, Architecture]
 ---
@@ -8,7 +8,11 @@ tags: [AI, Search, Multi-Tenant, Architecture]
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Semantic Search for Multi-Tenant Products
+# Semantic search for multi-tenant products
+
+:::note Managed embeddings
+This tutorial searches with a text `query`, which RushDB Cloud embeds with its managed model. On a self-hosted engine, create external indexes and pass a `queryVector` from your own embedding model instead — see [Bring Your Own Vectors](../../semantic-search/bring-your-own-vectors.mdx).
+:::
 
 Vector search in multi-tenant products has one rule that trumps all others: a user in tenant A must never see results from tenant B, even if tenant B has a more semantically similar document.
 
@@ -691,6 +695,6 @@ Project-scoped isolation is enforced at the API key level. If you accidentally r
 
 ## Next steps
 
-- [Hybrid Retrieval: Structured Filters Plus Semantic Search](/learn/tutorials/ai-and-rag/hybrid-retrieval) — combining semantic ranking with deeper graph traversal
-- [RAG Pipeline in Minutes](/learn/tutorials/ai-and-rag/rag-pipeline) — adding an LLM generation step on top of retrieval
-- [Semantic Search reference](/learn/semantic-search) — full parameter reference
+- [Hybrid Retrieval: Structured Filters Plus Semantic Search](./hybrid-retrieval.mdx) — combining semantic ranking with deeper graph traversal
+- [RAG Pipeline in Minutes](./rag-pipeline.mdx) — adding an LLM generation step on top of retrieval
+- [Semantic Search reference](../../semantic-search/semantic-search.mdx) — full parameter reference

@@ -1,16 +1,17 @@
 ---
 sidebar_position: 3
-title: Write Records with Vectors
+title: Write records with vectors
+description: Attach precomputed vectors to RushDB records at write time with the vectors parameter on create, upsert, set, createMany and CSV import calls.
 ---
 
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Write Records with Vectors
+# Write records with vectors
 
 RushDB lets you attach pre-computed embedding vectors to records **at write time**, eliminating the need for a separate bulk-upsert call. Any operation that creates or modifies records accepts a `vectors` parameter.
 
-This feature requires at least one [external index](/learn/semantic-search/bring-your-own-vectors) on the target `(label, propertyName)`.
+This feature requires at least one [external index](./bring-your-own-vectors.mdx) on the target `(label, propertyName)`. It works on RushDB Cloud and on a self-hosted engine, except inside a transaction on a self-hosted engine: the engine cannot stage inline vectors, so the SDK throws `DirectModeError` before sending the write. Write the vectors after the commit with `upsertVectors`, or outside the transaction.
 
 ---
 
@@ -21,10 +22,11 @@ This feature requires at least one [external index](/learn/semantic-search/bring
 | `propertyName`       | `string`   | **yes**  | Property name this vector is associated with              |
 | `vector`             | `number[]` | **yes**  | Pre-computed embedding vector                             |
 | `similarityFunction` | `string`   | no       | Required when multiple indexes exist on the same property |
+| `index`              | `string`   | no       | The index to write to, by name (or id). Overrides selection by property and shape. |
 
 ---
 
-## Create a Record with Vectors
+## Create a record with vectors
 
 Record creation and vector storage happen atomically in one request.
 
@@ -91,7 +93,7 @@ curl -X POST https://api.rushdb.com/api/v1/records \
 
 ---
 
-## Upsert with Vectors
+## Upsert with vectors
 
 `upsert` is idempotent on the record's natural key. Passing `vectors` writes or replaces the stored vector in the same call.
 
@@ -164,7 +166,7 @@ curl -X POST https://api.rushdb.com/api/v1/records \
 
 ---
 
-## Set with Vectors
+## Set with vectors
 
 `set` replaces all properties of a record. Including `vectors` writes those vectors at the same time.
 
@@ -215,7 +217,7 @@ curl -X PUT https://api.rushdb.com/api/v1/records/rec_abc123 \
 
 ---
 
-## Create Multiple Records with Vectors
+## Create multiple records with vectors
 
 `createMany` / `create_many` accepts a top-level `vectors` array **indexed by row position** — each entry is a list of vector entries for that row.
 
@@ -344,7 +346,7 @@ curl -X POST https://api.rushdb.com/api/v1/records/import/json \
 
 ---
 
-## Import CSV with Vectors
+## Import CSV with vectors
 
 CSV is a raw string, so per-row vectors are supplied separately. Row indices are 0-based after the header is consumed.
 
@@ -476,7 +478,7 @@ curl -X POST https://api.rushdb.com/api/v1/records \
 
 ## Disambiguation
 
-When a `(label, propertyName)` has multiple external indexes (e.g. cosine and euclidean), specify `similarityFunction` in each vector entry to route to the correct index. Omitting it when multiple indexes match returns `422 Unprocessable Entity`.
+When a `(label, propertyName)` has multiple external indexes (e.g. cosine and euclidean), name the target with `index`, or specify `similarityFunction`, in each vector entry to route to the correct index. Omitting it when multiple indexes match returns `422 Unprocessable Entity`.
 
 <Tabs groupId="programming-language">
   <TabItem value="python" label="Python" default>
@@ -525,6 +527,6 @@ curl -X POST https://api.rushdb.com/api/v1/records \
 
 ## See also
 
-- [Bring Your Own Vectors](/learn/semantic-search/bring-your-own-vectors) — create external indexes and bulk-upsert
-- [Manage Embedding Indexes](/learn/semantic-search/manage-indexes) — list, stats, delete indexes
-- [Semantic Search](/learn/semantic-search) — search across indexed properties
+- [Bring Your Own Vectors](./bring-your-own-vectors.mdx) — create external indexes and bulk-upsert
+- [Manage Embedding Indexes](./manage-indexes.mdx) — list, stats, delete indexes
+- [Semantic Search](./semantic-search.mdx) — search across indexed properties

@@ -1,0 +1,125 @@
+/*
+ * Design tokens for docs.rushdb.com. See DESIGN.md.
+ *
+ * Colours, the syntax palette and the type scale are copied verbatim from the
+ * RushDB website (rush-db/website, src/styles/globals.css @ bef6c6d). Change
+ * them there first, then copy them here; never invent a value in this file.
+ *
+ * Each colour has a hex var (for var() in CSS and inline styles) and an -rgb
+ * var (space-separated channels, for rgb(var(--lp-*-rgb) / 0.1)).
+ *
+ * Light is :root; dark is html[data-theme='dark'] (Docusaurus' theme switch).
+ */
+
+:root {
+  color-scheme: light;
+
+  /* ── Colour: light (retro beige) ─────────────────────────────────────── */
+  --lp-bg: #ede9e0;              --lp-bg-rgb: 237 233 224;
+  --lp-surface: #f5f2eb;         --lp-surface-rgb: 245 242 235;
+  --lp-panel: #f7f4ed;           --lp-panel-rgb: 247 244 237;
+  --lp-raised: #ffffff;          --lp-raised-rgb: 255 255 255;
+  --lp-border: #dad6ce;          --lp-border-rgb: 218 214 206;
+  --lp-border-strong: #c9c2b6;   --lp-border-strong-rgb: 201 194 182;
+  --lp-text: #1c1a16;            --lp-text-rgb: 28 26 22;
+  --lp-body: #3e3a34;            --lp-body-rgb: 62 58 52;
+  --lp-muted: #574f47;           --lp-muted-rgb: 87 79 71;
+  --lp-subtle: #6d675f;          --lp-subtle-rgb: 109 103 95;
+  --lp-accent: #c8540a;          --lp-accent-rgb: 200 84 10;
+  --lp-accent-hover: #b04808;    --lp-accent-hover-rgb: 176 72 8;
+  --lp-danger: #b83e3e;          --lp-danger-rgb: 184 62 62;
+  --lp-warning: #b7791f;         --lp-warning-rgb: 183 121 31;
+  --lp-header-bg: rgb(var(--lp-bg-rgb) / 0.88);
+
+  /* ── Syntax colours: the only code palette ───────────────────────────── */
+  --code-text: #3a3530;
+  --code-comment: #9a8f85;
+  --code-keyword: #7c3aed;
+  --code-string: #c8540a;
+  --code-number: #b45309;
+  --code-function: #0369a1;
+  --code-property: #0f766e;
+  --code-punctuation: #8b5c3a;
+
+  /* ── Brand marks (website lp/BrandLogo: simple-icons colours) ────────── */
+  --brand-claude: #d97757;
+  --brand-perplexity: #1fb8cd;
+  --brand-google: #4285f4;
+
+  /* ── Type ────────────────────────────────────────────────────────────── */
+  --font-sans: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* The only sizes (website tailwind.config.js fontSize). */
+  --fs-2xs: 11px;
+  --fs-xs: 12px;
+  --fs-sm: 14px;
+  --fs-base: 16px;
+  --fs-md: 18px;
+  --fs-lg: 22px;
+  --fs-xl: 28px;
+  --fs-2xl: 36px;
+  --fs-3xl: 48px;
+
+  --tracking-label: 0.08em;
+  --tracking-button: 0.04em;
+
+  /* ── Layout ──────────────────────────────────────────────────────────── */
+  --rd-sidebar-width: 280px;
+  --rd-sidebar-rail-width: 56px;
+  --rd-toc-width: 260px;
+  --rd-measure: 42rem; /* prose: ~70 characters of Geist at 16px */
+  --rd-content-max: 52rem; /* code, tables and figures may use the full column */
+  --rd-row-height: 32px;
+  --rd-control-height: 36px;
+
+  /* ── Elevation, layers, motion ───────────────────────────────────────── */
+  --rd-shadow-floating: 0 8px 24px rgb(0 0 0 / 0.12);
+  --rd-shadow-overlay: 0 24px 64px rgb(0 0 0 / 0.28);
+
+  --z-sticky: 20;
+  --z-chrome: 40;
+  --z-overlay: 50;
+  --z-tooltip: 60;
+
+  --rd-duration-fast: 150ms;
+  --rd-duration-base: 200ms;
+  --rd-ease-enter: cubic-bezier(0.2, 0, 0, 1);
+  --rd-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  /* The `└` tree glyph colour (website blog rail). */
+  --rd-tree: color-mix(in srgb, var(--lp-subtle) 55%, var(--lp-bg));
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* ── Colour: dark (black and green) ──────────────────────────────────── */
+  --lp-bg: #0a0a0b;              --lp-bg-rgb: 10 10 11;
+  --lp-surface: #111113;         --lp-surface-rgb: 17 17 19;
+  --lp-panel: #131313;           --lp-panel-rgb: 19 19 19;
+  --lp-raised: #1d1f22;          --lp-raised-rgb: 29 31 34;
+  --lp-border: #232327;          --lp-border-rgb: 35 35 39;
+  --lp-border-strong: #3a3f45;   --lp-border-strong-rgb: 58 63 69;
+  --lp-text: #f0f0ee;            --lp-text-rgb: 240 240 238;
+  --lp-body: #d0d4d1;            --lp-body-rgb: 208 212 209;
+  --lp-muted: #a8a8b0;           --lp-muted-rgb: 168 168 176;
+  --lp-subtle: #7f8883;          --lp-subtle-rgb: 127 136 131;
+  --lp-accent: #00ff85;          --lp-accent-rgb: 0 255 133;
+  --lp-accent-hover: #00e876;    --lp-accent-hover-rgb: 0 232 118;
+  --lp-danger: #ff6b6b;          --lp-danger-rgb: 255 107 107;
+  --lp-warning: #f5b941;         --lp-warning-rgb: 245 185 65;
+  --lp-header-bg: rgb(var(--lp-bg-rgb) / 0.85);
+
+  --code-text: #d0d4d1;
+  --code-comment: #5d636c;
+  --code-keyword: #c792ea;
+  --code-string: #c3e88d;
+  --code-number: #f78c6c;
+  --code-function: #82aaff;
+  --code-property: #80cbc4;
+  --code-punctuation: #89ddff;
+
+  --rd-shadow-floating: 0 8px 24px rgb(0 0 0 / 0.5);
+  --rd-shadow-overlay: 0 24px 64px rgb(0 0 0 / 0.6);
+}

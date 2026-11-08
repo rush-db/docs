@@ -1,6 +1,6 @@
 ---
 sidebar_position: 39
-title: 'Multi-Source RAG'
+title: 'Multi-source RAG'
 description: Ingest PDFs, web pages, and database records as distinct labels, then search across all sources in a single vector query with source-aware citations.
 tags: [RAG, AI, Embeddings, Search]
 ---
@@ -8,7 +8,11 @@ tags: [RAG, AI, Embeddings, Search]
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Multi-Source RAG
+# Multi-source RAG
+
+:::note Managed embeddings
+This tutorial searches with a text `query`, which RushDB Cloud embeds with its managed model. On a self-hosted engine, create external indexes and pass a `queryVector` from your own embedding model instead — see [Bring Your Own Vectors](../../semantic-search/bring-your-own-vectors.mdx).
+:::
 
 Real retrieval pipelines rarely draw from a single data source. This tutorial shows how to ingest PDFs, web pages, and database summaries as distinct record labels, then search across all of them in a single vector query — with source-aware citations in the final answer.
 
@@ -37,7 +41,7 @@ Each source type lands in its own RushDB label. This keeps data organized and le
 
 ## Prerequisites
 
-- RushDB project with an embedding index configured (cloud managed or self-hosted with `RUSHDB_EMBEDDING_MODEL` set).
+- A RushDB project with an embedding index: a managed index on RushDB Cloud, or an external index with your own embedding model on a self-hosted engine.
 - A PDF parsing library (we'll use `pdf-parse` for Node.js / `pypdf` for Python).
 - An LLM client for the synthesis step.
 
@@ -48,9 +52,9 @@ Each source type lands in its own RushDB label. This keeps data organized and le
 Chunk the PDF text and store each chunk as a separate record. Keep metadata (`source`, `page`) so you can cite the document later.
 
 <Tabs>
-<TabItem value="js" label="JavaScript">
+<TabItem value="javascript" label="JavaScript">
 
-```js
+```javascript
 import RushDB from '@rushdb/javascript-sdk'
 import pdfParse from 'pdf-parse'
 import fs from 'node:fs'
@@ -140,9 +144,9 @@ ingest_pdf('./docs/product-spec.pdf', 'Product Spec v3')
 Fetch and chunk web content the same way. Add a `url` field for citation.
 
 <Tabs>
-<TabItem value="js" label="JavaScript">
+<TabItem value="javascript" label="JavaScript">
 
-```js
+```javascript
 import { JSDOM } from 'jsdom'
 
 async function ingestWebPage(url) {
@@ -210,9 +214,9 @@ ingest_web_page('https://docs.rushdb.com/learn/tutorials/ai-and-rag/graphrag')
 For structured data, generate a natural-language summary per entity and store it as a record. This makes relational data searchable via vector similarity.
 
 <Tabs>
-<TabItem value="js" label="JavaScript">
+<TabItem value="javascript" label="JavaScript">
 
-```js
+```javascript
 // Example: products from a SQL database
 async function ingestDbSummaries(products) {
   await db.records.importJson({
@@ -269,9 +273,9 @@ ingest_db_summaries(products)
 Create one embedding index per label. Each index covers the `text` property.
 
 <Tabs>
-<TabItem value="js" label="JavaScript">
+<TabItem value="javascript" label="JavaScript">
 
-```js
+```javascript
 const labels = ['PDF_CHUNK', 'WEB_CHUNK', 'DB_SUMMARY']
 
 for (const label of labels) {
@@ -300,9 +304,9 @@ for label in labels:
 The indexes backfill in the background. Poll status if you need to wait:
 
 <Tabs>
-<TabItem value="js" label="JavaScript">
+<TabItem value="javascript" label="JavaScript">
 
-```js
+```javascript
 import { setTimeout } from 'timers/promises'
 
 async function waitForIndex(indexId) {
@@ -340,9 +344,9 @@ def wait_for_index(index_id: str):
 A single `records.vectorSearch` call across multiple labels returns results ranked by vector similarity regardless of source type.
 
 <Tabs>
-<TabItem value="js" label="JavaScript">
+<TabItem value="javascript" label="JavaScript">
 
-```js
+```javascript
 async function searchAllSources(query, limit = 8) {
   const results = await db.records.vectorSearch({
     query,
@@ -379,9 +383,9 @@ hits = search_all_sources('how does the pricing model work?')
 You can also query a single source when you know which to target:
 
 <Tabs>
-<TabItem value="js" label="JavaScript">
+<TabItem value="javascript" label="JavaScript">
 
-```js
+```javascript
 // Only search the PDF corpus
 const pdfHits = await db.records.vectorSearch({
   query: 'annual revenue breakdown',
@@ -428,9 +432,9 @@ web_hits = db.records.vector_search({
 Drop low-confidence results and remove near-duplicate chunks before sending to the LLM.
 
 <Tabs>
-<TabItem value="js" label="JavaScript">
+<TabItem value="javascript" label="JavaScript">
 
-```js
+```javascript
 function deduplicateChunks(hits, scoreThreshold = 0.7, similarityThreshold = 0.95) {
   // Drop low-score results
   const filtered = hits.filter((h) => (h.score ?? 0) >= scoreThreshold)
@@ -492,9 +496,9 @@ def deduplicate_chunks(
 Format the context for the LLM prompt with numbered citations tied to each source type.
 
 <Tabs>
-<TabItem value="js" label="JavaScript">
+<TabItem value="javascript" label="JavaScript">
 
-```js
+```javascript
 function buildContextWithCitations(hits) {
   const citations = []
   const contextLines = []
@@ -559,9 +563,9 @@ def build_context_with_citations(hits: list) -> dict:
 ## Step 8: Synthesize with the LLM
 
 <Tabs>
-<TabItem value="js" label="JavaScript">
+<TabItem value="javascript" label="JavaScript">
 
-```js
+```javascript
 import OpenAI from 'openai'
 
 const openai = new OpenAI()
@@ -675,6 +679,6 @@ ingestDbSummaries()→  DB_SUMMARY records
 
 ## Next steps
 
-- [RAG Evaluation](/learn/tutorials/ai-and-rag/rag-evaluation) — measure precision@k and recall@k across your pipeline
-- [RAG Reranking](/learn/tutorials/ai-and-rag/rag-reranking) — two-stage retrieval with cross-encoder scoring
-- [GraphRAG](/learn/tutorials/ai-and-rag/graphrag) — enrich chunks with graph context before synthesis
+- [RAG Evaluation](./rag-evaluation.mdx) — measure precision@k and recall@k across your pipeline
+- [RAG Reranking](./rag-reranking.mdx) — two-stage retrieval with cross-encoder scoring
+- [GraphRAG](./graphrag.mdx) — enrich chunks with graph context before synthesis

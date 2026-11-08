@@ -7,7 +7,7 @@
 import { readFile, readdir } from 'node:fs/promises'
 import { join, relative } from 'node:path'
 
-const root = new URL('../docs-v3/', import.meta.url).pathname
+const root = new URL('../docs/', import.meta.url).pathname
 
 const skipped = ['engine/', 'migration/from-2x.mdx']
 
@@ -51,4 +51,4 @@ if (violations.length) {
   for (const violation of violations) console.error(`- ${violation}`)
   process.exit(1)
 }
-console.log('docs-v3: no 2.x claims in published pages.')
+console.log('docs (3.x): no 2.x claims in published pages.')

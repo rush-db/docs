@@ -1,6 +1,6 @@
 // Copies the engine manual (`docs/manual` in the RushDB engine repository) into
-// `docs-v3/engine`. The engine repository is the only source of these pages:
-// edit them there and run this script again; never edit `docs-v3/engine` here.
+// `docs/engine`. The engine repository is the only source of these pages:
+// edit them there and run this script again; never edit `docs/engine` here.
 //
 //   node scripts/sync-engine-manual.mjs [path-to-engine-repo]   # default ../rust-rushdb
 //   node scripts/sync-engine-manual.mjs --check [path]          # fail if the copy is stale
@@ -17,7 +17,7 @@ const args = process.argv.slice(2)
 const check = args.includes('--check')
 const engineRepo = resolve(args.find((arg) => !arg.startsWith('--')) ?? new URL('../../rust-rushdb', import.meta.url).pathname)
 const manual = join(engineRepo, 'docs', 'manual')
-const target = new URL('../docs-v3/engine/', import.meta.url).pathname
+const target = new URL('../docs/engine/', import.meta.url).pathname
 const githubBlob = 'https://github.com/rush-db/rushdb/blob/main'
 const githubEdit = 'https://github.com/rush-db/rushdb/edit/main/docs/manual'
 
@@ -131,12 +131,12 @@ if (check) {
   const current = await existing()
   const stale = [...new Set([...rendered.keys(), ...current.keys()])].filter((key) => rendered.get(key) !== current.get(key))
   if (stale.length) {
-    console.error(`docs-v3/engine is out of date with ${manual}:`)
+    console.error(`docs/engine is out of date with ${manual}:`)
     for (const key of stale.sort()) console.error(`- ${key}`)
     console.error('Run: node scripts/sync-engine-manual.mjs')
     process.exit(1)
   }
-  console.log(`docs-v3/engine matches ${manual} (${rendered.size} files).`)
+  console.log(`docs/engine matches ${manual} (${rendered.size} files).`)
 } else {
   await rm(target, { recursive: true, force: true })
   for (const [rel, text] of rendered) {
@@ -144,5 +144,5 @@ if (check) {
     await mkdir(dirname(path), { recursive: true })
     await writeFile(path, text)
   }
-  console.log(`Synced ${rendered.size} files from ${manual} into docs-v3/engine.`)
+  console.log(`Synced ${rendered.size} files from ${manual} into docs/engine.`)
 }

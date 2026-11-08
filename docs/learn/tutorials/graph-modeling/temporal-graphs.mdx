@@ -1,6 +1,6 @@
 ---
 sidebar_position: 17
-title: 'Temporal Graphs: Modeling State and Event Time Together'
+title: 'Temporal graphs: Modeling state and event time together'
 description: Represent durable entities alongside time-stamped events so you can answer both current-state and historical questions without losing lineage.
 tags: [Graph Modeling, Events, Time-Series, Transactions]
 ---
@@ -8,7 +8,7 @@ tags: [Graph Modeling, Events, Time-Series, Transactions]
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Temporal Graphs: Modeling State and Event Time Together
+# Temporal graphs: Modeling state and event time together
 
 Most business questions have two modes:
 
@@ -118,8 +118,8 @@ STATE1_ID=$(curl -s -X POST "$BASE/records" -H "$H" -H "Authorization: Bearer $T
   -d '{"label":"STATE","data":{"plan":"pro","monthlyLimit":50000,"since":"2025-01-10T00:00:00Z","isCurrent":true}}' \
   | jq -r '.data.__id')
 
-curl -s -X POST "$BASE/records/$USER_ID/relations" -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$STATE1_ID\"],\"options\":{\"type\":\"HAS_STATE\"}}"
+curl -s -X POST "$BASE/relationships/$USER_ID" -H "$H" -H "Authorization: Bearer $TOKEN" \
+  -d "{\"targetIds\":[\"$STATE1_ID\"],\"type\":\"HAS_STATE\"}"
 ```
 
 </TabItem>
@@ -257,10 +257,10 @@ EVENT_ID=$(curl -s -X POST "$BASE/records" \
   | jq -r '.data.__id')
 
 # Chain relationships
-curl -s -X POST "$BASE/records/$STATE1_ID/relations" \
+curl -s -X POST "$BASE/relationships/$STATE1_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
   -H "x-transaction-id: $TX_ID" \
-  -d "{\"targets\":[\"$STATE2_ID\"],\"options\":{\"type\":\"SUPERSEDED_BY\"}}"
+  -d "{\"targetIds\":[\"$STATE2_ID\"],\"type\":\"SUPERSEDED_BY\"}"
 
 # Commit
 curl -s -X POST "$BASE/tx/$TX_ID/commit" \
@@ -550,6 +550,6 @@ State and event chains grow indefinitely. Set a retention horizon: archive or de
 
 ## Next steps
 
-- [Audit Trails with Immutable Events and Derived State](/learn/tutorials/use-cases/audit-trails) — extending this pattern for compliance use cases
-- [RushDB as a Memory Layer](/learn/tutorials/agent-memory/memory-layer) — using the same FACT/EPISODE pattern for agent memory
-- [SearchQuery Deep Dive](/learn/tutorials/search-and-queries/searchquery-advanced-patterns) — date filter syntax and aggregation patterns
+- [Audit Trails with Immutable Events and Derived State](../use-cases/audit-trails.mdx) — extending this pattern for compliance use cases
+- [RushDB as a Memory Layer](../agent-memory/memory-layer.mdx) — using the same FACT/EPISODE pattern for agent memory
+- [SearchQuery Deep Dive](../search-and-queries/searchquery-advanced-patterns.mdx) — date filter syntax and aggregation patterns

@@ -1,9 +1,11 @@
 ---
 sidebar_position: 1
-title: Embedding Indexes
+title: Embedding indexes REST API
+sidebar_label: Embedding indexes
+description: Create, list, inspect and delete embedding indexes with the RushDB Cloud REST API, wait for them to become ready, and run several indexes on one property.
 ---
 
-# Embedding Indexes
+# Embedding indexes
 
 An **embedding index** is a policy that tells RushDB to vectorize a specific string property for a label. Once `status` is `ready`, every record matching that label+property pair is searchable via `POST /api/v1/ai/search`.
 
@@ -23,21 +25,21 @@ Index policy
 
 ↓  backfill runs automatically
 
-Book records get vectors stored on their VALUE relationships:
-  rel._emb_managed_cosine_1536 = [0.1, 0.2, ...]
+Each Book record gets one vector in the index, bound to the record;
+the record's own properties are unchanged.
 ```
 
 When new records are created or existing records are updated, the index transitions back to `pending` and vectors are recomputed on the next backfill cycle.
 
 ---
 
-## List Embedding Indexes
+## List embedding indexes
 
 `GET /api/v1/ai/indexes`
 
 Returns all embedding index policies for the project.
 
-### Example Response
+### Example response
 
 ```json
 {
@@ -64,23 +66,24 @@ Returns all embedding index policies for the project.
 
 ---
 
-## Create Embedding Index
+## Create embedding index
 
 `POST /api/v1/ai/indexes`
 
-Creates a new embedding index policy scoped to a label. If the property already exists in the graph, its type must be `string` (scalar or list). If no records with this property exist yet, the index is created without type validation — the property node will be established when the first record carrying it is written.
+Creates a new embedding index policy scoped to a label. If the property already exists in the graph, its type must be `string` (scalar or list). If no records with this property exist yet, the index is created without type validation — the property appears in the catalog when the first record carrying it is written.
 
-### Request Body
+### Request body
 
 | Field                | Type   | Required | Description                                                                                                                 |
 | -------------------- | ------ | -------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `name`               | string | no       | Unique within the project: 1–64 letters, digits, `.`, `_`, `:` or `-`. Defaults to `<label>.<property>.<model>.<dimensions>.<similarity>`; `POST /api/v1/ai/indexes/name-suggestion` returns it. |
 | `label`              | string | **yes**  | Label to scope this index to (e.g. `"Article"`, `"Product"`)                                                                |
 | `propertyName`       | string | **yes**  | Name of the property to embed (e.g. `"description"`)                                                                        |
-| `sourceType`         | string | no       | `"managed"` (default) or `"external"`. See [Advanced Indexing](/learn/reference/rest-api/ai-and-vectors/advanced-indexing). |
+| `sourceType`         | string | no       | `"managed"` (default) or `"external"`. See [Advanced Indexing](./advanced-indexing.md). |
 | `similarityFunction` | string | no       | `"cosine"` (default) or `"euclidean"`                                                                                       |
-| `dimensions`         | number | no       | Vector dimensionality. Defaults to server `RUSHDB_EMBEDDING_DIMENSIONS`. **Required** for external indexes.                 |
+| `dimensions`         | number | no       | Vector length. Defaults to the managed model's dimensions. **Required** for external indexes.                               |
 
-> **Model config is server-side.** The embedding model is set via `RUSHDB_EMBEDDING_MODEL` / `RUSHDB_EMBEDDING_DIMENSIONS` env vars.
+> **The managed model is RushDB Cloud's.** Each index records the model it was embedded with as `modelKey`.
 
 ### Example — simplest form
 
@@ -105,7 +108,7 @@ curl -X POST https://api.rushdb.com/api/v1/ai/indexes \
   }'
 ```
 
-### Example Response
+### Example response
 
 ```json
 {
@@ -142,20 +145,20 @@ curl -X POST https://api.rushdb.com/api/v1/ai/indexes \
 
 ---
 
-## Delete Embedding Index
+## Delete embedding index
 
 `DELETE /api/v1/ai/indexes/:id`
 
-Deletes an embedding index policy. The underlying Neo4j DDL vector index is only dropped when **zero embeddings remain** across the entire project — this avoids unnecessary rebuilds when multiple policies share the same `(dimensions, similarityFunction)`.
+Deletes an embedding index policy and its vectors. `:id` accepts the index's name as well as its id.
 
-### Example Request
+### Example request
 
 ```bash
 curl -X DELETE https://api.rushdb.com/api/v1/ai/indexes/idx_abc123 \
   -H "Authorization: Bearer $RUSHDB_API_KEY"
 ```
 
-### Example Response
+### Example response
 
 ```json
 { "data": { "deleted": true }, "success": true }
@@ -163,13 +166,13 @@ curl -X DELETE https://api.rushdb.com/api/v1/ai/indexes/idx_abc123 \
 
 ---
 
-## Get Embedding Index Stats
+## Get embedding index stats
 
 `GET /api/v1/ai/indexes/:id/stats`
 
 Returns the current indexing progress — useful for progress monitoring or health checks before running search.
 
-### Example Response
+### Example response
 
 ```json
 {
@@ -239,7 +242,7 @@ curl -X POST https://api.rushdb.com/api/v1/ai/indexes \
   -d '{"label": "Product", "propertyName": "description", "similarityFunction": "euclidean", "dimensions": 768}'
 ```
 
-When searching or writing vectors against a property with multiple indexes, specify `similarityFunction` to disambiguate. See [Advanced Indexing](/learn/reference/rest-api/ai-and-vectors/advanced-indexing#disambiguation) for details.
+When searching or writing vectors against a property with multiple indexes, specify `similarityFunction` to disambiguate. See [Advanced Indexing](./advanced-indexing.md#disambiguation) for details.
 
 ---
 
@@ -265,7 +268,7 @@ When searching or writing vectors against a property with multiple indexes, spec
 
 ---
 
-## String Array Properties
+## String array properties
 
 `List<String>`
 

@@ -1,12 +1,15 @@
 ---
+title: RelationTarget type (TypeScript SDK)
+sidebar_label: RelationTarget
+description: "Reference for RelationTarget in the RushDB TypeScript SDK: the records, instances or IDs you pass to attach and detach, with relation and direction options."
 sidebar_position: 6
 ---
 
 # RelationTarget
 
-`RelationTarget` is a type that represents the target(s) for [relationship](/learn/relationships) operations like attach and detach.
+`RelationTarget` is a type that represents the target(s) for [relationship](../../relationships/index.mdx) operations like attach and detach.
 
-## Type Definition
+## Type definition
 
 ```typescript
 export type RelationTarget =
@@ -18,7 +21,7 @@ export type RelationTarget =
 
 This union type allows for multiple ways to reference one or more target records when creating or removing relationships.
 
-## Type Options
+## Type options
 
 | Type                                | Description                                             |
 | ----------------------------------- | ------------------------------------------------------- |
@@ -33,8 +36,7 @@ Where `MaybeArray<T>` is defined as:
 type MaybeArray<T> = T | Array<T>
 ```
 
-## Related Types
-
+## See also
 ### Relation
 
 ```typescript
@@ -78,7 +80,7 @@ export type TraversalRelationOptions = RelationOptions & {
 }
 ```
 
-Used by the `$relation` operator in [SearchQuery](/learn/reference/typescript/SearchQuery) `where` traversals — not by attach/detach. `hops` enables variable-length traversal: a number means exactly N hops, `{ min?, max? }` a range (`min` defaults to `1`). See [Variable-Length Traversal](/learn/search-query/where-operators#variable-length-traversal-hops).
+Used by the `$relation` operator in [SearchQuery](./SearchQuery.md) `where` traversals — not by attach/detach. `hops` enables variable-length traversal: a number means exactly N hops, `{ min?, max? }` a range (`min` defaults to `1`). See [Variable-Length Traversal](../../search-query/where-operators.md#variable-length-traversal-hops).
 
 ### RelationDetachOptions
 
@@ -93,7 +95,7 @@ Options for removing a relationship.
 
 ## Usage
 
-### Single Target
+### Single target
 
 ```typescript
 // Using a record ID string
@@ -112,7 +114,7 @@ const postInstance = await PostModel.findById('post_123')
 await userInstance.attach(postInstance, { type: 'AUTHORED' })
 ```
 
-### Multiple Targets
+### Multiple targets
 
 ```typescript
 // Using an array of record ID strings
@@ -139,7 +141,7 @@ const posts = await PostModel.find({
 await userInstance.attach(posts, { type: 'AUTHORED' })
 ```
 
-### Detaching Relationships
+### Detaching relationships
 
 ```typescript
 // Detach all relationships to a specific record

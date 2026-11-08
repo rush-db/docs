@@ -1,4 +1,7 @@
 ---
+title: SearchResult class (Python SDK)
+sidebar_label: SearchResult
+description: "Reference for SearchResult in the RushDB Python SDK: list-style access to records, total and has_more, pagination with next(), and CSV export."
 sidebar_position: 3
 ---
 
@@ -8,7 +11,7 @@ The `SearchResult` class is a container for search results that follows Python S
 
 This class is designed to be familiar to Python developers, following patterns used by popular libraries like boto3 (AWS SDK), google-cloud libraries, and requests libraries.
 
-## Class Definition
+## Class definition
 
 ```python
 from typing import Generic, Iterator, List, Optional, TypeVar
@@ -29,7 +32,7 @@ class SearchResult(Generic[T]):
     )
 ```
 
-## Type Aliases
+## Type aliases
 
 ```python
 # Type alias for record search results
@@ -181,7 +184,7 @@ for record in result:
     print(f"User: {record.get('name', 'Unknown')}")
 ```
 
-### Get Item
+### Get item
 
 `__getitem__(index) -> T`
 
@@ -206,7 +209,7 @@ last_user = result[-1] if result else None
 first_five = result[0:5]
 ```
 
-### Boolean Check
+### Boolean check
 
 `__bool__() -> bool`
 
@@ -222,7 +225,7 @@ else:
     print("No inactive users found")
 ```
 
-### Convert to Dict
+### Convert to dict
 
 `to_dict() -> dict`
 
@@ -239,7 +242,7 @@ print(result_dict["total"])  # Total count
 print(len(result_dict["data"]))  # Records in this result set
 ```
 
-### Page Info
+### Page info
 
 `get_page_info() -> dict`
 
@@ -366,9 +369,9 @@ print(df.head())
 df_full = result.to_dataframe(exclude_internal=False)
 ```
 
-## Usage Examples
+## Usage examples
 
-### Basic Iteration
+### Basic iteration
 
 ```python
 # Find all active users
@@ -388,7 +391,7 @@ else:
     print("No active users found")
 ```
 
-### Pagination Handling
+### Pagination handling
 
 ```python
 def get_all_users():
@@ -416,7 +419,7 @@ def get_all_users():
     return all_users
 ```
 
-### List-like Operations
+### List-like operations
 
 ```python
 result = client.records.find({"labels": ["USER"]})
@@ -435,7 +438,7 @@ user_count = len(result)
 user_list = list(result)
 ```
 
-### Working with Metadata
+### Working with metadata
 
 ```python
 result = client.records.find({
@@ -464,10 +467,20 @@ if result.has_more:
     })
 ```
 
-### Error Handling
+### Error handling
+
+`records.find` raises `RushDBError` when the request fails (authentication, connection, an invalid query); a failure is never reported as an empty result. An empty result only means nothing matched:
 
 ```python
-# SearchResult is designed to be safe - it won't raise exceptions for empty results
+from rushdb import RushDBError
+
+try:
+    result = client.records.find({"labels": ["USER"], "where": {"age": {"$gt": 30}}})
+except RushDBError as error:
+    print(f"Search failed: {error}")
+    raise
+
+# SearchResult is safe to use when nothing matched
 result = client.records.find({"labels": ["NONEXISTENT"]})
 
 # These operations are safe even if no results found
@@ -483,7 +496,7 @@ if result:
     print("This won't execute if result is empty")
 ```
 
-## Integration with Records API
+## Integration with records API
 
 The `SearchResult` class is returned by the `RecordsAPI.find()` method:
 
@@ -507,7 +520,7 @@ for user in result:
 print(f"Loaded {len(result)} out of {result.total} total users")
 ```
 
-## Best Practices
+## Best practices
 
 1. **Check for Results**: Always check if results exist before accessing individual records:
 

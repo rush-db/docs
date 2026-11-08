@@ -1,13 +1,15 @@
 ---
 sidebar_position: 4
-title: Writing Records with Vectors
+title: Write records with vectors REST API
+sidebar_label: Writing records with vectors
+description: Attach precomputed vectors to records in RushDB Cloud REST API create, upsert, set and import calls with the vectors field, including CSV and flat-row imports.
 ---
 
-# Writing Records with Vectors
+# Writing records with vectors
 
 RushDB lets you attach pre-computed embedding vectors to records **at write time**, eliminating the need for a separate `POST /api/v1/ai/indexes/:id/vectors/upsert` call. Any endpoint that creates or modifies records accepts a `vectors` field.
 
-This feature requires at least one [external index](/learn/reference/rest-api/ai-and-vectors/advanced-indexing) to exist for the target `(label, propertyName)`.
+This feature requires at least one [external index](./advanced-indexing.md) to exist for the target `(label, propertyName)`.
 
 ---
 
@@ -33,7 +35,7 @@ All write endpoints accept a `vectors` array:
 
 ---
 
-## Create a Record with Vectors
+## Create a record with vectors
 
 `POST /api/v1/records`
 
@@ -57,7 +59,7 @@ curl -X POST https://api.rushdb.com/api/v1/records \
 
 ---
 
-## Upsert with Vectors
+## Upsert with vectors
 
 `POST /api/v1/records`
 
@@ -77,7 +79,7 @@ curl -X POST https://api.rushdb.com/api/v1/records \
 
 ---
 
-## Set with Vectors
+## Set with vectors
 
 `PUT /api/v1/records/:id`
 
@@ -96,7 +98,7 @@ curl -X PUT https://api.rushdb.com/api/v1/records/rec_abc123 \
 
 ---
 
-## Import JSON Flat Rows with Vectors
+## Import JSON flat rows with vectors
 
 `POST /api/v1/records/import/json`
 
@@ -139,7 +141,7 @@ curl -X POST https://api.rushdb.com/api/v1/records/import/json \
 
 ---
 
-## Import CSV with Vectors
+## Import CSV with vectors
 
 `POST /api/v1/records/import/csv`
 

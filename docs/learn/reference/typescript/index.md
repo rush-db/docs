@@ -1,6 +1,7 @@
 ---
 sidebar_position: 0
-title: TypeScript / JavaScript SDK
+title: TypeScript / JavaScript SDK reference
+description: Install the RushDB TypeScript and JavaScript SDK for Node.js and browsers, run a first query, and browse the reference for each class and type it exports.
 ---
 
 # TypeScript / JavaScript SDK
@@ -13,7 +14,7 @@ The official TypeScript/JavaScript SDK for RushDB. Works in Node.js and browser 
 npm install @rushdb/javascript-sdk
 ```
 
-## Quick Start
+## Quick start
 
 ```typescript
 import RushDB from '@rushdb/javascript-sdk'
@@ -34,25 +35,28 @@ const { data } = await db.records.find({
 })
 ```
 
-To connect to a self-hosted instance pass the `url` option:
+To connect to a self-hosted engine, use direct mode with the engine's URL and token:
 
 ```typescript
-const db = new RushDB('RUSHDB_API_KEY', {
-  url: 'https://your-rushdb-instance.com/api/v1'
+const db = new RushDB('ENGINE_TOKEN', {
+  direct: true,
+  engineUrl: 'http://127.0.0.1:3000'
 })
 ```
 
-## API Reference
+See [SDKs](../../../connect/sdks.mdx) for what direct mode offers.
+
+## API reference
 
 | Class                                                                        | Description                                                                  |
 | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| [RushDB](/learn/reference/typescript/RushDB)                                 | Main client — entry point for all operations                                 |
-| [DBRecord](/learn/reference/typescript/DBRecord)                             | Typed record class returned from queries                                     |
-| [DBRecordInstance](/learn/reference/typescript/DBRecordInstance)             | Active record with instance methods (`attach`, `detach`, `update`, `delete`) |
-| [DBRecordsArrayInstance](/learn/reference/typescript/DBRecordsArrayInstance) | Collection of records with bulk-operation methods                            |
-| [Model](/learn/reference/typescript/Model)                                   | Schema-bound model class for label-scoped operations                         |
-| [Relationship Patterns](/learn/reference/typescript/relationship-patterns)   | Review and apply AI-suggested relationships                                  |
-| [Transaction](/learn/reference/typescript/Transaction)                       | ACID transaction handle                                                      |
-| [SearchQuery](/learn/reference/typescript/SearchQuery)                       | Query builder types and interfaces                                           |
-| [DBRecordTarget](/learn/reference/typescript/DBRecordTarget)                 | Record reference type used in relationship calls                             |
-| [RelationTarget](/learn/reference/typescript/RelationTarget)                 | Relationship target reference type                                           |
+| [RushDB](./RushDB.md)                                 | Main client — entry point for all operations                                 |
+| [DBRecord](./DBRecord.md)                             | Typed record class returned from queries                                     |
+| [DBRecordInstance](./DBRecordInstance.md)             | Active record with instance methods (`attach`, `detach`, `update`, `delete`) |
+| [DBRecordsArrayInstance](./DBRecordsArrayInstance.md) | Collection of records with bulk-operation methods                            |
+| [Model](./Model.md)                                   | Schema-bound model class for label-scoped operations                         |
+| [Relationship Patterns](./relationship-patterns.md)   | Review and apply AI-suggested relationships                                  |
+| [Transaction](./Transaction.md)                       | ACID transaction handle                                                      |
+| [SearchQuery](./SearchQuery.md)                       | Query builder types and interfaces                                           |
+| [DBRecordTarget](./DBRecordTarget.md)                 | Record reference type used in relationship calls                             |
+| [RelationTarget](./RelationTarget.md)                 | Relationship target reference type                                           |

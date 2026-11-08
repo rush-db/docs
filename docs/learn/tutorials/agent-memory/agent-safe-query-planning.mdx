@@ -1,6 +1,6 @@
 ---
 sidebar_position: 22
-title: 'Agent-Safe Query Planning with Schema First'
+title: 'Agent-safe query planning with schema first'
 description: A repeatable agent pattern — schema first, query spec second, constrained execution, and failure recovery when labels or fields are wrong.
 tags: [MCP, Agents, SearchQuery, TypeScript, Python]
 ---
@@ -8,7 +8,7 @@ tags: [MCP, Agents, SearchQuery, TypeScript, Python]
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Agent-Safe Query Planning with Schema First
+# Agent-safe query planning with schema first
 
 LLMs that interact with databases without schema grounding make mistakes that are hard to catch: they invent label names, assume property shapes, and produce queries that return zero results or subtly wrong ones.
 
@@ -379,6 +379,6 @@ Schema grounding is a first-call overhead: one `getSchemaMarkdown` request per a
 
 ## Next steps
 
-- [Discovery Queries](/learn/tutorials/search-and-queries/discovery-queries) — interactive schema exploration in code
-- [MCP Quickstart for Real Operators](/deploy/guides/mcp-operator-quickstart) — the same loop via MCP tools
-- [Building Team Memory](/learn/tutorials/agent-memory/building-team-memory) — a real knowledge base for agents to query
+- [Discovery Queries](../search-and-queries/discovery-queries.mdx) — interactive schema exploration in code
+- [MCP Quickstart for Real Operators](../../../connect/mcp.mdx) — the same loop via MCP tools
+- [Building Team Memory](./building-team-memory.mdx) — a real knowledge base for agents to query

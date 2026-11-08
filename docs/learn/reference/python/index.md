@@ -1,6 +1,7 @@
 ---
 sidebar_position: 0
-title: Python SDK
+title: Python SDK reference
+description: Install the RushDB Python SDK with pip, connect to RushDB Cloud or a self-hosted engine in direct mode, and browse the reference for each class.
 ---
 
 # Python SDK
@@ -13,7 +14,7 @@ The official Python SDK for RushDB. Compatible with Python 3.8+.
 pip install rushdb
 ```
 
-## Quick Start
+## Quick start
 
 ```python
 from rushdb import RushDB
@@ -34,22 +35,21 @@ result = db.records.find({
 })
 ```
 
-To connect to a self-hosted instance pass the `url` parameter:
+To connect to a self-hosted engine, use direct mode with the engine's URL and token:
 
 ```python
-db = RushDB(
-    api_key="RUSHDB_API_KEY",
-    url="https://your-rushdb-instance.com",
-)
+db = RushDB("ENGINE_TOKEN", direct=True, engine_url="http://127.0.0.1:3000")
 ```
 
-## API Reference
+See [SDKs](../../../connect/sdks.mdx) for what direct mode offers.
+
+## API reference
 
 | Class                                                                  | Description                                                                           |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| [RushDB](/learn/reference/python/RushDB)                               | Main client — entry point for all operations                                          |
-| [Record](/learn/reference/python/record)                               | Typed record class with instance methods (`attach`, `detach`, `update`, `delete`)     |
-| [Relationship Patterns](/learn/reference/python/relationship-patterns) | Review and apply AI-suggested relationships                                           |
-| [SearchQuery](/learn/reference/python/SearchQuery)                     | Query builder types and interfaces                                                    |
-| [SearchResult](/learn/reference/python/search-result)                  | Paginated result wrapper returned by `find`, `records.vector_search`, and `ai.search` |
-| [Transaction](/learn/reference/python/transaction)                     | ACID transaction handle                                                               |
+| [RushDB](./RushDB.md)                               | Main client — entry point for all operations                                          |
+| [Record](./record.md)                               | Typed record class with instance methods (`attach`, `detach`, `update`, `delete`)     |
+| [Relationship Patterns](./relationship-patterns.md) | Review and apply AI-suggested relationships                                           |
+| [SearchQuery](./SearchQuery.md)                     | Query builder types and interfaces                                                    |
+| [SearchResult](./search-result.md)                  | Paginated result wrapper returned by `find`, `records.vector_search`, and `ai.search` |
+| [Transaction](./transaction.md)                     | ACID transaction handle                                                               |

@@ -1,6 +1,6 @@
 ---
 sidebar_position: 29
-title: 'Event-Driven Ingestion from Webhooks and Queues'
+title: 'Event-driven ingestion from webhooks and queues'
 description: Handle partial, repeated, and out-of-order events from webhooks or message queues without corrupting connected graph state.
 tags: [Ingestion, Transactions, TypeScript, Python]
 ---
@@ -8,7 +8,7 @@ tags: [Ingestion, Transactions, TypeScript, Python]
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Event-Driven Ingestion from Webhooks and Queues
+# Event-driven ingestion from webhooks and queues
 
 Webhooks and message queues deliver events at least once — occasionally more than once, occasionally out of order. Naive insertion on every delivery duplicates records, splits relationship graphs, and corrupts summary metrics.
 
@@ -421,6 +421,6 @@ def apply_order_status(order_id: str, new_status: str, event_at: str) -> None:
 
 ## Next steps
 
-- [Audit Trails](/learn/tutorials/use-cases/audit-trails) — append events to records without mutating them
-- [Versioning Records](/learn/tutorials/graph-modeling/versioning-records) — maintain a history of every state transition
-- [Supply Chain Traceability](/learn/tutorials/use-cases/supply-chain-traceability) — event-sourced causal chains across graph hops
+- [Audit Trails](../use-cases/audit-trails.mdx) — append events to records without mutating them
+- [Versioning Records](../graph-modeling/versioning-records.mdx) — maintain a history of every state transition
+- [Supply Chain Traceability](../use-cases/supply-chain-traceability.mdx) — event-sourced causal chains across graph hops

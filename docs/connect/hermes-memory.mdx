@@ -1,10 +1,9 @@
 ---
-title: Hermes Native Memory Provider
-description: Install RushDB as a lifecycle-aware Hermes Agent MemoryProvider.
-displayed_sidebar: docs
+title: Hermes native memory provider
+description: Install rushdb-hermes-memory, the Hermes Agent MemoryProvider that recalls RushDB memory before inference and persists completed turns automatically.
 ---
 
-# Hermes Native Memory Provider
+# Hermes native memory provider
 
 `rushdb-hermes-memory` implements Hermes Agent's native `MemoryProvider` contract. It performs automatic recall before inference and persists completed turns without requiring the model to call an MCP tool.
 
@@ -24,13 +23,35 @@ The package registers the `rushdb` provider through the official entry-point gro
 rushdb = "rushdb_hermes_memory:register"
 ```
 
-Set:
+Requires Python 3.11–3.13, installed into the same environment as Hermes Agent.
+
+### RushDB Cloud
 
 ```bash
 export RUSHDB_API_KEY=your-project-api-key
-# Optional for self-hosting:
-export RUSHDB_API_URL=https://rushdb.example.com/api/v1
-# Recommended for non-correlatable participant hashes:
+# Optional: a different RushDB Cloud API endpoint
+# export RUSHDB_API_URL=https://api.rushdb.com/api/v1
+```
+
+### A self-hosted RushDB engine
+
+Recall is a vector search. RushDB Cloud embeds memories for you; a self-hosted engine does not, so the provider embeds them itself through an OpenAI-compatible embeddings endpoint:
+
+```bash
+export RUSHDB_ENGINE_URL="http://127.0.0.1:3000"
+export RUSHDB_ENGINE_TOKEN="your-engine-token"
+# export RUSHDB_ENGINE_SCOPE="tenant-1"   # only for an engine started with --multitenant
+export RUSHDB_EMBEDDING_API_KEY="sk-..."
+export RUSHDB_EMBEDDING_MODEL="text-embedding-3-small"
+export RUSHDB_EMBEDDING_DIMENSIONS="1536"
+# export RUSHDB_EMBEDDING_BASE_URL="https://api.openai.com/v1"
+```
+
+On start the provider creates the external vector indexes it needs; every memory is written with its vector, and recall searches with the embedded query. With RushDB Cloud the embedding settings are optional. When the configuration is incomplete, `hermes memory status` reports what is missing.
+
+In either mode, set a salt so participant hashes can't be correlated across deployments:
+
+```bash
 export RUSHDB_MEMORY_SCOPE_SALT=a-long-random-secret
 ```
 
@@ -54,7 +75,7 @@ Only bounded user and assistant text leaves the device automatically. The option
 
 Recall always filters on the Hermes agent/profile identity, privacy scope, a salted participant hash, and sandbox eligibility before semantic ranking. Non-primary contexts such as subagents and cron/flush agents do not write memory.
 
-RushDB timeouts or errors produce empty/degraded recall rather than a failed Hermes turn. Recent locally queued episodes remain eligible for lexical fallback while managed embeddings are pending.
+RushDB timeouts or errors produce empty/degraded recall rather than a failed Hermes turn. Recent locally queued episodes remain eligible for lexical fallback while embeddings are pending.
 
 ## Verify
 

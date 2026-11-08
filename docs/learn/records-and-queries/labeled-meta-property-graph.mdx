@@ -1,15 +1,16 @@
 ---
 sidebar_position: 7
 title: Labeled Meta Property Graph
+description: "How RushDB's Labeled Meta Property Graph model stores records, typed property values and a live property catalog, and why the schema emerges from data."
 ---
 
 # Labeled Meta Property Graph
 
-RushDB uses a **Labeled Meta Property Graph** model: application records remain flexible graph nodes, while their field definitions are represented as metadata nodes inside the same graph.
+RushDB uses a **Labeled Meta Property Graph** model: application records remain flexible graph nodes, every property value is stored and typed on its own, and the field definitions those values form are kept as live, queryable metadata next to the data.
 
-This page explains the internal model. You do not need to understand these implementation details to store or query data, but they explain why RushDB can accept evolving JSON, expose its live schema, and help agents reason over unknown datasets.
+This page explains the model. You do not need to understand these details to store or query data, but they explain why RushDB can accept evolving JSON, expose its live schema, and help agents reason over unknown datasets.
 
-## The Short Version
+## The short version
 
 When you write:
 
@@ -24,31 +25,33 @@ When you write:
 }
 ```
 
-RushDB stores one `PRODUCT` record with the values. As part of that same write path, it ensures schema metadata nodes exist for:
+RushDB stores one `PRODUCT` record. Each of its values is stored as its own typed entry — an **occurrence** of a property on the record — rather than inside one document. In the same commit, RushDB updates the **property catalog** with the definitions those values form:
 
 ```text
-(name, string)
-(price, number)
-(inStock, boolean)
+PRODUCT · (name, string)    · 1 record
+PRODUCT · (price, number)   · 1 record
+PRODUCT · (inStock, boolean)· 1 record
 ```
-
-Each successful write extends an emergent set of schema guardrails: metadata nodes are connected to records that carry the corresponding field and inferred type.
 
 ```mermaid
 graph LR
-  P1["PROPERTY<br/>name · string"]
-  P2["PROPERTY<br/>price · number"]
-  P3["PROPERTY<br/>inStock · boolean"]
-  R["RECORD · PRODUCT<br/>name: Trail Jacket<br/>price: 129.99<br/>inStock: true"]
+  R["RECORD · PRODUCT"]
+  O1["name = 'Trail Jacket'<br/>string"]
+  O2["price = 129.99<br/>number"]
+  O3["inStock = true<br/>boolean"]
+  C["Property catalog<br/>(name, string) · (price, number) · (inStock, boolean)<br/>counts, ranges, value dictionaries"]
 
-  P1 -->|"schema guardrail"| R
-  P2 -->|"schema guardrail"| R
-  P3 -->|"schema guardrail"| R
+  R --> O1
+  R --> O2
+  R --> O3
+  O1 -. "maintained on every commit" .-> C
+  O2 -.-> C
+  O3 -.-> C
 ```
 
-The values stay on the record. Property nodes store schema metadata, not duplicated application data. Internally, RushDB represents each guardrail with a `__RUSHDB__RELATION__VALUE__` edge. Despite its internal name, that edge indicates that a record carries a property definition; it is not the value's storage location.
+The values stay with the record; the catalog holds definitions, counts and value statistics, never a second copy of your data.
 
-## Why Property Nodes Exist
+## Why a property catalog
 
 Most databases keep schema outside the data:
 
@@ -56,7 +59,7 @@ Most databases keep schema outside the data:
 - document stores often leave field discovery to application code or sampling;
 - conventional property graphs store values directly on nodes but do not necessarily maintain a queryable field catalog.
 
-RushDB keeps a compact, queryable metadata layer inside the graph. This provides:
+RushDB maintains the catalog as part of every write, so it is exact and never needs a scan. This provides:
 
 | Capability               | Why the metadata layer helps                                                     |
 | ------------------------ | -------------------------------------------------------------------------------- |
@@ -65,20 +68,20 @@ RushDB keeps a compact, queryable metadata layer inside the graph. This provides
 | Value exploration        | Property IDs provide a stable handle for distinct values and numeric/date ranges |
 | Flexible ingestion       | New fields appear on write without a migration                                   |
 | Schema evolution         | Old and new record shapes can coexist while the live schema reflects both        |
-| Semantic indexing        | Embedding policies attach to a label and property name discovered from the graph |
+| Semantic indexing        | Embedding and text indexes attach to a label and property name discovered from the data |
 
-## Records, Labels, Properties, Relationships
+## Records, labels, properties, relationships
 
-| Layer         | Stores                                          | Example                            |
-| ------------- | ----------------------------------------------- | ---------------------------------- |
-| Record        | Application values and system metadata          | `PRODUCT { name, price, inStock }` |
-| Label         | The record's entity type                        | `PRODUCT`, `ORDER`, `SESSION`      |
-| Property node | A field definition identified by `(name, type)` | `(price, number)`                  |
-| Relationship  | A directed edge between graph nodes             | `ORDER -[CONTAINS]-> PRODUCT`      |
+| Layer               | Stores                                                  | Example                            |
+| ------------------- | ------------------------------------------------------- | ---------------------------------- |
+| Record              | Application values, each typed, and system metadata     | `PRODUCT { name, price, inStock }` |
+| Label               | The record's entity type                                | `PRODUCT`, `ORDER`, `SESSION`      |
+| Property definition | A field identified by `(name, type)`, with its counts   | `(price, number)`                  |
+| Relationship        | A directed, typed edge between records, with properties | `ORDER -[CONTAINS]-> PRODUCT`      |
 
-Records remain the source of truth for values. The property layer describes the shape of those records.
+Records remain the source of truth for values. The catalog describes the shape of those records.
 
-## Identity Is Name Plus Type
+## Identity is name plus type
 
 Property identity includes both the field name and its inferred type. If different records send:
 
@@ -100,22 +103,21 @@ This preserves information instead of forcing unrelated values into one rigid co
 
 For predictable queries, keep a property's type consistent within an entity model whenever possible.
 
-## How the Schema Emerges
+## How the schema emerges
 
 Every write passes through the same conceptual pipeline:
 
 1. **Accept JSON** — receive flat or nested input.
 2. **Infer types** — classify scalar and array values.
-3. **Create records** — store application values on record nodes.
-4. **Upsert property metadata** — ensure each `(name, type)` definition exists.
-5. **Attach schema guardrails** — connect property nodes to records carrying those fields and inferred types.
-6. **Decompose nested objects** — create child records and parent-child relationships where needed.
+3. **Create records** — store each application value as a typed occurrence on its record.
+4. **Update the catalog** — record each `(name, type)` definition with its counts and value statistics, in the same commit.
+5. **Decompose nested objects** — create child records and parent-child relationships where needed.
 
 No schema declaration is required before step 1. The schema emerges from successful writes.
 
-## From Metadata Graph to Schema
+## From catalog to schema
 
-The schema APIs turn the internal graph into an efficient runtime schema snapshot:
+The schema APIs read the catalog into a runtime schema snapshot, without scanning records:
 
 ```text
 getSchemaMarkdown()
@@ -139,7 +141,7 @@ For deeper inspection:
 | `findLabels`        | List labels and record counts                                   |
 | `findRelationships` | Explore edges between record types                              |
 
-## Adaptive Does Not Mean Uncontrolled
+## Adaptive does not mean uncontrolled
 
 RushDB does not require upfront migrations, but production data still benefits from conventions:
 
@@ -161,11 +163,12 @@ The metadata layer is useful because it is explicit, but it is not free:
 | Type drift remains visible                  | Mixed `(name, type)` definitions can appear until data is normalized                      |
 | Flexible records require disciplined naming | `userId` and `userID` are distinct fields                                                 |
 | Discovery is runtime state                  | Schema reflects what has been written, not an aspirational schema file                    |
-| Internal metadata should stay internal      | Query application records through RushDB APIs rather than editing metadata nodes directly |
+| Storage favours property-grained work       | Updating one property writes one key; reading a whole record is one ordered scan of its occurrences |
 
-## Next Steps
+## Next steps
 
-- [Labels & Properties](/learn/records-and-queries/labels-and-properties) — inspect and manage schema metadata through public APIs
-- [Discover Your Schema](/learn/records-and-queries/discover-your-schema) — retrieve the live schema
-- [Import Data](/learn/records-and-queries/import-data) — create records and relationships from nested JSON
-- [Relationships](/learn/relationships) — understand explicit and generated graph edges
+- [Labels & Properties](./labels-and-properties.mdx) — inspect and manage schema metadata through public APIs
+- [Discover Your Schema](./discover-your-schema.mdx) — retrieve the live schema
+- [Import Data](./import-data.mdx) — create records and relationships from nested JSON
+- [Relationships](../relationships/index.mdx) — understand explicit and generated graph edges
+- [LMPG layout](../../engine/architecture/lmpg-layout.md) and [Schema catalog](../../engine/data-model/schema-catalog.md) in the engine manual — how occurrences and the catalog are stored

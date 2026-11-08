@@ -1,12 +1,15 @@
 ---
+title: DBRecordsArrayInstance class (TypeScript SDK)
+sidebar_label: DBRecordsArrayInstance
+description: "Reference for DBRecordsArrayInstance in the RushDB TypeScript SDK: search results with total, paging with next(), deleteAll, exportCsv and setProperties."
 sidebar_position: 5
 ---
 
 # DBRecordsArrayInstance
 
-`DBRecordsArrayInstance` is a class that manages an array of `DBRecordInstance` objects. It typically represents the result of a [search query](/learn/search-query) that returns multiple [records](/learn/records-and-queries/store-records).
+`DBRecordsArrayInstance` is a class that manages an array of `DBRecordInstance` objects. It typically represents the result of a [search query](../../search-query/search-query.md) that returns multiple [records](../../records-and-queries/store-records.mdx).
 
-## Class Definition
+## Class definition
 
 ```typescript
 export class DBRecordsArrayInstance<S extends Schema = Schema, Q extends SearchQuery<S> = SearchQuery<S>> {
@@ -16,7 +19,7 @@ export class DBRecordsArrayInstance<S extends Schema = Schema, Q extends SearchQ
 }
 ```
 
-## Type Parameters
+## Type parameters
 
 | Parameter                                   | Description                                               |
 | ------------------------------------------- | --------------------------------------------------------- |
@@ -127,7 +130,7 @@ Updates properties across all records in this result set. Records are processed 
 - `patch`: The fields to update and their new values
 - `transaction`: Optional transaction or transaction ID
 
-## Usage Example
+## Usage example
 
 ```typescript
 // Get multiple records from a model

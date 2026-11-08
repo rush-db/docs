@@ -1,14 +1,17 @@
 ---
+title: Export data REST API
+sidebar_label: Export data
+description: Export RushDB records as CSV with POST /api/v1/records/export/csv, filtered and sorted with the same where, orderBy, skip, limit and labels as a search.
 sidebar_position: 8
 ---
 
-# Export Data
+# Export data
 
 Export records as CSV. Accepts the same `where` / `orderBy` / `skip` / `limit` / `labels` parameters as a search query.
 
 `POST /api/v1/records/export/csv`
 
-### Request Body
+### Request body
 
 | Field     | Type             | Description                        |
 | --------- | ---------------- | ---------------------------------- |
@@ -18,7 +21,7 @@ Export records as CSV. Accepts the same `where` / `orderBy` / `skip` / `limit` /
 | `limit`   | number           | Max records to return (up to 1000) |
 | `labels`  | array of strings | Restrict to specific labels        |
 
-### Example Request
+### Example request
 
 ```bash
 curl -X POST https://api.rushdb.com/api/v1/records/export/csv \

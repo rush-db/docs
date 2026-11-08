@@ -1,6 +1,6 @@
 ---
 sidebar_position: 12
-title: 'End-to-End Data Lineage: From Source to Answer'
+title: 'End-to-end data lineage: From source to answer'
 description: Model imported records, transformation steps, derived summaries, and final outputs so every answer can be traced back to its upstream source.
 tags: [Lineage, Audit, Graph Modeling, Governance]
 ---
@@ -8,7 +8,7 @@ tags: [Lineage, Audit, Graph Modeling, Governance]
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# End-to-End Data Lineage: From Source to Answer
+# End-to-end data lineage: From source to answer
 
 When a dashboard shows a number, a sales rep acts on it. When a model generates a recommendation, an engineer ships it. Lineage answers the question that always follows: _where did this come from?_
 
@@ -178,13 +178,13 @@ RUN_ID=$(curl -s -X POST "$BASE/records" \
   -d '{"label":"PIPELINE_RUN","data":{"runId":"enrich-contacts-v2-20250301","pipelineName":"enrich-contacts","version":"v2.4.1","status":"success"}}' \
   | jq -r '.data.__id')
 
-curl -s -X POST "$BASE/records/$CRM_ID/relations" \
+curl -s -X POST "$BASE/relationships/$CRM_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$RUN_ID\"],\"options\":{\"type\":\"FEEDS\"}}"
+  -d "{\"targetIds\":[\"$RUN_ID\"],\"type\":\"FEEDS\"}"
 
-curl -s -X POST "$BASE/records/$BILLING_ID/relations" \
+curl -s -X POST "$BASE/relationships/$BILLING_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$RUN_ID\"],\"options\":{\"type\":\"FEEDS\"}}"
+  -d "{\"targetIds\":[\"$RUN_ID\"],\"type\":\"FEEDS\"}"
 ```
 
 </TabItem>
@@ -242,9 +242,9 @@ ART_ID=$(curl -s -X POST "$BASE/records" \
   -d '{"label":"ARTIFACT","data":{"name":"contacts-enriched-20250301","type":"dataset","rowCount":13940,"schema":"contacts-enriched-v3"}}' \
   | jq -r '.data.__id')
 
-curl -s -X POST "$BASE/records/$RUN_ID/relations" \
+curl -s -X POST "$BASE/relationships/$RUN_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$ART_ID\"],\"options\":{\"type\":\"PRODUCED\"}}"
+  -d "{\"targetIds\":[\"$ART_ID\"],\"type\":\"PRODUCED\"}"
 ```
 
 </TabItem>
@@ -326,13 +326,13 @@ SUMART_ID=$(curl -s -X POST "$BASE/records" \
   -d '{"label":"ARTIFACT","data":{"name":"q1-contact-summary","type":"report"}}' \
   | jq -r '.data.__id')
 
-curl -s -X POST "$BASE/records/$ART_ID/relations" \
+curl -s -X POST "$BASE/relationships/$ART_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$SUMRUN_ID\"],\"options\":{\"type\":\"FEEDS\"}}"
+  -d "{\"targetIds\":[\"$SUMRUN_ID\"],\"type\":\"FEEDS\"}"
 
-curl -s -X POST "$BASE/records/$SUMRUN_ID/relations" \
+curl -s -X POST "$BASE/relationships/$SUMRUN_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$SUMART_ID\"],\"options\":{\"type\":\"PRODUCED\"}}"
+  -d "{\"targetIds\":[\"$SUMART_ID\"],\"type\":\"PRODUCED\"}"
 ```
 
 </TabItem>
@@ -390,9 +390,9 @@ ANS_ID=$(curl -s -X POST "$BASE/records" \
   -d '{"label":"ANSWER","data":{"answerId":"report-q1-retention","type":"retention-report","generatedAt":"2025-04-02T09:00:00Z"}}' \
   | jq -r '.data.__id')
 
-curl -s -X POST "$BASE/records/$SUMART_ID/relations" \
+curl -s -X POST "$BASE/relationships/$SUMART_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$ANS_ID\"],\"options\":{\"type\":\"CITED_BY\"}}"
+  -d "{\"targetIds\":[\"$ANS_ID\"],\"type\":\"CITED_BY\"}"
 ```
 
 </TabItem>
@@ -596,6 +596,6 @@ Multi-hop lineage queries will scan the entire reachable subgraph unless you sco
 
 ## Next steps
 
-- [Audit Trails with Immutable Events](/learn/tutorials/use-cases/audit-trails) — separate event log from current state for reconstructible history
-- [Versioning Records Without Losing Queryability](/learn/tutorials/graph-modeling/versioning-records) — keeping historical state queryable alongside current state
-- [RushDB as a Memory Layer](/learn/tutorials/agent-memory/memory-layer) — using the same EPISODE + REFERENCE pattern for agent memory
+- [Audit Trails with Immutable Events](../use-cases/audit-trails.mdx) — separate event log from current state for reconstructible history
+- [Versioning Records Without Losing Queryability](./versioning-records.mdx) — keeping historical state queryable alongside current state
+- [RushDB as a Memory Layer](../agent-memory/memory-layer.mdx) — using the same EPISODE + REFERENCE pattern for agent memory

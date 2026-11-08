@@ -1,14 +1,14 @@
 ---
 sidebar_position: 18
-title: 'Detecting Fraud Rings'
-description: Find circular money flows with SearchQuery cycle detection — two transfer data models, directed variable-length traversal, and how to go from flagged participants to reconstructed rings.
+title: 'Detecting fraud rings'
+description: "Find circular money flows with SearchQuery $cycle detection: two transfer models, directed variable-length traversal, and rebuilding rings from participants."
 tags: [Graph Modeling, Fraud Detection, SearchQuery, Traversal, TypeScript, Python]
 ---
 
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Detecting Fraud Rings
+# Detecting fraud rings
 
 Money laundering has a geometric signature. Legitimate money flows are mostly acyclic: salaries fan out to merchants, merchants pay suppliers, suppliers pay employees. Laundering schemes need the money to come **back** — pushed through a chain of mule accounts and returned, cleaned, to somewhere the originator controls. That closing of the loop is the tell:
 
@@ -19,7 +19,7 @@ graph LR
   C -->|TRANSFERRED_TO| A
 ```
 
-Relational systems struggle here because "is this account on a directed cycle of length 2–6?" is a recursive question. In a graph it is a single query. This tutorial shows how to model transfers in RushDB and how to run cycle detection with [`$cycle`](/learn/search-query/where-operators#cycle-detection-cycle) and [variable-length traversal (`hops`)](/learn/search-query/where-operators#variable-length-traversal-hops).
+Relational systems struggle here because "is this account on a directed cycle of length 2–6?" is a recursive question. In a graph it is a single query. This tutorial shows how to model transfers in RushDB and how to run cycle detection with [`$cycle`](../../search-query/where-operators.md#cycle-detection-cycle) and [variable-length traversal (`hops`)](../../search-query/where-operators.md#variable-length-traversal-hops).
 
 ---
 
@@ -47,7 +47,7 @@ Use Model A when you only need topology (who pays whom). Use Model B when you ne
 
 ---
 
-## Step 1: Create a sample dataset (Model A)
+## Step 1: Create a sample dataset (model A)
 
 Five accounts. Three of them (`acct-a`, `acct-b`, `acct-c`) form a directed ring; the other two exchange an innocent one-way payment.
 
@@ -131,12 +131,12 @@ C_ID=$(curl -s -X POST "$BASE/records" -H "$H" -H "Authorization: Bearer $TOKEN"
   -d '{"label":"ACCOUNT","data":{"accountId":"acct-c","country":"CY","riskTier":"high"}}' | jq -r '.data.__id')
 
 # The ring: A → B → C → A
-curl -s -X POST "$BASE/records/$A_ID/relations" -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$B_ID\"],\"options\":{\"type\":\"TRANSFERRED_TO\"}}"
-curl -s -X POST "$BASE/records/$B_ID/relations" -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$C_ID\"],\"options\":{\"type\":\"TRANSFERRED_TO\"}}"
-curl -s -X POST "$BASE/records/$C_ID/relations" -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$A_ID\"],\"options\":{\"type\":\"TRANSFERRED_TO\"}}"
+curl -s -X POST "$BASE/relationships/$A_ID" -H "$H" -H "Authorization: Bearer $TOKEN" \
+  -d "{\"targetIds\":[\"$B_ID\"],\"type\":\"TRANSFERRED_TO\"}"
+curl -s -X POST "$BASE/relationships/$B_ID" -H "$H" -H "Authorization: Bearer $TOKEN" \
+  -d "{\"targetIds\":[\"$C_ID\"],\"type\":\"TRANSFERRED_TO\"}"
+curl -s -X POST "$BASE/relationships/$C_ID" -H "$H" -H "Authorization: Bearer $TOKEN" \
+  -d "{\"targetIds\":[\"$A_ID\"],\"type\":\"TRANSFERRED_TO\"}"
 ```
 
 </TabItem>
@@ -207,7 +207,7 @@ The rules of the `$cycle` operator, briefly:
 
 ### Model B: untyped, directed hops — with doubled counts
 
-In Model B the path alternates `ACCOUNT -[SENT]-> TRANSACTION -[CREDITS]-> ACCOUNT`, so each money movement costs **two hops**. A ring of 2–5 transfers is a closed path of 4–10 hops (the default cloud hop cap is 10, so in Model B that budget covers rings of up to 5 transfers). And because the hops alternate between two relationship types, omit `type` — untyped traversal allows a different type on each hop (RushDB automatically excludes its internal property metadata edges, so this never leaves your data model):
+In Model B the path alternates `ACCOUNT -[SENT]-> TRANSACTION -[CREDITS]-> ACCOUNT`, so each money movement costs **two hops**. A ring of 2–5 transfers is a closed path of 4–10 hops (so in Model B a `max` of 10 covers rings of up to 5 transfers). And because the hops alternate between two relationship types, omit `type` — untyped traversal allows a different type on each hop (RushDB automatically excludes its internal property metadata edges, so this never leaves your data model):
 
 <Tabs groupId="programming-language">
 <TabItem value="typescript" label="TypeScript">
@@ -437,15 +437,15 @@ Each step is a one-hop, ID-anchored query — cheap and index-friendly. In pract
 
 ## Performance notes
 
-- **Keep `max` small.** Variable-length traversal explores every matching path, and each extra hop multiplies the path count. Real laundering rings are short (3–6 parties); start there and widen only with evidence. Remember that in Model B the hop budget spends twice as fast — 10 hops is only 5 transfers.
+- **Keep `max` small.** Variable-length traversal visits every record within `max` hops of each candidate, and in a densely connected payments network each extra hop multiplies that count. Real laundering rings are short (3–6 parties); start there and widen only with evidence. Remember that in Model B the hop budget spends twice as fast — 10 hops is only 5 transfers.
 - **Always set `direction`.** It halves the expansion at every hop _and_ it is what makes the result mean "circular flow". An undirected, untyped `hops` query is the most expensive shape SearchQuery can produce.
-- **Mind the hop cap.** `hops.max` is capped per deployment (`RUSHDB_MAX_TRAVERSAL_HOPS`, default 10) on shared cloud. Unbounded traversal (omitting `max`) is only available on self-hosted deployments and projects with a custom Neo4j instance, bounded there by the transaction timeout.
+- **Mind the hop budget.** An omitted `hops.max` means 10. Deeper ring searches visit many more records, so raise `max` only as far as the investigation needs.
 - **Filter the root first.** Property criteria on the root (`country`, `riskTier`, activity flags) run before traversal and shrink the candidate set the cycle check has to cover.
 
 ---
 
 ## Next steps
 
-- [Where Operators — Variable-Length Traversal and Cycle Detection](/learn/search-query/where-operators#variable-length-traversal-hops) — the full `hops` and `$cycle` reference
-- [Modeling Hierarchies, Networks, and Feedback Loops](/learn/tutorials/graph-modeling/modeling-hierarchies) — the three graph shapes, including cyclic dependency graphs
-- [Temporal Graphs: Modeling State and Event Time Together](/learn/tutorials/graph-modeling/temporal-graphs) — adding time to transaction records for velocity-based scoring
+- [Where Operators — Variable-Length Traversal and Cycle Detection](../../search-query/where-operators.md#variable-length-traversal-hops) — the full `hops` and `$cycle` reference
+- [Modeling Hierarchies, Networks, and Feedback Loops](./modeling-hierarchies.mdx) — the three graph shapes, including cyclic dependency graphs
+- [Temporal Graphs: Modeling State and Event Time Together](./temporal-graphs.mdx) — adding time to transaction records for velocity-based scoring

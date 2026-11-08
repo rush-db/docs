@@ -5,26 +5,19 @@ import type { WrapperProps } from '@docusaurus/types'
 import DocSidebarDesktop from '@theme-original/DocSidebar/Desktop'
 import Logo from '@theme/Logo'
 import SidebarCommunity from '@site/src/components/SidebarCommunity'
-import DocsVersionSwitch from '@site/src/components/DocsVersionSwitch'
 import ThemeSwitch from '@site/src/components/ThemeSwitch'
 import { PanelLeftClose, PanelLeft, Search } from 'lucide-react'
 import type DocSidebarDesktopType from '@theme/DocSidebar/Desktop'
 
 type Props = WrapperProps<typeof DocSidebarDesktopType>
 
+const COLLAPSED_KEY = 'rushdb-docs-sidebar-collapsed'
+
 function SidebarThemeToggle() {
+  const { colorMode, setColorMode } = useColorMode()
   const {
-    colorMode: currentColorMode,
-    setColorMode,
-    colorModeChoice
-  } = useColorMode() as ReturnType<typeof useColorMode> & {
-    colorModeChoice: 'light' | 'dark' | null
-  }
-  const {
-    colorMode: { respectPrefersColorScheme, disableSwitch }
-  } = useThemeConfig() as {
-    colorMode: { respectPrefersColorScheme?: boolean; disableSwitch?: boolean }
-  }
+    colorMode: { disableSwitch }
+  } = useThemeConfig() as { colorMode: { disableSwitch?: boolean } }
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -35,31 +28,10 @@ function SidebarThemeToggle() {
     return null
   }
 
-  const nextMode = (() => {
-    if (!respectPrefersColorScheme) {
-      return currentColorMode === 'dark' ? 'light' : 'dark'
-    }
-
-    switch (colorModeChoice) {
-      case null:
-        return 'light'
-      case 'light':
-        return 'dark'
-      case 'dark':
-        return null
-      default:
-        return 'light'
-    }
-  })()
-
-  const isDark = currentColorMode === 'dark'
+  const isDark = colorMode === 'dark'
 
   return (
-    <ThemeSwitch
-      disabled={!mounted}
-      isDark={isDark}
-      onToggle={() => setColorMode(isDark ? 'light' : 'dark')}
-    />
+    <ThemeSwitch disabled={!mounted} isDark={isDark} onToggle={() => setColorMode(isDark ? 'light' : 'dark')} />
   )
 }
 
@@ -67,14 +39,14 @@ function SidebarCollapseToggle({ collapsed, onToggle }: { collapsed: boolean; on
   return (
     <button
       type="button"
-      className="clean-btn rushdb-sidebar-control rushdb-sidebar-control--collapse"
+      className="clean-btn rushdb-sidebar-control"
       aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       onClick={onToggle}
     >
       {collapsed ?
-        <PanelLeft aria-hidden="true" className="rushdb-sidebar-control__icon" />
-      : <PanelLeftClose aria-hidden="true" className="rushdb-sidebar-control__icon" />}
+        <PanelLeft aria-hidden="true" size={18} />
+      : <PanelLeftClose aria-hidden="true" size={18} />}
     </button>
   )
 }
@@ -83,12 +55,18 @@ export default function DocSidebarDesktopWrapper(props: Props) {
   const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
-    const savedState = window.localStorage.getItem('rushdb-docs-sidebar-collapsed')
-    setCollapsed(savedState === 'true')
+    setCollapsed(window.localStorage.getItem(COLLAPSED_KEY) === 'true')
   }, [])
 
+  // The collapsed width is `--doc-sidebar-width`, switched on <html> so the
+  // sidebar column and the main column resize together (custom.css).
   useEffect(() => {
-    window.localStorage.setItem('rushdb-docs-sidebar-collapsed', String(collapsed))
+    window.localStorage.setItem(COLLAPSED_KEY, String(collapsed))
+    if (collapsed) {
+      document.documentElement.setAttribute('data-sidebar-collapsed', 'true')
+    } else {
+      document.documentElement.removeAttribute('data-sidebar-collapsed')
+    }
   }, [collapsed])
 
   return (
@@ -102,21 +80,19 @@ export default function DocSidebarDesktopWrapper(props: Props) {
       <div className="rushdb-docs-sidebar-header">
         <Logo />
         <Link href="https://app.rushdb.com" className="cta-button rushdb-sidebar-cta">
-          GET API KEY
+          Get API key
         </Link>
       </div>
-
-      <DocsVersionSwitch />
 
       <button
         type="button"
         className="clean-btn rushdb-docs-sidebar-search-trigger"
         onClick={() => document.dispatchEvent(new CustomEvent('rushdb:open-search'))}
-        aria-label="Open search"
+        aria-label="Search docs"
       >
-        <Search aria-hidden="true" className="rushdb-docs-sidebar-search-trigger__icon" size={14} />
-        <span className="rushdb-docs-sidebar-search-trigger__label">Search</span>
-        <kbd className="rushdb-docs-sidebar-search-trigger__kbd">⌘K</kbd>
+        <Search aria-hidden="true" size={14} />
+        <span className="rushdb-docs-sidebar-search-trigger__label">Search docs</span>
+        <kbd>⌘K</kbd>
       </button>
 
       <DocSidebarDesktop {...props} />
@@ -131,12 +107,12 @@ export default function DocSidebarDesktopWrapper(props: Props) {
 
       <button
         type="button"
-        className="clean-btn rushdb-sidebar-expand-rail"
+        className="clean-btn rushdb-sidebar-control rushdb-sidebar-expand-rail"
         aria-label="Expand sidebar"
         title="Expand sidebar"
         onClick={() => setCollapsed(false)}
       >
-        <PanelLeft aria-hidden="true" className="rushdb-sidebar-expand-rail__icon" />
+        <PanelLeft aria-hidden="true" size={18} />
       </button>
     </div>
   )

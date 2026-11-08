@@ -5,22 +5,19 @@ const sidebars: SidebarsConfig = {
     {
       type: 'link',
       label: 'Quick Start',
-      href: '/get-started/quick-tutorial',
-      customProps: { icon: 'Rocket' }
+      href: '/get-started/quick-tutorial'
     },
     {
       type: 'category',
       label: 'Deploy',
       collapsible: false,
       collapsed: false,
-      customProps: { icon: 'Server' },
       items: [
         {
           type: 'category',
           label: 'Local Hosting',
           collapsible: true,
           collapsed: true,
-          customProps: { icon: 'Monitor' },
           link: { type: 'doc', id: 'deploy/local-hosting/index' },
           items: [
             'deploy/local-hosting/docker',
@@ -33,7 +30,6 @@ const sidebars: SidebarsConfig = {
           label: 'Remote Hosting',
           collapsible: true,
           collapsed: true,
-          customProps: { icon: 'Cloud' },
           link: { type: 'doc', id: 'deploy/remote-hosting/index' },
           items: [
             'deploy/remote-hosting/prerequisites',
@@ -47,7 +43,6 @@ const sidebars: SidebarsConfig = {
           label: 'Configuration',
           collapsible: true,
           collapsed: true,
-          customProps: { icon: 'Settings2' },
           link: { type: 'doc', id: 'deploy/configuration/index' },
           items: [
             'deploy/configuration/environment-variables',
@@ -60,7 +55,6 @@ const sidebars: SidebarsConfig = {
           label: 'Infrastructure',
           collapsible: true,
           collapsed: true,
-          customProps: { icon: 'Database' },
           link: { type: 'doc', id: 'deploy/infrastructure/index' },
           items: [
             'deploy/infrastructure/rushdb-platform',
@@ -73,7 +67,6 @@ const sidebars: SidebarsConfig = {
           label: 'Operations',
           collapsible: true,
           collapsed: true,
-          customProps: { icon: 'LifeBuoy' },
           items: ['deploy/operations/backup-restore', 'deploy/operations/troubleshooting']
         }
       ]
@@ -83,29 +76,25 @@ const sidebars: SidebarsConfig = {
       label: 'Connect',
       collapsible: false,
       collapsed: false,
-      customProps: { icon: 'Plug' },
       link: { type: 'doc', id: 'connect/index' },
       items: [
         {
           type: 'link',
           label: 'Skills',
           href: '/connect/skills',
-          className: 'connect-sidebar-link connect-sidebar-link--skills',
-          customProps: { icon: 'Sparkles' }
+          className: 'connect-sidebar-link connect-sidebar-link--skills'
         },
         {
           type: 'link',
           label: 'MCP',
           href: '/connect/mcp',
-          className: 'connect-sidebar-link connect-sidebar-link--mcp',
-          customProps: { icon: 'Cpu' }
+          className: 'connect-sidebar-link connect-sidebar-link--mcp'
         },
         {
           type: 'link',
           label: 'Agents',
           href: '/connect/agents',
-          className: 'connect-sidebar-link connect-sidebar-link--agents',
-          customProps: { icon: 'Bot' }
+          className: 'connect-sidebar-link connect-sidebar-link--agents'
         },
         {
           type: 'link',
@@ -123,8 +112,7 @@ const sidebars: SidebarsConfig = {
           type: 'link',
           label: 'SDK & REST',
           href: '/connect/sdks',
-          className: 'connect-sidebar-link connect-sidebar-link--sdks',
-          customProps: { icon: 'Code2' }
+          className: 'connect-sidebar-link connect-sidebar-link--sdks'
         }
       ]
     },
@@ -133,14 +121,12 @@ const sidebars: SidebarsConfig = {
       label: 'Learn',
       collapsible: false,
       collapsed: false,
-      customProps: { icon: 'Hammer' },
       items: [
         {
           type: 'category',
           label: 'Agent Memory',
           collapsible: true,
           collapsed: false,
-          customProps: { icon: 'Brain' },
           link: { type: 'doc', id: 'learn/agent-memory/index' },
           items: [
             'learn/agent-memory/quickstart',
@@ -153,7 +139,6 @@ const sidebars: SidebarsConfig = {
           label: 'Records & Queries',
           collapsible: true,
           collapsed: true,
-          customProps: { icon: 'Database' },
           link: { type: 'doc', id: 'learn/records-and-queries/index' },
           items: [
             'learn/records-and-queries/store-records',
@@ -172,7 +157,6 @@ const sidebars: SidebarsConfig = {
           label: 'SearchQuery',
           collapsible: true,
           collapsed: true,
-          customProps: { icon: 'Filter' },
           link: { type: 'doc', id: 'learn/search-query/search-query' },
           items: [
             'learn/search-query/smart-search',
@@ -188,7 +172,6 @@ const sidebars: SidebarsConfig = {
           label: 'Relationships',
           collapsible: true,
           collapsed: true,
-          customProps: { icon: 'Network' },
           link: { type: 'doc', id: 'learn/relationships/index' },
           items: [
             'learn/relationships/connect-records',
@@ -201,7 +184,6 @@ const sidebars: SidebarsConfig = {
           label: 'Semantic Search',
           collapsible: true,
           collapsed: true,
-          customProps: { icon: 'Search' },
           link: { type: 'doc', id: 'learn/semantic-search/semantic-search' },
           items: [
             'learn/semantic-search/manage-indexes',
@@ -214,7 +196,6 @@ const sidebars: SidebarsConfig = {
           label: 'Tutorials',
           collapsible: true,
           collapsed: true,
-          customProps: { icon: 'BookOpen' },
           link: { type: 'doc', id: 'learn/tutorials/index' },
           items: [
             {
@@ -222,7 +203,6 @@ const sidebars: SidebarsConfig = {
               label: 'AI & RAG',
               collapsible: true,
               collapsed: true,
-              customProps: { icon: 'Cpu' },
               items: [
                 'learn/tutorials/ai-and-rag/ai-semantic-search',
                 'learn/tutorials/ai-and-rag/graphrag',
@@ -242,7 +222,6 @@ const sidebars: SidebarsConfig = {
               label: 'Agent Memory',
               collapsible: true,
               collapsed: true,
-              customProps: { icon: 'Brain' },
               items: [
                 'learn/tutorials/agent-memory/agent-safe-query-planning',
                 'learn/tutorials/agent-memory/agent-skills-with-openclaw',
@@ -257,7 +236,6 @@ const sidebars: SidebarsConfig = {
               label: 'Graph Modeling',
               collapsible: true,
               collapsed: true,
-              customProps: { icon: 'Network' },
               items: [
                 'learn/tutorials/graph-modeling/thinking-in-graphs',
                 'learn/tutorials/graph-modeling/choosing-relationship-types',
@@ -274,7 +252,6 @@ const sidebars: SidebarsConfig = {
               label: 'Working with Data',
               collapsible: true,
               collapsed: true,
-              customProps: { icon: 'Database' },
               items: [
                 'learn/tutorials/working-with-data/importing-data',
                 'learn/tutorials/working-with-data/importing-from-mongodb',
@@ -288,7 +265,6 @@ const sidebars: SidebarsConfig = {
               label: 'Search & Queries',
               collapsible: true,
               collapsed: true,
-              customProps: { icon: 'Search' },
               items: [
                 'learn/tutorials/search-and-queries/discovery-queries',
                 'learn/tutorials/search-and-queries/reusable-search-query',
@@ -303,7 +279,6 @@ const sidebars: SidebarsConfig = {
               label: 'Use Cases',
               collapsible: true,
               collapsed: true,
-              customProps: { icon: 'Globe' },
               items: [
                 'learn/tutorials/use-cases/audit-trails',
                 'learn/tutorials/use-cases/compliance-retention',
@@ -320,14 +295,12 @@ const sidebars: SidebarsConfig = {
           label: 'Reference',
           collapsible: true,
           collapsed: true,
-          customProps: { icon: 'BookMarked' },
           items: [
             {
               type: 'category',
               label: 'TypeScript',
               collapsible: true,
               collapsed: true,
-              customProps: { icon: 'FileCode' },
               link: { type: 'doc', id: 'learn/reference/typescript/index' },
               items: [
                 'learn/reference/typescript/DBRecord',
@@ -347,7 +320,6 @@ const sidebars: SidebarsConfig = {
               label: 'Python',
               collapsible: true,
               collapsed: true,
-              customProps: { icon: 'FileCode' },
               link: { type: 'doc', id: 'learn/reference/python/index' },
               items: [
                 'learn/reference/python/record',
@@ -363,7 +335,6 @@ const sidebars: SidebarsConfig = {
               label: 'REST API',
               collapsible: true,
               collapsed: true,
-              customProps: { icon: 'Globe' },
               link: { type: 'doc', id: 'learn/reference/rest-api/introduction' },
               items: [
                 {
@@ -371,7 +342,6 @@ const sidebars: SidebarsConfig = {
                   label: 'Records',
                   collapsible: true,
                   collapsed: true,
-                  customProps: { icon: 'Database' },
                   items: [
                     'learn/reference/rest-api/records/create-records',
                     'learn/reference/rest-api/records/get-records',
@@ -386,7 +356,6 @@ const sidebars: SidebarsConfig = {
                   label: 'AI & Vectors',
                   collapsible: true,
                   collapsed: true,
-                  customProps: { icon: 'Sparkles' },
                   link: { type: 'doc', id: 'learn/reference/rest-api/ai-and-vectors/overview' },
                   items: [
                     'learn/reference/rest-api/ai-and-vectors/indexing',
@@ -407,7 +376,6 @@ const sidebars: SidebarsConfig = {
               label: 'MCP',
               collapsible: true,
               collapsed: true,
-              customProps: { icon: 'Cpu' },
               link: { type: 'doc', id: 'learn/reference/mcp/index' },
               items: ['learn/reference/mcp/tools']
             }
@@ -420,7 +388,6 @@ const sidebars: SidebarsConfig = {
       label: 'RushDB Cloud',
       collapsible: true,
       collapsed: false,
-      customProps: { icon: 'Cloud' },
       link: { type: 'doc', id: 'rushdb-cloud/index' },
       items: [
         'rushdb-cloud/billing-model',

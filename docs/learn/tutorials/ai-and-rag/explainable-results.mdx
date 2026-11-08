@@ -1,6 +1,6 @@
 ---
 sidebar_position: 33
-title: 'Explainable Results'
+title: 'Explainable results'
 description: Pair raw search results with related evidence, summary metrics, and traversal paths so users and agents can understand why a result was returned.
 tags: [Search, AI, SearchQuery, TypeScript, Python]
 ---
@@ -8,7 +8,11 @@ tags: [Search, AI, SearchQuery, TypeScript, Python]
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Explainable Results
+# Explainable results
+
+:::note Managed embeddings
+This tutorial searches with a text `query`, which RushDB Cloud embeds with its managed model. On a self-hosted engine, create external indexes and pass a `queryVector` from your own embedding model instead — see [Bring Your Own Vectors](../../semantic-search/bring-your-own-vectors.mdx).
+:::
 
 A result without context forces users to trust it blindly. An explainable result shows _why_ it was returned: which fields matched, which related records reinforce it, and what summary metric supports it.
 
@@ -431,6 +435,6 @@ Evidence assembly makes one additional query per result per evidence type. For 1
 
 ## Next steps
 
-- [Search UX Patterns](/learn/tutorials/search-and-queries/search-ux-patterns) — structured and semantic search for the end user
-- [Hybrid Retrieval](/learn/tutorials/ai-and-rag/hybrid-retrieval) — `where` filter + semantic scoring in one call
-- [Research Knowledge Graph](/learn/tutorials/agent-memory/research-knowledge-graph) — citation and co-authorship graphs to power evidence traversal
+- [Search UX Patterns](../search-and-queries/search-ux-patterns.mdx) — structured and semantic search for the end user
+- [Hybrid Retrieval](./hybrid-retrieval.mdx) — `where` filter + semantic scoring in one call
+- [Research Knowledge Graph](../agent-memory/research-knowledge-graph.mdx) — citation and co-authorship graphs to power evidence traversal

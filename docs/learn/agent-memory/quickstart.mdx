@@ -1,11 +1,10 @@
 ---
 sidebar_position: 1
-title: Agent Memory Quickstart
+title: Agent memory quickstart
+description: "Give an agent persistent graph memory in RushDB: connect the MCP server, install the agent skills, bootstrap and validate memory, then use the recall patterns."
 ---
 
-import Tabs from '@theme/TabItem'
-
-# Agent Memory Quickstart
+# Agent memory quickstart
 
 Give any agent a persistent, graph-structured memory in under five minutes. Sessions, decisions, tasks, entities, and preferences — stored in RushDB, traversable by meaning.
 
@@ -14,7 +13,7 @@ Give any agent a persistent, graph-structured memory in under five minutes. Sess
 ## Prerequisites
 
 1. **API key** — sign up free at [app.rushdb.com](https://app.rushdb.com) and copy your project API key.
-2. **A running RushDB instance** — [cloud](https://app.rushdb.com) or [self-hosted](/deploy/local-hosting/docker).
+2. **A running RushDB instance** — [Cloud](https://app.rushdb.com) or [self-hosted](../../engine/getting-started/installation.md).
 
 ---
 
@@ -34,16 +33,16 @@ Fetch https://rushdb.com/agent-setup and follow the instructions exactly.
 
 ---
 
-## Step 1 — Connect the MCP Server
+## Step 1 — connect the MCP server
 
 Add the `@rushdb/mcp-server` to your agent's MCP config, then restart.
 
-import Tabs2 from '@theme/TabItem'
+import TabItem from '@theme/TabItem'
 
-import TabsHost from '@theme/Tabs'
+import Tabs from '@theme/Tabs'
 
-<TabsHost groupId="agent-platform">
-  <Tabs2 value="claude" label="Claude Desktop">
+<Tabs groupId="agent-platform">
+  <TabItem value="claude" label="Claude Desktop">
 
 Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
@@ -63,8 +62,8 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 Restart Claude Desktop. The RushDB tools appear in the tool list automatically.
 
-  </Tabs2>
-  <Tabs2 value="vscode" label="VS Code / Copilot / OpenClaw">
+  </TabItem>
+  <TabItem value="vscode" label="VS Code / Copilot / OpenClaw">
 
 Add to your MCP settings (`.vscode/mcp.json` or user-level MCP config):
 
@@ -86,8 +85,8 @@ For **GitHub Copilot agent mode**: add the block above and reload the window. Ru
 
 For **OpenClaw**: add the same config to your OpenClaw workspace settings, or install via the OpenClaw skill registry (search `rushdb`).
 
-  </Tabs2>
-  <Tabs2 value="codex" label="Codex CLI">
+  </TabItem>
+  <TabItem value="codex" label="Codex CLI">
 
 ```bash
 # Set the key once
@@ -112,8 +111,8 @@ export RUSHDB_API_KEY=<your-api-key>
 
 Then run Codex normally — it will discover the RushDB tools at startup.
 
-  </Tabs2>
-  <Tabs2 value="hermes" label="Hermes / NousResearch">
+  </TabItem>
+  <TabItem value="hermes" label="Hermes / NousResearch">
 
 Hermes-based agents that support MCP can use the same npx transport. This is a **model-directed MCP tool integration**, not the automatic native memory-provider lifecycle:
 
@@ -134,33 +133,53 @@ Hermes-based agents that support MCP can use the same npx transport. This is a *
 
 If your Hermes host uses a different MCP config key, replace `mcp_servers` with the correct key — the inner object is the same.
 
-For automatic pre-inference recall and non-blocking turn persistence, install the [Hermes Native Memory Provider](/connect/hermes-memory).
+For automatic pre-inference recall and non-blocking turn persistence, install the [Hermes Native Memory Provider](../../connect/hermes-memory.mdx).
 
-  </Tabs2>
-  <Tabs2 value="docker" label="Docker / self-hosted MCP">
+  </TabItem>
+  <TabItem value="remote" label="Remote MCP (RushDB Cloud)">
 
-Run the server as a sidecar and expose it via SSE:
+Web-based clients such as ChatGPT and Claude.ai connect to RushDB Cloud's hosted MCP endpoint without installing anything:
 
-```bash
-docker run -d \
-  -e RUSHDB_API_KEY=<your-api-key> \
-  -p 3001:3001 \
-  rushdb/mcp-server
+```text
+https://mcp.rushdb.com/mcp
 ```
 
-Point your agent at `http://localhost:3001/sse` as the MCP SSE transport.
+The client redirects you to RushDB to sign in with OAuth and receives a scoped token.
 
-  </Tabs2>
-</TabsHost>
+  </TabItem>
+  <TabItem value="direct" label="Self-hosted engine">
+
+Point a local stdio client at your own engine. Direct mode runs over stdio only:
+
+```json
+{
+  "mcpServers": {
+    "rushdb": {
+      "command": "npx",
+      "args": ["-y", "@rushdb/mcp-server"],
+      "env": {
+        "RUSHDB_MODE": "direct",
+        "RUSHDB_ENGINE_URL": "http://127.0.0.1:3000",
+        "RUSHDB_ENGINE_TOKEN": "<your-engine-token>"
+      }
+    }
+  }
+}
+```
+
+On a self-hosted engine, memory recall by meaning needs an embedding model of your own; see [MCP](../../connect/mcp.mdx#self-hosted-engine-direct-mode).
+
+  </TabItem>
+</Tabs>
 
 ---
 
-## Step 2 — Install the Agent Skills
+## Step 2 — install the agent skills
 
 Install the RushDB skills pack so your agent knows how to use the MCP tools for memory, querying, and data modeling:
 
 ```bash
-npx skills add rush-db/rushdb --path packages/skills
+npx skills add rush-db/skills
 ```
 
 Or install the package with npm:
@@ -184,11 +203,11 @@ The pack includes:
 The MCP server gives your agent RushDB tools at runtime. Agent Skills teach it how to use those tools correctly. Install both, then start a new agent session so the skills are discovered.
 :::
 
-For OpenClaw workspace-level installation, see [Using RushDB Agent Skills in OpenClaw](/learn/tutorials/agent-memory/agent-skills-with-openclaw#part-2--install-the-rushdb-skills-pack).
+For OpenClaw workspace-level installation, see [Using RushDB Agent Skills in OpenClaw](../tutorials/agent-memory/agent-skills-with-openclaw.mdx#part-2--install-the-rushdb-skills-pack).
 
 ---
 
-## Step 3 — Bootstrap the Agent
+## Step 3 — bootstrap the agent
 
 After the MCP server is connected, send this prompt once per new agent / project:
 
@@ -227,7 +246,7 @@ CONFIRM
 
 ---
 
-## Step 4 — Validate
+## Step 4 — validate
 
 Ask the agent:
 
@@ -243,7 +262,7 @@ If it returns a session record, memory is live. From here the agent will:
 
 ---
 
-## Recommended Memory Labels
+## Recommended memory labels
 
 | Label         | What it stores                                          |
 | ------------- | ------------------------------------------------------- |
@@ -274,7 +293,7 @@ One `createRecord` call creates `SESSION → DECISION + TASK`, all linked automa
 
 ---
 
-## Recall Patterns
+## Recall patterns
 
 Copy these into your agent's system prompt or run them on demand:
 
@@ -296,12 +315,12 @@ Copy these into your agent's system prompt or run them on demand:
 vectorSearch: query="how did we handle auth", labels=["DECISION"], limit=5
 ```
 
-→ Requires a one-time embedding index. See [Schema Self-Awareness](/learn/agent-memory/schema-self-awareness) for setup.
+→ Requires a one-time embedding index. See [Schema Self-Awareness](./schema-self-awareness.mdx) for setup.
 
 ---
 
-## Next Steps
+## Next steps
 
-- [Agent Memory Overview](/learn/agent-memory) — the three memory layers (episodic, semantic, structural) and the full retrieval stack
-- [Schema Self-Awareness](/learn/agent-memory/schema-self-awareness) — let agents discover and reason about the graph schema dynamically
-- [Semantic Search](/learn/semantic-search) — add meaning-based recall to any memory label
+- [Agent Memory Overview](./index.mdx) — the three memory layers (episodic, semantic, structural) and the full retrieval stack
+- [Schema Self-Awareness](./schema-self-awareness.mdx) — let agents discover and reason about the graph schema dynamically
+- [Semantic Search](../semantic-search/semantic-search.mdx) — add meaning-based recall to any memory label

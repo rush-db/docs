@@ -1,16 +1,18 @@
 ---
 sidebar_position: 2
-title: Import Data
+title: Import JSON and CSV data
+sidebar_label: Import data
+description: Import nested JSON, flat arrays or CSV into RushDB and get typed, linked records automatically, with upsert by property and CSV parse options.
 ---
 
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# Import Data
+# Import data
 
 RushDB accepts raw data — JSON objects, nested trees, flat arrays, or CSV — and turns it into a fully typed, linked graph. No schema definitions, no migrations, no manual relationship wiring.
 
-## How Nested Data Becomes a Graph
+## How nested data becomes a graph
 
 When you import a nested JSON object, RushDB walks the structure with a breadth-first search (BFS) algorithm. Each nested object becomes a separate record, linked to its parent by a relationship.
 
@@ -45,7 +47,7 @@ graph LR
 
 ---
 
-## Import Nested JSON
+## Import nested JSON
 
 <Tabs groupId="programming-language">
   <TabItem value="python" label="Python" default>
@@ -152,7 +154,7 @@ curl -X POST https://api.rushdb.com/api/v1/records/import/json \
 
 ---
 
-## Import Flat Arrays
+## Import flat arrays
 
 Use this for flat, row-like data (no nested objects inside items). This is the fastest path for CSV-shaped data.
 
@@ -290,7 +292,7 @@ curl -X POST https://api.rushdb.com/api/v1/records/import/csv \
 
 ---
 
-## Upsert by Property During Import
+## Upsert by property during import
 
 All import methods support native upsert-by-property via `mergeBy` and `mergeStrategy`.
 Use `mergeBy` to name the property or properties that identify an existing record.
@@ -386,7 +388,7 @@ curl -X POST https://api.rushdb.com/api/v1/records/import/json \
 
 ---
 
-## Import Options
+## Import options
 
 | Option                          | Type       | Default                         | Description                                                                                                       |
 | ------------------------------- | ---------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -401,7 +403,7 @@ curl -X POST https://api.rushdb.com/api/v1/records/import/json \
 
 ---
 
-## Method Quick Reference
+## Method quick reference
 
 | Scenario       | Python                          | TypeScript                       | REST                                |
 | -------------- | ------------------------------- | -------------------------------- | ----------------------------------- |
@@ -414,6 +416,6 @@ curl -X POST https://api.rushdb.com/api/v1/records/import/json \
 
 ## See also
 
-- [Store Records](/learn/records-and-queries/store-records) — flat record create / update / delete operations
-- [Connect Records](/learn/relationships/connect-records) — manually attach/detach relationships
-- [Write Records with Vectors](/learn/semantic-search/write-with-vectors) — attach embedding vectors at import time
+- [Store Records](./store-records.mdx) — flat record create / update / delete operations
+- [Connect Records](../relationships/connect-records.mdx) — manually attach/detach relationships
+- [Write Records with Vectors](../semantic-search/write-with-vectors.mdx) — attach embedding vectors at import time

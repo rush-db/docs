@@ -1,9 +1,15 @@
 ---
 sidebar_position: 2
-title: Relationship Patterns
+title: Relationship patterns API (Python SDK)
+sidebar_label: Relationship patterns
+description: Use db.relationships.patterns in the RushDB Python SDK to queue schema analysis, then approve, ignore or delete the relationship patterns Cloud suggests.
 ---
 
-# Relationship Patterns
+# Relationship patterns
+
+:::info Cloud
+This capability is provided by RushDB Cloud. It is not available on a self-hosted engine, where the SDK raises `CloudOnlyError` before sending anything.
+:::
 
 RushDB can analyze the project schema and suggest relationships that are not materialized yet. Suggestions are reviewable: no relationship is created until you approve a pattern.
 
@@ -19,7 +25,7 @@ Access the API through `db.relationships.patterns`.
 | `ignore(pattern_id)`                           | Ignore a suggestion without applying it                                |
 | `delete(pattern_id, *, delete_existing=False)` | Delete a saved pattern, optionally removing materialized relationships |
 
-## Review Flow
+## Review flow
 
 ```python
 from rushdb import RushDB
@@ -48,4 +54,4 @@ Deleting a saved pattern does not delete relationships that it already created u
 db.relationships.patterns.delete("pattern-id", delete_existing=True)
 ```
 
-For lifecycle details, matching modes, REST endpoints, and MCP tools, see [Suggested Relationship Patterns](/learn/relationships/suggested-patterns).
+For lifecycle details, matching modes, REST endpoints, and MCP tools, see [Suggested Relationship Patterns](../../relationships/suggested-patterns.mdx).

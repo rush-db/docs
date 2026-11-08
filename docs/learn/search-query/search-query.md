@@ -1,5 +1,6 @@
 ---
-title: Introduction
+title: SearchQuery introduction
+description: Introduction to RushDB SearchQuery, the one query object for filtering records, traversing relationships, computing aggregates, paginating and sorting.
 sidebar_position: 0
 ---
 
@@ -7,18 +8,18 @@ sidebar_position: 0
 
 RushDB provides a powerful and flexible search system that allows you to efficiently query and traverse your graph data. The Search API is a cornerstone of RushDB, enabling you to find records, filter by conditions, navigate relationships, compute metrics, and format the returned data exactly as needed. The legacy aggregate clause is deprecated and should only be used for vector similarity until select supports it.
 
-## Core Capabilities
+## Core capabilities
 
 RushDB's Search API offers a comprehensive set of features:
 
-- **Powerful Filtering**: Use the [`where` clause](/learn/search-query/where-operators) with a wide range of operators to precisely filter records
+- **Powerful Filtering**: Use the [`where` clause](./where-operators.md) with a wide range of operators to precisely filter records
 - **Graph Traversal**: Navigate through connected records with relationship queries
-- **Select Expressions**: Compute aggregates, derive metrics, and shape output using the [`select` clause](/learn/search-query/select-expressions)
-- **Pagination and Sorting**: Control result volume and order with [pagination and sorting options](/learn/search-query/pagination-order)
-- **Label-Based Filtering**: Target specific types of records using [label filtering](/learn/search-query/search-labels)
-- **Semantic Search**: Find records by meaning using AI embedding indexes — see [AI Search](/learn/reference/rest-api/ai-and-vectors/overview)
+- **Select Expressions**: Compute aggregates, derive metrics, and shape output using the [`select` clause](./select-expressions.md)
+- **Pagination and Sorting**: Control result volume and order with [pagination and sorting options](./pagination-order.md)
+- **Label-Based Filtering**: Target specific types of records using [label filtering](./search-labels.md)
+- **Semantic Search**: Find records by meaning using AI embedding indexes — see [AI Search](../reference/rest-api/ai-and-vectors/overview.md)
 
-## SearchQuery Structure
+## SearchQuery structure
 
 All search operations in RushDB use a consistent SearchQuery data structure:
 
@@ -33,7 +34,7 @@ interface SearchQuery {
 }
 ```
 
-## Basic Example
+## Basic example
 
 Here's a simple example of searching for products:
 
@@ -60,11 +61,11 @@ This query:
 4. Limits results to 20 records
 5. Sorts results by price in ascending order
 
-## Advanced Search Features
+## Advanced search features
 
-### Filtering with Where Clauses
+### Filtering with where clauses
 
-The [`where` clause](/learn/search-query/where-operators) is the primary mechanism for filtering records. It supports:
+The [`where` clause](./where-operators.md) is the primary mechanism for filtering records. It supports:
 
 - **Property Matching**: Filter by exact values, string patterns, numeric ranges, etc.
 - **Logical Operators**: Combine conditions with AND, OR, NOT, etc.
@@ -83,9 +84,9 @@ The [`where` clause](/learn/search-query/where-operators) is the primary mechani
 }
 ```
 
-### Aggregating Results
+### Aggregating results
 
-[Select Expressions](/learn/search-query/select-expressions) allow you to perform calculations and transform the structure of your results:
+[Select Expressions](./select-expressions.md) allow you to perform calculations and transform the structure of your results:
 
 ```typescript
 {
@@ -103,9 +104,9 @@ The [`where` clause](/learn/search-query/where-operators) is the primary mechani
 }
 ```
 
-### Pagination and Sorting
+### Pagination and sorting
 
-Control the volume and order of results using [pagination and sorting options](/learn/search-query/pagination-order):
+Control the volume and order of results using [pagination and sorting options](./pagination-order.md):
 
 ```typescript
 {
@@ -119,19 +120,19 @@ Control the volume and order of results using [pagination and sorting options](/
 }
 ```
 
-## Performance Best Practices
+## Performance best practices
 
 For optimal performance when using the Search API:
 
 1. **Be Specific**: Filter by labels when possible to narrow the search scope
 2. **Use Indexed Properties**: Prioritize filtering on properties that have indexes
 3. **Limit Results**: Use pagination to retrieve only the records you need
-4. **Bound Your Traversals**: Variable-length traversal (`$relation.hops`) is capped per deployment (`RUSHDB_MAX_TRAVERSAL_HOPS`, default 10) — keep `max` as small as your use case allows, and constrain `type` and `direction` to prune the search
+4. **Bound Your Traversals**: Variable-length traversal (`$relation.hops`) visits every record within `max` hops of each candidate record — keep `max` as small as your use case allows, and constrain `type` and `direction` to prune the search
 5. **Use Aliases Efficiently**: Define aliases only for records you need to reference in aggregations
 
-## Next Steps
+## Next steps
 
-- Learn more about [filtering with where clauses](/learn/search-query/where-operators)
-- Explore [select expressions and aggregation capabilities](/learn/search-query/select-expressions)
-- Understand [pagination and sorting options](/learn/search-query/pagination-order)
-- Discover how to filter by [record labels](/learn/search-query/search-labels)
+- Learn more about [filtering with where clauses](./where-operators.md)
+- Explore [select expressions and aggregation capabilities](./select-expressions.md)
+- Understand [pagination and sorting options](./pagination-order.md)
+- Discover how to filter by [record labels](./search-labels.md)

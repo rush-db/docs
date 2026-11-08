@@ -1,12 +1,15 @@
 ---
+title: DBRecord type (TypeScript SDK)
+sidebar_label: DBRecord
+description: "Reference for the DBRecord type in the RushDB TypeScript SDK: system properties such as __id and __label combined with your schema-defined fields."
 sidebar_position: 2
 ---
 
 # DBRecord
 
-`DBRecord` is a type representing a database [record](/learn/records-and-queries/store-records) in RushDB. It combines internal system properties with schema-defined data [properties](/learn/records-and-queries/labels-and-properties).
+`DBRecord` is a type representing a database [record](../../records-and-queries/store-records.mdx) in RushDB. It combines internal system properties with schema-defined data [properties](../../records-and-queries/labels-and-properties.mdx).
 
-## Type Definition
+## Type definition
 
 ```typescript
 export type DBRecord<S extends Schema = Schema> = FlattenTypes<
@@ -14,7 +17,7 @@ export type DBRecord<S extends Schema = Schema> = FlattenTypes<
 >
 ```
 
-## Type Parameters
+## Type parameters
 
 | Parameter                   | Description                                              |
 | --------------------------- | -------------------------------------------------------- |
@@ -24,7 +27,7 @@ export type DBRecord<S extends Schema = Schema> = FlattenTypes<
 
 A `DBRecord` consists of both system properties and schema-defined properties:
 
-### System Properties
+### System properties
 
 | Property      | Type     | Description                              |
 | ------------- | -------- | ---------------------------------------- |
@@ -32,15 +35,14 @@ A `DBRecord` consists of both system properties and schema-defined properties:
 | `__label`     | `string` | The label/type of the record             |
 | `__proptypes` | `object` | Property type information for the record |
 
-### Schema Properties
+### Schema properties
 
 The remaining properties are defined by the schema `S` that was used to create the record. These properties can be:
 
 - Required properties (as defined in the schema with `required: true`)
 - Optional properties (as defined in the schema without `required: true` or with `required: false`)
 
-## Related Types
-
+## See also
 ### DBRecordInternalProps
 
 ```typescript
@@ -79,7 +81,7 @@ export type DBRecordInferred<S extends Schema, Q extends SearchQuery<S>> = DBRec
 
 An extension of `DBRecord` for a search query result. Aggregated fields from `select` expressions are typed based on the query shape.
 
-## Usage Example
+## Usage example
 
 ```typescript
 // Define a schema

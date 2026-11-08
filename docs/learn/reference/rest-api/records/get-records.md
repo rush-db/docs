@@ -1,10 +1,13 @@
 ---
+title: Get records REST API
+sidebar_label: Get records
+description: Get a RushDB record by ID or search records with a SearchQuery body in the RushDB Cloud REST API, including traversal, select expressions and groupBy.
 sidebar_position: 5
 ---
 
-# Get Records
+# Get records
 
-## Get Record by ID
+## Get record by ID
 
 `GET /api/v1/records/:entityId`
 
@@ -13,7 +16,7 @@ curl https://api.rushdb.com/api/v1/records/movie-123 \
   -H "Authorization: Bearer $RUSHDB_API_KEY"
 ```
 
-## Search Records
+## Search records
 
 `POST /api/v1/records/search`
 
@@ -58,7 +61,7 @@ curl -X POST https://api.rushdb.com/api/v1/records/search \
   }'
 ```
 
-### Select Expressions
+### Select expressions
 
 ```bash
 curl -X POST https://api.rushdb.com/api/v1/records/search \
@@ -94,7 +97,7 @@ curl -X POST https://api.rushdb.com/api/v1/records/search \
   }'
 ```
 
-## Search Record Relationships
+## Search record relationships
 
 `POST /api/v1/records/:entityId/search`
 

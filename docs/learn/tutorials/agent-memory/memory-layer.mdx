@@ -1,14 +1,14 @@
 ---
 sidebar_position: 11
-title: 'RushDB as a Memory Layer: Facts, Episodes, and References'
-description: Model persistent facts, episodic interactions, and linked reference material as a graph so agents and applications can retrieve and reason over connected context.
+title: 'RushDB as a memory layer: Facts, episodes, and references'
+description: Model persistent facts, episodic interactions and linked reference material as a RushDB graph that agents and applications can retrieve and reason over.
 tags: [Agents, AI, Memory, Graph Modeling]
 ---
 
 import Tabs from '@site/src/components/LanguageTabs'
 import TabItem from '@theme/TabItem'
 
-# RushDB as a Memory Layer: Facts, Episodes, and References
+# RushDB as a memory layer: Facts, episodes, and references
 
 Stateless LLM calls forget everything between turns. Retrieval from flat vector stores returns similar chunks without regard for how pieces of information connect. Neither approach gives an agent the ability to reason over **connected context** — who said what, when, in response to what, tied to which entities they already know.
 
@@ -136,9 +136,9 @@ FACT_ID=$(curl -s -X POST "$BASE/records" \
   -d "{\"label\":\"FACT\",\"data\":{\"key\":\"plan\",\"value\":\"enterprise\",\"setAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"source\":\"billing-api\"}}" \
   | jq -r '.data.__id')
 
-curl -s -X POST "$BASE/records/$USER_ID/relations" \
+curl -s -X POST "$BASE/relationships/$USER_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$FACT_ID\"],\"options\":{\"type\":\"HAS_FACT\"}}"
+  -d "{\"targetIds\":[\"$FACT_ID\"],\"type\":\"HAS_FACT\"}"
 ```
 
 </TabItem>
@@ -205,9 +205,9 @@ EPISODE_ID=$(curl -s -X POST "$BASE/records" \
   -d '{"label":"EPISODE","data":{"episodeId":"chat-2025-03-15","type":"support-chat","startedAt":"2025-03-15T09:00:00Z","outcome":"resolved"}}' \
   | jq -r '.data.__id')
 
-curl -s -X POST "$BASE/records/$USER_ID/relations" \
+curl -s -X POST "$BASE/relationships/$USER_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$EPISODE_ID\"],\"options\":{\"type\":\"HAD_EPISODE\"}}"
+  -d "{\"targetIds\":[\"$EPISODE_ID\"],\"type\":\"HAD_EPISODE\"}"
 ```
 
 </TabItem>
@@ -278,9 +278,9 @@ REF_ID=$(curl -s -X POST "$BASE/records" \
   -d '{"label":"REFERENCE","data":{"referenceId":"pricing-v3","title":"Pricing and Plans (v3)","version":"3.0"}}' \
   | jq -r '.data.__id')
 
-curl -s -X POST "$BASE/records/$EPISODE_ID/relations" \
+curl -s -X POST "$BASE/relationships/$EPISODE_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$REF_ID\"],\"options\":{\"type\":\"CITED\"}}"
+  -d "{\"targetIds\":[\"$REF_ID\"],\"type\":\"CITED\"}"
 ```
 
 </TabItem>
@@ -506,9 +506,9 @@ NEW_FACT_ID=$(curl -s -X POST "$BASE/records" \
   -d "{\"label\":\"FACT\",\"data\":{\"key\":\"plan\",\"value\":\"unlimited\",\"setAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"source\":\"billing-api\"}}" \
   | jq -r '.data.__id')
 
-curl -s -X POST "$BASE/records/$USER_ID/relations" \
+curl -s -X POST "$BASE/relationships/$USER_ID" \
   -H "$H" -H "Authorization: Bearer $TOKEN" \
-  -d "{\"targets\":[\"$NEW_FACT_ID\"],\"options\":{\"type\":\"HAS_FACT\"}}"
+  -d "{\"targetIds\":[\"$NEW_FACT_ID\"],\"type\":\"HAS_FACT\"}"
 
 # Mark old fact superseded
 curl -s -X PATCH "$BASE/records/$FACT_ID" \
@@ -586,6 +586,6 @@ History-preserving fact graphs grow unbounded. Apply a retention policy: periodi
 
 ## Next steps
 
-- [Episodic Memory for Multi-Step Agents](/learn/tutorials/agent-memory/episodic-memory) — storing intermediate observations, tool outputs, and decisions in a resume-capable graph
-- [End-to-End Data Lineage](/learn/tutorials/graph-modeling/data-lineage) — applying the same Event + Reference pattern to data pipeline provenance
-- [Semantic Search for Multi-Tenant Products](/learn/tutorials/ai-and-rag/semantic-search-multitenant) — combining graph facts with vector retrieval
+- [Episodic Memory for Multi-Step Agents](./episodic-memory.mdx) — storing intermediate observations, tool outputs, and decisions in a resume-capable graph
+- [End-to-End Data Lineage](../graph-modeling/data-lineage.mdx) — applying the same Event + Reference pattern to data pipeline provenance
+- [Semantic Search for Multi-Tenant Products](../ai-and-rag/semantic-search-multitenant.mdx) — combining graph facts with vector retrieval
