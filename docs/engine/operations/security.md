@@ -20,7 +20,7 @@ RushDB has two kinds of credentials.
 | Credential | Set with | Accepted on | Grants |
 |---|---|---|---|
 | **Boot token** | `--token` / `RUSHDB_TOKEN` (default `local-token`) | HTTP, pgwire (as the password), gRPC (bearer), Bolt (`HELLO` credentials), replication endpoints | Full access to every tenant. |
-| **Capability token** | issued by your application, verified with `--capability-secret` | HTTP; pgwire as the password (`database` names the tenant); gRPC as the bearer token (`x-rushdb-tenant`); Bolt as the `HELLO` credentials (`db`). Over TLS on the network listeners. | The listed permissions, optionally bound to one tenant, until it expires. |
+| **Capability token** | issued by your application, verified with `--capability-secret` | HTTP; pgwire as the password (`database` names the tenant); gRPC as the bearer token (`x-rushdb-tenant`); Bolt as the `HELLO` credentials (`db` of `BEGIN`/`RUN`/`HELLO`). Over TLS on the network listeners. | The listed permissions, optionally bound to one tenant, until it expires. |
 
 > **Warning:** The default boot token is `local-token`. Always set your own
 > long random token for anything beyond a local experiment:
@@ -82,7 +82,8 @@ capability. Every transport applies the same rule: the boot token is the
 operator; a capability must be bound to exactly the requested tenant
 (`X-RushDB-Tenant`, `database`, `x-rushdb-tenant`, `db`) on a multitenant
 server and unbound on a single-tenant one. gRPC checks it per call. pgwire
-and Bolt check it at login, and a session that logged in before the secret
+and Bolt check it at login (Bolt again for each `BEGIN` or `RUN` that names
+another tenant), and a session that logged in before the secret
 rotated or the token expired stays open until it disconnects, as a
 PostgreSQL session outlives a password change.
 
@@ -95,7 +96,7 @@ In multitenant mode (`--multitenant`) every request must select a tenant:
 | HTTP | `X-RushDB-Tenant` header (and `context.scope` in the envelope must match it) |
 | PostgreSQL wire | `database` connection parameter |
 | gRPC | `x-rushdb-tenant` metadata |
-| Bolt | HELLO `db` field |
+| Bolt | `db` of each `BEGIN` and auto-commit `RUN` (or of `HELLO`) |
 
 A missing scope is refused, never defaulted. Each tenant is a separate
 keyspace; no tenant identifier is stored on records. The mode is fixed when
@@ -119,10 +120,12 @@ All listeners bind `--listen` (default `127.0.0.1`). The startup guard:
 | Non-loopback, multitenant | requires TLS **or** `--allow-insecure-listen` | requires TLS **and** `--capability-secret` |
 
 The check counts only listeners that will actually start, on the effective
-configuration (after `config.yml`): pgwire when `sql` is enabled, Bolt when
-`cypher` is enabled, and gRPC whenever its port is set. To expose HTTPS on a
-non-loopback address without the insecure flag, keep those listeners off
-(for example `--pgwire-port 0` when `sql` is enabled).
+configuration (after `config.yml`): pgwire when `sql` is enabled and its
+port is non-zero, Bolt when `cypher` is enabled and its port is non-zero, and
+gRPC whenever its port is non-zero. Port `0` disables a listener: nothing is
+bound. To expose HTTPS on a non-loopback address without the insecure flag,
+keep those listeners off (for example `--pgwire-port 0` when `sql` is
+enabled).
 
 ## TLS
 
