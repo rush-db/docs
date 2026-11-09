@@ -892,6 +892,16 @@ kbd {
   transition: color var(--rd-duration-fast) ease;
 }
 
+/* "Cookie settings" is a button among the links; it looks like them. */
+button.rushdb-sidebar-community__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  line-height: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+
 .rushdb-sidebar-community__socials {
   display: flex;
   align-items: center;

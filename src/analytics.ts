@@ -4,41 +4,19 @@
  *
  * docusaurus.config.ts sets the consent default (everything denied) in <head>
  * and passes GTM_ID as customFields.gtmId. Without GTM_ID nothing here runs.
- * GTM loads only after the reader accepts (CookieConsent); the choice is kept
- * in localStorage under `cookieConsent` ('true' | 'false'), as on the website.
+ * GTM loads only after the reader accepts (CookieConsent); the choice is the
+ * `rushdb_consent` cookie shared with rushdb.com and app.rushdb.com
+ * (src/consent.ts).
  *
  * This file is also a client module: onRouteDidUpdate sends a page_view on
  * client-side navigation. GTM's own page view covers the first page.
  */
 import siteConfig from '@generated/docusaurus.config'
+import { hasConsent } from '@site/src/consent'
 
-declare global {
-  interface Window {
-    gtag?: (...args: unknown[]) => void
-    dataLayer?: unknown[]
-  }
-}
-
-export const CONSENT_KEY = 'cookieConsent'
 const GTM_SCRIPT_ID = 'rushdb-gtm'
 
 export const gtmId = (siteConfig.customFields?.gtmId as string | undefined) || undefined
-
-export function readConsent(): string | null {
-  try {
-    return window.localStorage.getItem(CONSENT_KEY)
-  } catch {
-    return null
-  }
-}
-
-export function storeConsent(granted: boolean) {
-  try {
-    window.localStorage.setItem(CONSENT_KEY, String(granted))
-  } catch {
-    // Storage blocked: the choice holds for this page only.
-  }
-}
 
 function ensureDataLayer() {
   window.dataLayer = window.dataLayer ?? []
@@ -93,7 +71,7 @@ export function onRouteUpdate() {
 }
 
 export function onRouteDidUpdate({ location, previousLocation }: RouteChange) {
-  if (!gtmId || !previousLocation || readConsent() !== 'true') return
+  if (!gtmId || !previousLocation || !hasConsent()) return
   if (location.pathname === previousLocation.pathname && location.search === previousLocation.search) return
 
   // The new title is set some frames after the route renders. Send once it

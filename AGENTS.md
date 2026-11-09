@@ -48,7 +48,7 @@ If a rule blocks a real need, change the rule here (and in `scripts/check-design
 | Secondary actions | `rd-button--ghost`; icon-only: `rd-icon-button` with `aria-label` | pills, rounded or coloured buttons |
 | A keyboard shortcut | `<kbd>` | custom kbd classes |
 | Opening search | `document.dispatchEvent(new CustomEvent('rushdb:open-search'))` | another search modal |
-| Analytics, cookie consent | `src/analytics.ts` and `CookieConsent` (in `Root`); both stay off unless `GTM_ID` is set at build time | `@docusaurus/plugin-google-gtag`, a script tag or a second banner |
+| Analytics, cookie consent | `src/analytics.ts`, `src/consent.ts` (the consent contract shared with rushdb.com and app.rushdb.com) and `CookieConsent` (in `Root`); all stay off unless `GTM_ID` is set at build time. Reopen it (to accept or withdraw) with `openCookieSettings()` from `CookieConsent`, as the sidebar's "Cookie settings" button does | `@docusaurus/plugin-google-gtag`, a script tag, `localStorage` for consent or a second banner |
 
 Missing a component? Add it to `src/components/` on tokens, add a row here and to DESIGN.md's component table in the same change.
 
