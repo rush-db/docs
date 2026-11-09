@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import Link from '@docusaurus/Link'
-import { ArrowRight, FileText, Globe, Linkedin, Rss, Youtube } from 'lucide-react'
+import { ArrowRight, Cookie, FileText, Globe, Linkedin, Rss, Youtube } from 'lucide-react'
 import { DEFAULT_DOCS_VERSION, DOCS_VERSIONS, type DocsVersion, docsVersionHref } from '@site/docs-versioning'
 import { DiscordIcon, GitHubIcon, XIcon } from '@site/src/components/BrandIcons'
+import { openCookieSettings } from '@site/src/components/CookieConsent'
+import { gtmId } from '@site/src/analytics'
 
 const RESOURCES = [
   { label: 'rushdb.com', href: 'https://rushdb.com', Icon: Globe },
@@ -63,6 +65,14 @@ export default function SidebarCommunity({ className }: { className?: string }) 
             </a>
           </li>
         ))}
+        {gtmId && (
+          <li>
+            <button type="button" className="rushdb-sidebar-community__link" onClick={openCookieSettings}>
+              <Cookie aria-hidden="true" size={14} />
+              Cookie settings
+            </button>
+          </li>
+        )}
       </ul>
       <div className="rushdb-sidebar-community__socials">
         {SOCIALS.map(({ label, href, Icon }) => (
