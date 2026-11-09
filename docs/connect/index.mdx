@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: Connect RushDB
-description: "Pick how to connect to RushDB Cloud or a self-hosted engine: TypeScript and Python SDKs, MCP server, agent skills, agent memory, LangChain or SQL clients."
+description: "Pick how to connect to RushDB Cloud or a self-hosted engine: TypeScript and Python SDKs, MCP server, agent skills, agent memory, LangChain, Debezium, Obsidian or SQL clients."
 ---
 
 # Connect RushDB
@@ -17,6 +17,7 @@ Start with the path that matches how you work. Every path below works with **Rus
 | Add persistent memory to an agent                    | [Agent memory](#agent-memory)                     | ✓     | ✓           |
 | Build RAG or agents with LangChain or LangGraph      | [LangChain & LangGraph](#langchain--langgraph)    | ✓     | ✓           |
 | Sync an existing database (change data capture)      | [Debezium](#debezium)                             | ✓     | ✓           |
+| Search an Obsidian vault and give agents your notes  | [Obsidian](#obsidian)                             | ✓     | ✓           |
 | Query with PostgreSQL or Neo4j drivers, or gRPC      | [SQL and Cypher clients](./sql-and-cypher.mdx)    | —     | ✓           |
 
 ---
@@ -139,6 +140,14 @@ docker run --rm -v $PWD/config:/debezium/config -e RUSHDB_API_KEY=... \
 ```
 
 [Set up Debezium →](./debezium.mdx)
+
+---
+
+## Obsidian
+
+The RushDB community plugin indexes an Obsidian vault into RushDB: notes, properties, tags and links. Search it from Obsidian, see each note's related notes, and point the MCP server at the same data so an agent can query your notes. Install **RushDB** from **Settings → Community plugins → Browse**.
+
+[Set up Obsidian →](./obsidian.mdx)
 
 ---
 

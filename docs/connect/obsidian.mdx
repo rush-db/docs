@@ -1,0 +1,157 @@
+---
+title: Obsidian
+description: Index an Obsidian vault into RushDB with the RushDB community plugin, search it from Obsidian and give AI agents your notes, properties, tags and links through MCP.
+---
+
+import Tabs from '@theme/Tabs'
+import TabItem from '@theme/TabItem'
+
+# Obsidian
+
+The [RushDB plugin for Obsidian](https://github.com/rush-db/obsidian-plugin) indexes the notes of a vault into RushDB: their text, properties (frontmatter), tags, headings and `[[links]]`. Your Markdown files stay the source of truth: the plugin writes only to RushDB, never to your vault.
+
+Once a vault is indexed you can:
+
+- search it from Obsidian, by keyword or, with semantic search on, by meaning;
+- open a sidebar that shows the open note's links, backlinks, notes two links away, similar notes and notes that share its tags;
+- point the [MCP server](./mcp.mdx) at the same data, so an AI agent can filter notes by property, follow links and search by meaning.
+
+It works with **RushDB Cloud** and with **self-hosted RushDB**, and needs Obsidian 1.13 or later.
+
+## Install
+
+In Obsidian, open **Settings → Community plugins → Browse**, search for **RushDB**, install it and enable it.
+
+## Connect
+
+Open **Settings → RushDB** and choose a server.
+
+<Tabs groupId="deployment">
+  <TabItem value="cloud" label="RushDB Cloud" default>
+
+1. Create a project at [app.rushdb.com](https://app.rushdb.com) and create an API key in it.
+2. Keep **Server** on **RushDB API (Cloud or self-hosted)** and **API URL** on `https://api.rushdb.com`.
+3. Under **API key**, add the key. Obsidian keeps it in its secret storage, not in the plugin's data file.
+
+  </TabItem>
+  <TabItem value="self-hosted" label="Self-hosted">
+
+A self-hosted RushDB platform takes an API key like RushDB Cloud: set **API URL** to your platform's URL and add one of its API keys.
+
+To use a standalone engine instead, start it with a data directory so the index survives restarts:
+
+```bash
+rushdb serve --port 3999 --data-dir ~/.local/share/rushdb-obsidian
+```
+
+Then set **Server** to **Standalone engine**, **Engine URL** to `http://127.0.0.1:3999`, and fill in **Engine token** if the engine runs with `--token`, and **Tenant** if it runs with `--multitenant`.
+
+  </TabItem>
+</Tabs>
+
+Select **Check** next to **Check connection** to confirm the plugin reaches the server.
+
+## Choose what to index
+
+Under **Folders to index**, list the folders whose notes are sent to RushDB, one per line, or `/` for the whole vault. List folders to leave out, such as journals or templates, under **Folders to skip**.
+
+:::warning
+Nothing is sent until you choose at least one folder. Everything in the folders you choose is sent to the server you configured, so leave out anything that should not leave your device.
+:::
+
+Close the settings to start the first sync; the status bar shows its progress. Later edits, renames and deletions are sent a couple of seconds after they happen. A large vault is sent in batches, and an interrupted first sync resumes where it stopped.
+
+| Setting | Default | Description |
+|---|---|---|
+| **Folders to index** | none | Folders whose notes are indexed, one per line; `/` for the whole vault |
+| **Folders to skip** | none | Folders inside them to leave out |
+| **Semantic search** | off | Embed note text with the server's managed embedding model, for search by meaning and similar notes |
+| **Text per note** | `32000` | Characters of each note that are sent; longer notes are cut |
+
+**Semantic search** uses RushDB Cloud's managed embeddings, or those of a self-hosted platform configured with an embedding model. A standalone engine has no embedding model, so the plugin searches by keyword and finds similar notes by their titles and headings.
+
+## Search and related notes
+
+| Command | What it does |
+|---|---|
+| **RushDB: Search notes** | Keyword search, or hybrid keyword and semantic search with semantic search on |
+| **RushDB: Show related notes** | Opens the related-notes sidebar for the active note |
+| **RushDB: Resync the vault** | Compares the vault with RushDB and sends whatever differs |
+
+## Give an agent your notes
+
+Point the [MCP server](./mcp.mdx) at the same project or engine as the plugin:
+
+<Tabs groupId="deployment">
+  <TabItem value="cloud" label="RushDB Cloud" default>
+
+```json
+{
+  "mcpServers": {
+    "rushdb": {
+      "command": "npx",
+      "args": ["-y", "@rushdb/mcp-server"],
+      "env": {
+        "RUSHDB_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+  </TabItem>
+  <TabItem value="self-hosted" label="Self-hosted">
+
+```json
+{
+  "mcpServers": {
+    "rushdb": {
+      "command": "npx",
+      "args": ["-y", "@rushdb/mcp-server"],
+      "env": {
+        "RUSHDB_MODE": "direct",
+        "RUSHDB_ENGINE_URL": "http://127.0.0.1:3999",
+        "RUSHDB_ENGINE_TOKEN": "your-engine-token"
+      }
+    }
+  }
+}
+```
+
+  </TabItem>
+</Tabs>
+
+Then ask, for example:
+
+> Which notes tagged `project` link to notes whose `fm_status` is `draft`?
+
+## What lands in RushDB
+
+| Vault | RushDB |
+|---|---|
+| A note | One `NOTE` record |
+| Path, file name, folder | `path`, `title`, `folder` |
+| Note text, without frontmatter | `body`, up to **Text per note** characters |
+| Tags (in the text and in properties) | `tags` |
+| Aliases, headings | `aliases`, `headings` |
+| Property `status` | `fm_status`: properties are prefixed `fm_`, with spaces and dashes as `_` |
+| Last modified | `modifiedAt` |
+| A `[[link]]` to another indexed note | A `LINKS_TO` relationship with `kind: "wikilink"` |
+
+Each record also holds `vaultId`, which identifies the vault, and `linkKey` and `linksTo`, which the plugin uses to write links. Several vaults can share a project; links never connect notes of different vaults.
+
+To remove a vault from RushDB, select **Remove** next to **Remove this vault from RushDB** in the plugin's settings. It deletes every note and link the vault sent, and leaves your notes untouched.
+
+## Privacy
+
+- Only notes in the folders you choose are sent, and only to the server you configure. Attachments and other files are never sent.
+- The plugin walks only the folders you chose; it does not list the rest of the vault.
+- The API key and engine token are kept in Obsidian's secret storage.
+- The plugin has no telemetry or analytics. Its source is on [GitHub](https://github.com/rush-db/obsidian-plugin), and each release carries a GitHub artifact attestation.
+
+## See also
+
+- [MCP server](./mcp.mdx)
+- [Keyword search](../learn/semantic-search/keyword-search.mdx)
+- [Semantic search](../learn/semantic-search/semantic-search.mdx)
+- [Relationships](../learn/relationships/connect-records.mdx)

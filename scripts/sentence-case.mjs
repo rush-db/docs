@@ -17,7 +17,7 @@ const root = new URL('../docs/', import.meta.url).pathname
 export const KEEP = new Set(
   `RushDB Python TypeScript JavaScript LangChain LangGraph OpenClaw Hermes NousResearch Claude Codex Copilot VS Docker
   Kubernetes Helm Homebrew Cargo Neo4j Aura MongoDB PostgreSQL Postgres SQLite Cypher Gremlin GraphQL Bolt AWS GCP Azure
-  Google OpenAI Anthropic Ollama Stripe Slack GitHub Jira Notion Zapier Kafka Debezium Next.js Node.js Bun Deno FastAPI
+  Google OpenAI Anthropic Ollama Stripe Slack GitHub Jira Notion Obsidian Zapier Kafka Debezium Next.js Node.js Bun Deno FastAPI
   Flask Django Prisma Supabase Vercel Cloudflare Markdown REST HTTP Rust Linux macOS Windows Grafana Prometheus
   OpenTelemetry Redis Elasticsearch Pinecone Weaviate Qdrant Chroma LlamaIndex CrewAI AutoGen Mastra Vectra Hono Express
   Cursor Windsurf Zed Gemini Mistral Cohere HuggingFace Jupyter Pandas Arrow Parquet Excel Sheets Airtable HubSpot
