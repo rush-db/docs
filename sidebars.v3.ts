@@ -21,6 +21,7 @@ const sidebars: SidebarsConfig = {
           ['connect/mcp', 'mcp'],
           ['connect/langchain', 'langchain'],
           ['connect/debezium', 'debezium'],
+          ['connect/obsidian', 'obsidian'],
           ['connect/skills', 'skills'],
           ['connect/agents', 'agents'],
           ['connect/openclaw-memory', 'openclaw'],
