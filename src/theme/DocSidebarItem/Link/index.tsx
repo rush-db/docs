@@ -8,7 +8,7 @@ import clsx from 'clsx'
 import Link from '@docusaurus/Link'
 import { ThemeClassNames } from '@docusaurus/theme-common'
 import { isActiveSidebarItem } from '@docusaurus/plugin-content-docs/client'
-import { ArrowRightLeft, Bot, Code2, Cpu, Database, NotebookText, Sparkles, Workflow } from 'lucide-react'
+import { ArrowRightLeft, Bot, Code2, Cpu, Database, Sparkles, Workflow } from 'lucide-react'
 
 function ConnectIcon({ href, label }: { href: string; label: string }): ReactNode {
   // Match the page whichever docs version owns `/` (`/connect/...`, `/2.x/connect/...`, `/3.x/connect/...`).
@@ -48,7 +48,17 @@ function ConnectIcon({ href, label }: { href: string; label: string }): ReactNod
     return <ArrowRightLeft size={15} strokeWidth={1.75} className="sidebar-link-icon" aria-hidden="true" />
   }
   if (path.startsWith('/connect/obsidian')) {
-    return <NotebookText size={14} strokeWidth={1.75} className="sidebar-link-icon" aria-hidden="true" />
+    // Obsidian's brand rules allow the mark in one solid colour, never recoloured otherwise.
+    return (
+      <img
+        src="/img/integrations/obsidian.svg"
+        width="14"
+        height="14"
+        className="sidebar-link-icon sidebar-link-icon--brand sidebar-link-icon--single-colour"
+        alt=""
+        aria-hidden="true"
+      />
+    )
   }
   if (path.startsWith('/connect/langchain')) {
     return <Workflow size={14} strokeWidth={1.75} className="sidebar-link-icon" aria-hidden="true" />

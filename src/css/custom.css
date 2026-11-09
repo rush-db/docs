@@ -1184,6 +1184,15 @@ html[data-theme='dark'] .sidebar-link-icon--brand {
   filter: grayscale(1) invert(1);
 }
 
+/* A brand mark whose owner allows only solid black or white: no grey tones. */
+.sidebar-link-icon--single-colour {
+  filter: brightness(0);
+}
+
+html[data-theme='dark'] .sidebar-link-icon--single-colour {
+  filter: brightness(0) invert(1);
+}
+
 .connect-sidebar-link__label {
   min-width: 0;
 }
