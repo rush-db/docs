@@ -1,0 +1,124 @@
+---
+title: Import files in the background
+sidebar_label: Import files
+description: Upload up to 50 CSV, TSV, JSON, NDJSON or Parquet files to RushDB Cloud, map labels, keys and links between files, and follow the background import run.
+---
+
+# Import files in the background
+
+A file import uploads one or more files to RushDB Cloud and turns every row into a record, on the server, in the background. Use it for files too large to send in one request, or for several related files that should link to each other.
+
+:::note RushDB Cloud
+This capability is provided by RushDB Cloud. On a self-hosted engine, send rows with [`records.importJson` or `records.importCsv`](../records-and-queries/import-data.mdx).
+:::
+
+## Supported files
+
+| Format | Extensions | Notes |
+|---|---|---|
+| CSV, TSV | `.csv`, `.tsv`, `.txt` | The first row holds the column names |
+| JSON | `.json` | An array of objects |
+| NDJSON | `.ndjson`, `.jsonl` | One object per line |
+| Parquet | `.parquet`, `.pq` | |
+| Any of the above, gzipped | `.gz` suffix | Decompressed while streaming |
+
+An import takes up to 50 files. Files are read as streams, so their size isn't limited by memory.
+
+## Import from the dashboard
+
+1. In the project sidebar, open **Data sources** and choose **Import files**, or drop files anywhere on the page.
+2. Wait for the uploads. They go straight to storage, so you can keep working in other tabs.
+3. Review each file in the mapping step:
+   - **Label**: every row becomes a record with this label.
+   - **Key column**: rows with the same key update one record, so importing the file again doesn't duplicate it. Without a key, every row is a new record.
+   - **Column types**: detected from a sample of rows; change a type when the detection is wrong.
+   - **Import as**: keep, hash or skip each column. Columns that look personal are suggested for hashing or skipping.
+4. Review **Links between files**. When a column of one file matches the key of another (an order's `customer_id` and a customer's `id`), the link is suggested with its evidence. Accept the right ones and rename the relationship type if you like.
+5. Choose **Start import**. You can close the tab: the run continues on the server, and its page shows progress per file.
+
+## Import with the SDK
+
+`importFiles` creates the import, uploads every file, starts it and, with `wait`, follows it to the end.
+
+```typescript
+import { createReadStream, statSync } from 'node:fs'
+import RushDB from '@rushdb/javascript-sdk'
+
+const db = new RushDB(process.env.RUSHDB_API_KEY!)
+
+const run = await db.imports.importFiles(
+  [
+    { data: createReadStream('customers.csv'), name: 'customers.csv', size: statSync('customers.csv').size, label: 'Customer' },
+    { data: createReadStream('orders.ndjson.gz'), name: 'orders.ndjson.gz', size: statSync('orders.ndjson.gz').size, label: 'Order' }
+  ],
+  {
+    mappings: { 0: { keyColumn: 'id' }, 1: { keyColumn: 'order_id' } },
+    links: [{ source: 1, sourceColumn: 'customer_id', target: 0, targetColumn: 'id', type: 'PLACED_BY' }],
+    wait: { intervalMs: 2000 },
+    onProgress: (p) => console.log(p.phase === 'upload' ? `${p.loaded}/${p.total} bytes` : p.run.status)
+  }
+)
+
+console.log(run.data.status, run.data.recordsWritten)
+```
+
+To show the suggested mapping before starting, run the steps yourself:
+
+```typescript
+const { data: created } = await db.imports.create({ files: [{ name: 'orders.csv', size: file.size }] })
+await db.imports.upload(created.id, created.files[0], file, { parallelism: 4, retries: 3 })
+
+const { data: preview } = await db.imports.preview(created.id)
+const columns = preview.files[0].columns // type, samples, `suggestion` and `pii` per column
+
+await db.imports.start(created.id, {
+  files: [
+    {
+      id: created.files[0].id,
+      mapping: {
+        keyColumn: preview.files[0].suggestedKey,
+        skip: columns.filter((c) => c.suggestion === 'skip').map((c) => c.name),
+        hash: columns.filter((c) => c.suggestion === 'hash').map((c) => c.name)
+      }
+    }
+  ]
+})
+
+const { data: finished } = await db.imports.wait(created.id, { timeoutMs: 30 * 60_000 })
+```
+
+Upload data can be a `Blob` or `File`, a `Uint8Array` or `Buffer`, an `ArrayBuffer`, a web `ReadableStream` or a Node `Readable`. A stream needs its `size` up front.
+
+### Mapping options
+
+| Field | Type | What it does |
+|---|---|---|
+| `label` | `string` | The label of every record from the file |
+| `keyColumn` | `string` | Rows with the same value update one record |
+| `skip` | `string[]` | Columns left out |
+| `hash` | `string[]` | Columns stored as a keyed hash: not readable, still joinable |
+| `types` | `Record<string, 'string' \| 'number' \| 'boolean' \| 'datetime'>` | Overrides the detected type of a column |
+
+## Follow, cancel and retry a run
+
+| Method | What it does |
+|---|---|
+| `db.imports.get(id)` | The run with its status, per-file progress and summary |
+| `db.imports.wait(id, { timeoutMs })` | Polls until the status is `completed`, `partial`, `failed` or `cancelled` |
+| `db.imports.list({ kind: 'file' })` | Recent runs, newest first |
+| `db.imports.cancel(id)` | Stops the run after the current batch |
+| `db.imports.retry(id)` | Continues a `failed`, `partial` or `cancelled` run from each file's last checkpoint |
+| `db.imports.delete(id)` | Removes a finished or cancelled run and its uploaded files; the records it wrote stay |
+
+A run keeps a checkpoint per file. If the server restarts mid-import, the run resumes from its checkpoints instead of starting over.
+
+:::warning
+A `partial` run wrote some rows and skipped others, for example rows that failed to parse. Its summary lists what was skipped and why; fix the file and retry, and the key column keeps the rows that made it from being duplicated.
+:::
+
+## See also
+
+- [Data sources](./index.mdx)
+- [Connections](./connections.mdx)
+- [Import JSON and CSV data](../records-and-queries/import-data.mdx), the in-request import on any engine
+- [Connect records](../relationships/connect-records.mdx)

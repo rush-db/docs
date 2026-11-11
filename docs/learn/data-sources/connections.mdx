@@ -1,0 +1,122 @@
+---
+title: Connect SaaS tools and databases to RushDB Cloud
+sidebar_label: Connections
+description: Sync CRM, billing, accounting, support and project tools, custom REST APIs and on-prem databases into RushDB Cloud on a schedule, on demand or by webhook.
+---
+
+# Connections
+
+A connection keeps a project in sync with another system: a SaaS tool from the catalog, a REST API you describe, or a database inside your network. Each sync is an [import run](./index.mdx) that updates the records it wrote before, so re-syncs never duplicate data.
+
+:::note RushDB Cloud
+Connections are provided by RushDB Cloud. On a self-hosted engine, write records from your own sync code with the SDK's [store records](../records-and-queries/store-records.mdx) and [import](../records-and-queries/import-data.mdx) methods.
+:::
+
+## Connect a source
+
+1. In the project sidebar, open **Data sources** and choose **Connect a source**.
+2. Pick a connector. The catalog covers CRM and sales (HubSpot, Salesforce, Pipedrive, Salesloft, Gong), billing (Stripe, Paddle, Lemon Squeezy), accounting (QuickBooks Online, Xero, NetSuite), support (Zendesk, Intercom, ServiceNow), project management (Jira, Linear, Asana, ClickUp, monday.com, Trello, YouTrack), knowledge (Notion, Confluence, Google Sheets, Airtable) and more.
+3. Authorize. Connectors that support it offer **Connect with …** (OAuth); the others take an API key or token. Credentials are sealed on the server and never returned, not even to you.
+4. Choose the streams to sync (contacts, deals, invoices, …), review each stream's fields, and choose a mode.
+5. Run the first sync. Its records and their links appear as the run progresses.
+
+Grant read-only access where the provider lets you: connections only read.
+
+## Modes
+
+| Mode | `mode` value | When it syncs |
+|---|---|---|
+| On a schedule | `scheduled` | Every `scheduleMinutes` (5 minutes to 7 days). Streams that support it read only what changed since the last sync |
+| Manually | `manual` | Only when you choose **Sync now** or call `db.connections.sync(id)` |
+| Once | `once` | Reads everything one time, then stays idle until you sync again |
+| When a webhook is called | `webhook_trigger` | A secret URL starts a sync; call it from a script, a CI job or another tool |
+| Push | `webhook_push` | Nothing is read: the JSON posted to the connection's webhook URL is the data. Zapier, Make and n8n templates are in `db.connections.pushTemplates()` |
+
+Connectors with provider webhooks (among them Stripe, Paddle, HubSpot, Pipedrive, Zendesk, Intercom, Jira, Linear and Notion) can also apply changes as the provider reports them, between scheduled syncs.
+
+## Review fields
+
+Every stream has a field policy that decides what reaches the graph. Before the first sync, the fields are profiled from a sample. Fields that look personal, judged by their names and by sampled values, are proposed for dropping or hashing; you confirm each choice.
+
+| Choice | Effect |
+|---|---|
+| Include | The field is stored as-is |
+| Hash | The value is stored as a keyed hash: not readable, but equal values still match, so it still joins across sources |
+| Exclude | The field is dropped before it reaches the project |
+
+After the review, the policy is an allowlist: a field that appears later waits for review instead of being stored.
+
+## Connect with the SDK
+
+```typescript
+import RushDB from '@rushdb/javascript-sdk'
+
+const db = new RushDB(process.env.RUSHDB_API_KEY!)
+
+const { data: created } = await db.connections.create({
+  connectorId: 'hubspot',
+  auth: { type: 'bearer', token: process.env.HUBSPOT_TOKEN! },
+  mode: 'scheduled',
+  scheduleMinutes: 60,
+  streams: [{ stream: 'contacts' }, { stream: 'deals' }]
+})
+const id = created.connection.id
+
+await db.connections.test(id) // checks the credentials
+await db.connections.preview(id, 'contacts') // first records, nothing written
+
+const { data: review } = await db.connections.fields(id, { stream: 'contacts' })
+await db.connections.reviewFields(
+  id,
+  'contacts',
+  review.fields.map((field) => ({ name: field.name, action: field.suggestion }))
+)
+
+const { data: run } = await db.connections.sync(id) // or { streams: ['contacts'], full: true }
+await db.imports.wait(run.id)
+```
+
+| Method | What it does |
+|---|---|
+| `db.connections.catalog()` | Connectors with their streams, auth options and settings |
+| `db.connections.list()`, `get(id)` | Connections with their status, schedule, last success and per-stream counts |
+| `db.connections.update(id, changes)` | Changes the name, mode, schedule, streams or credentials |
+| `db.connections.runs(id)` | The connection's sync runs |
+| `db.connections.pause(id)`, `resume(id)` | Stops and restarts syncs; a paused connection refuses its webhooks |
+| `db.connections.rotateWebhookToken(id)` | Issues a new webhook URL; the old one stops working |
+| `db.connections.delete(id, { deleteData })` | Removes the connection, and with `deleteData` the records it wrote |
+
+## Custom connectors
+
+When a tool isn't in the catalog, create a connector for your workspace from **Data sources → Custom connectors**:
+
+- **New REST connector:** describe a REST API's base URL, auth and endpoints.
+- **From OpenAPI:** import an OpenAPI document and pick the operations to sync.
+- **Build with AI:** point at the API's documentation. A draft spec is tested against the API, and repairs are proposed when a request fails. A person approves the spec before anything syncs.
+
+Custom connectors run with the same modes, field review and runs as built-in ones. The spec format is open source in [`@rushdb/connectors`](https://github.com/rush-db/connectors), where you can also contribute a connector to the catalog.
+
+## On-prem databases
+
+`rushdb-agent` syncs PostgreSQL, MySQL and MariaDB, MongoDB and ClickHouse from inside your network. It reads with read-only credentials, applies the field policy locally, and only pushes out to RushDB, so RushDB never connects to your databases and never sees their credentials.
+
+1. Create an agent connection in **Data sources → Connect a source → On-prem databases**, or with the SDK:
+
+   ```typescript
+   const { data } = await db.connections.create({ connectorId: 'agent', name: 'Warehouse', agent: { intervalMinutes: 15 } })
+   console.log(data.agentToken) // shown once
+   ```
+
+2. Run the agent next to the database with that token and a config that names the tables or collections to sync. The [agent guide](https://github.com/rush-db/connectors/blob/main/docs/agent.md) covers the config and the container image.
+3. The connection page shows what the agent last reported.
+
+## For agents
+
+The MCP server's `listConnections` and `getConnection` tools show where a label's records come from and how fresh they are, and `syncConnection` refreshes a connection on request. The schema Markdown (`getSchemaMarkdown`) ends with `## Sources`, which lists each synced label with its connection and freshness.
+
+## See also
+
+- [Data sources](./index.mdx)
+- [Import files in the background](./import-files.mdx)
+- [Suggested relationship patterns](../relationships/suggested-patterns.mdx), for joins across sources
+- [Discover your schema](../records-and-queries/discover-your-schema.mdx)

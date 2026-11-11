@@ -1,0 +1,38 @@
+---
+title: Data sources in RushDB Cloud
+sidebar_label: Data sources
+description: Load data into a RushDB Cloud project from large files, SaaS tools, on-prem databases and push webhooks, with every run tracked and resumable.
+---
+
+# Data sources
+
+A data source is anything that keeps putting records into your project: a batch of files, a SaaS tool, a database inside your network, or an automation that pushes JSON. In RushDB Cloud each of them runs in the background on the server, and every load is an **import run** that you can follow, cancel and retry.
+
+:::note RushDB Cloud
+File imports and connections are provided by RushDB Cloud. A self-hosted engine has no background runs; load data with [`records.importJson` and `records.importCsv`](../records-and-queries/import-data.mdx) instead. The SDK throws `CloudOnlyError` for `db.imports` and `db.connections` before sending anything.
+:::
+
+## Choose a source
+
+| You have | Use | Page |
+|---|---|---|
+| CSV, TSV, JSON, NDJSON or Parquet files, up to 50 per import, optionally gzipped | A file import | [Import files in the background](./import-files.mdx) |
+| Data in a SaaS tool (CRM, billing, accounting, support, project management) | A connection from the catalog | [Connections](./connections.mdx) |
+| A REST API that isn't in the catalog | A custom connector: generic REST, an OpenAPI import, or the AI connector builder | [Connections](./connections.mdx#custom-connectors) |
+| PostgreSQL, MySQL, MongoDB or ClickHouse inside your network | `rushdb-agent`, which runs next to the database and only pushes out | [Connections](./connections.mdx#on-prem-databases) |
+| Zapier, Make, n8n or your own code sending events | A push connection with its own webhook URL | [Connections](./connections.mdx#modes) |
+| A few records from your application | The SDK's [store records](../records-and-queries/store-records.mdx) methods | — |
+
+## What every source has in common
+
+- **Stable ids.** Each source record gets a deterministic id, so a re-import, a re-sync or a retry updates records instead of duplicating them.
+- **Links as data arrives.** References between objects (an invoice's customer, an order's items) become relationships. A reference whose target hasn't arrived yet is linked when it does.
+- **Personal data review.** Columns and fields that look personal, judged by their names and by sampled values, are proposed for dropping or hashing. A hashed value is not readable, but it still joins across sources.
+- **Runs you can follow.** Open **Data sources** in the project sidebar, or use `db.imports.list()` and `db.imports.wait(id)`.
+- **Provenance for agents.** The schema Markdown agents read (`getSchemaMarkdown`) ends with `## Sources`, which lists the labels that come from each connection and how fresh they are.
+
+## Next steps
+
+- [Import files in the background](./import-files.mdx)
+- [Connections](./connections.mdx)
+- [Discover your schema](../records-and-queries/discover-your-schema.mdx)

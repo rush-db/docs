@@ -58,6 +58,13 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'category',
+          label: 'Data sources',
+          collapsed: true,
+          link: { type: 'doc', id: 'learn/data-sources/index' },
+          items: ['learn/data-sources/import-files', 'learn/data-sources/connections']
+        },
+        {
+          type: 'category',
           label: 'SearchQuery',
           collapsed: true,
           link: { type: 'doc', id: 'learn/search-query/search-query' },
@@ -67,7 +74,8 @@ const sidebars: SidebarsConfig = {
             'learn/search-query/group-by',
             'learn/search-query/pagination-order',
             'learn/search-query/search-labels',
-            'learn/search-query/smart-search'
+            'learn/search-query/smart-search',
+            'learn/search-query/definitions'
           ]
         },
         {

@@ -12,6 +12,10 @@ import TabItem from '@theme/TabItem'
 
 RushDB accepts raw data — JSON objects, nested trees, flat arrays, or CSV — and turns it into a fully typed, linked graph. No schema definitions, no migrations, no manual relationship wiring.
 
+:::tip
+For large files, several related files, or data from SaaS tools, use RushDB Cloud's [background file imports](../data-sources/import-files.mdx) and [connections](../data-sources/connections.mdx).
+:::
+
 ## How nested data becomes a graph
 
 When you import a nested JSON object, RushDB walks the structure with a breadth-first search (BFS) algorithm. Each nested object becomes a separate record, linked to its parent by a relationship.
