@@ -1,0 +1,72 @@
+---
+title: Definitions for metrics and filters
+sidebar_label: Definitions
+description: Define once in SQL what a project's business words mean, such as revenue or active customer, so Smart search, the SDK and MCP agents answer alike.
+---
+
+# Definitions
+
+Definitions say once what your project's business words mean in SQL: how revenue is computed, which customers count as active, which orders count at all. A person certifies each one, and from then on Smart search and agents apply it instead of guessing, so the same question gets the same answer everywhere.
+
+:::note RushDB Cloud
+Definitions are provided by RushDB Cloud. On a self-hosted engine, keep the equivalent rules in your own prompts and in the [SQL](../../engine/languages/sql.md) you run.
+:::
+
+## Kinds
+
+| Kind | What it is | Example |
+|---|---|---|
+| Metric | One `SELECT` that computes a number or a table | `SELECT SUM("amount") AS revenue FROM "ORDER" WHERE "status" = 'completed'` |
+| Filter | A condition over one label's rows | On `CUSTOMER`: `"status" = 'active' AND "churned_at" IS NULL` |
+| Instructions | Free text about the project, up to 4,000 characters | "Amounts are in cents. A customer is a company, not a person." |
+
+Each metric and filter has a name (up to 80 characters), an optional description and up to 20 synonyms: the other words people use for it ("sales", "turnover" for `revenue`).
+
+## Create a definition
+
+1. In the project sidebar, open **Definitions** under Knowledge.
+2. Choose **New definition**.
+3. Describe it in plain language, for example "only completed orders count for revenue", and choose **Draft**. The kind, name, SQL and synonyms are filled in for you to review; if the description names an existing definition, the draft revises it. You can also skip the draft and write the SQL yourself.
+4. Choose **Create**. The SQL is checked against your data before it is saved: SQL that doesn't run is refused with the engine's error.
+
+A definition you create is certified right away.
+
+## Review suggestions
+
+**Suggest definitions** proposes metrics and filters from your schema and saved queries. The ones whose SQL runs appear under **Suggested**:
+
+- **Certify** puts a suggestion to use.
+- **Ignore** moves it to **Ignored**. A name you ignored is never suggested again.
+
+Only certified definitions are used. Editing a definition checks its SQL again. Deleting one stops Smart search and agents from using it right away.
+
+Drafting and suggesting each count as one AI action.
+
+## Where definitions apply
+
+- **Smart search.** Every request carries the certified definitions and instructions. The response's `definitions` lists the ones the generated SQL used, and the dashboard names them after the search.
+- **Agents.** The schema Markdown (`getSchemaMarkdown`, and the MCP server's tool of the same name) ends with a `## Definitions` section: the instructions, then each metric and filter with its synonyms and SQL. Agents that read the schema first apply them without any change on their side.
+
+```text
+## Definitions
+
+### Instructions
+
+Amounts are in cents.
+
+### Metrics
+
+- **revenue**: Earned sales. Also called: sales, turnover. Computed by:
+
+  SELECT SUM("amount") AS revenue FROM "ORDER" WHERE "status" = 'completed'
+```
+
+:::tip
+Write definitions in the words your team uses in questions. Synonyms are how "turnover last quarter" finds `revenue`.
+:::
+
+## See also
+
+- [Smart search](./smart-search.mdx)
+- [Discover your schema](../records-and-queries/discover-your-schema.mdx)
+- [Schema self-awareness for agents](../agent-memory/schema-self-awareness.mdx)
