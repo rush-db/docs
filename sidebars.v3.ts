@@ -20,6 +20,7 @@ const sidebars: SidebarsConfig = {
           ['connect/sql-and-cypher', 'sql'],
           ['connect/mcp', 'mcp'],
           ['connect/langchain', 'langchain'],
+          ['connect/llamaindex', 'llamaindex'],
           ['connect/debezium', 'debezium'],
           ['connect/obsidian', 'obsidian'],
           ['connect/skills', 'skills'],

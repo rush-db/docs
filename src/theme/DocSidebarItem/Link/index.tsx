@@ -63,6 +63,19 @@ function ConnectIcon({ href, label }: { href: string; label: string }): ReactNod
   if (path.startsWith('/connect/langchain')) {
     return <Workflow size={14} strokeWidth={1.75} className="sidebar-link-icon" aria-hidden="true" />
   }
+  if (path.startsWith('/connect/llamaindex')) {
+    // LlamaIndex's square mark (LlamaSquareBlack.svg from run-llama/llama_index), unmodified.
+    return (
+      <img
+        src="/img/integrations/llamaindex.svg"
+        width="14"
+        height="14"
+        className="sidebar-link-icon sidebar-link-icon--brand"
+        alt=""
+        aria-hidden="true"
+      />
+    )
+  }
   if (path.startsWith('/connect/sdks')) {
     return <Code2 size={14} strokeWidth={1.75} className="sidebar-link-icon" aria-hidden="true" />
   }

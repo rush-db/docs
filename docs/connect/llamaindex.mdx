@@ -1,0 +1,136 @@
+---
+title: LlamaIndex property graph store
+sidebar_label: LlamaIndex
+description: Build a LlamaIndex PropertyGraphIndex on RushDB Cloud or a self-hosted engine, with typed entity labels, vector retrieval and a schema derived from your data.
+---
+
+# LlamaIndex property graph store
+
+`llama-index-graph-stores-rushdb` makes RushDB the graph store behind a LlamaIndex `PropertyGraphIndex`. LlamaIndex extracts entities and relations from your documents; RushDB stores them as a typed graph with their embeddings, and LlamaIndex's retrievers search and traverse it.
+
+| What you get | How |
+| ------------ | --- |
+| Typed entities, no schema to declare | Each extracted entity is a record under its own label (`PERSON`, `COMPANY`, …); each relation is a typed relationship with its properties |
+| Graph and vectors in one database | Entity and chunk embeddings go to RushDB vector indexes, so `VectorContextRetriever` needs no separate vector store |
+| A schema for text-to-Cypher | `get_schema_str()` returns the schema RushDB derives from the stored data: labels with counts, typed properties with value ranges, relationship patterns |
+
+The store works on **RushDB Cloud** and on a **self-hosted RushDB engine** (3.0.10 or later) with the same code.
+
+## Install
+
+```bash
+pip install llama-index-graph-stores-rushdb
+```
+
+It needs Python 3.10 or later and `llama-index-core` 0.13 or 0.14. The package is [open source](https://github.com/rush-db/llama-index-rushdb) and published on [PyPI](https://pypi.org/project/llama-index-graph-stores-rushdb/).
+
+## Connect
+
+`RushDBPropertyGraphStore` takes a RushDB SDK client. When you omit it, the client is built from the environment.
+
+```python
+import os
+
+from rushdb import RushDB
+from llama_index.graph_stores.rushdb import RushDBPropertyGraphStore
+
+graph_store = RushDBPropertyGraphStore(RushDB(os.environ["RUSHDB_API_KEY"]))  # RushDB Cloud
+# graph_store = RushDBPropertyGraphStore(
+#     RushDB(os.environ["RUSHDB_ENGINE_TOKEN"], direct=True, engine_url="http://127.0.0.1:3000")
+# )
+```
+
+| Mode               | Environment variables                                                                       |
+| ------------------ | ------------------------------------------------------------------------------------------- |
+| RushDB Cloud       | `RUSHDB_API_KEY`, optional `RUSHDB_URL`                                                     |
+| Self-hosted engine | `RUSHDB_ENGINE_URL`, `RUSHDB_ENGINE_TOKEN`, optional `RUSHDB_SCOPE` on a multitenant engine |
+
+Setting both groups is an error, so a deployment never picks a mode by accident.
+
+## Build a property graph index
+
+```python
+from llama_index.core import PropertyGraphIndex, SimpleDirectoryReader
+from llama_index.core.indices.property_graph import SchemaLLMPathExtractor
+from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.llms.openai import OpenAI
+
+llm = OpenAI(model="gpt-4o-mini")
+embed_model = OpenAIEmbedding(model_name="text-embedding-3-small")
+
+index = PropertyGraphIndex.from_documents(
+    SimpleDirectoryReader("./data").load_data(),
+    property_graph_store=graph_store,
+    kg_extractors=[
+        SchemaLLMPathExtractor(
+            llm=llm,
+            possible_entities=["PERSON", "COMPANY", "PRODUCT"],
+            possible_relations=["WORKS_AT", "FOUNDED", "MAKES"],
+        )
+    ],
+    embed_model=embed_model,
+)
+
+print(index.as_query_engine(llm=llm).query("Who founded the companies that make our products?"))
+```
+
+Any LlamaIndex extractor works; `SchemaLLMPathExtractor` keeps the LLM to the entity and relation types you list, which keeps the graph's labels consistent.
+
+## Retrieve
+
+| Retriever | Works | Notes |
+| --------- | :---: | ----- |
+| `VectorContextRetriever` | ✓ | Vector search over every entity label, then the paths around the hits |
+| `LLMSynonymRetriever` | ✓ | Looks entities up by id, then the paths around them |
+| `TextToCypherRetriever`, `CypherTemplateRetriever` | with `enable_cypher=True` | Needs Cypher enabled on a self-hosted engine (`--languages sql,cypher`) |
+
+```python
+from llama_index.core.indices.property_graph import VectorContextRetriever
+
+retriever = index.as_retriever(
+    sub_retrievers=[VectorContextRetriever(graph_store, embed_model=embed_model, path_depth=2)]
+)
+retriever.retrieve("Who founded Acme?")
+```
+
+`vector_query` accepts LlamaIndex metadata filters:
+
+| Operators | Notes |
+| --------- | ----- |
+| `==`, `!=`, `>`, `>=`, `<`, `<=`, `in`, `nin` | strings, numbers, booleans |
+| `contains` | an element of a list property |
+| `text_match` | a substring |
+| `is_empty` | the property is missing |
+| `and`, `or`, `not` | combine filters |
+
+Any other operator raises an error; it is never ignored.
+
+:::note
+RushDB's Cypher support is a release candidate, so `TextToCypherRetriever` can produce queries the engine refuses. The vector and synonym retrievers use RushDB's native queries and work everywhere.
+:::
+
+## How the graph is stored
+
+The store writes ordinary records and relationships, so you can explore the graph in the dashboard, with [SearchQuery](../learn/search-query/search-query.md) or with SQL.
+
+| LlamaIndex | RushDB |
+| ---------- | ------ |
+| `EntityNode(name, label, properties)` | A record under `label`, with `id`, `name` and the properties |
+| `ChunkNode` (a text chunk) | A record under `Chunk` (the `chunk_label` option), with `id`, `text` and the chunk's metadata |
+| `Relation(label, source_id, target_id, properties)` | A relationship of type `label`, with the properties on the edge |
+| An entity extracted from a chunk | A `MENTIONS` relationship from the chunk to the entity |
+| An embedding | An external vector index per label: on `name` for entities, on `text` for chunks |
+
+Every record the store writes carries `_kg_kind` (`entity` or `chunk`), so the graph can share a project with other data. Nodes are matched by `id`: upserting a node updates it in place.
+
+- A node has one label; upserting it under a different label relabels it.
+- A relation is created once per source, type and target; upserting it again keeps the first properties.
+- Objects in properties are stored as JSON text, and ISO 8601 date strings as datetimes.
+- Deleting a node removes its relationships; its neighbours stay.
+
+## Next steps
+
+- [Bring your own vectors](../learn/semantic-search/bring-your-own-vectors.mdx): the external vector indexes the store uses
+- [Schema self-awareness](../learn/agent-memory/schema-self-awareness.mdx): the derived schema behind `get_schema_str()`
+- [Relationship properties](../learn/relationships/relationship-properties.mdx): query the relations' properties directly
+- [LangChain & LangGraph](./langchain.mdx): RushDB as a LangChain vector store and LangGraph memory
