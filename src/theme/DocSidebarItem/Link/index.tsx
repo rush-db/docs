@@ -8,7 +8,7 @@ import clsx from 'clsx'
 import Link from '@docusaurus/Link'
 import { ThemeClassNames } from '@docusaurus/theme-common'
 import { isActiveSidebarItem } from '@docusaurus/plugin-content-docs/client'
-import { ArrowRightLeft, Bot, Code2, Cpu, Database, Network, Sparkles, Workflow } from 'lucide-react'
+import { ArrowRightLeft, Bot, Code2, Cpu, Database, Sparkles, Workflow } from 'lucide-react'
 
 function ConnectIcon({ href, label }: { href: string; label: string }): ReactNode {
   // Match the page whichever docs version owns `/` (`/connect/...`, `/2.x/connect/...`, `/3.x/connect/...`).
@@ -64,7 +64,17 @@ function ConnectIcon({ href, label }: { href: string; label: string }): ReactNod
     return <Workflow size={14} strokeWidth={1.75} className="sidebar-link-icon" aria-hidden="true" />
   }
   if (path.startsWith('/connect/llamaindex')) {
-    return <Network size={14} strokeWidth={1.75} className="sidebar-link-icon" aria-hidden="true" />
+    // LlamaIndex's square mark (LlamaSquareBlack.svg from run-llama/llama_index), unmodified.
+    return (
+      <img
+        src="/img/integrations/llamaindex.svg"
+        width="14"
+        height="14"
+        className="sidebar-link-icon sidebar-link-icon--brand"
+        alt=""
+        aria-hidden="true"
+      />
+    )
   }
   if (path.startsWith('/connect/sdks')) {
     return <Code2 size={14} strokeWidth={1.75} className="sidebar-link-icon" aria-hidden="true" />
