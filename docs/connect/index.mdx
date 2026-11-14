@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: Connect RushDB
-description: "Pick how to connect to RushDB Cloud or a self-hosted engine: TypeScript and Python SDKs, MCP server, agent skills, agent memory, LangChain, Debezium, Obsidian or SQL clients."
+description: "Pick how to connect to RushDB Cloud or a self-hosted engine: TypeScript and Python SDKs, MCP server, agent skills, agent memory, LangChain, LlamaIndex, Debezium, Obsidian or SQL clients."
 ---
 
 # Connect RushDB
@@ -16,6 +16,7 @@ Start with the path that matches how you work. Every path below works with **Rus
 | Teach an AI agent correct RushDB workflows           | [Install Agent Skills](#install-agent-skills)     | ✓     | ✓           |
 | Add persistent memory to an agent                    | [Agent memory](#agent-memory)                     | ✓     | ✓           |
 | Build RAG or agents with LangChain or LangGraph      | [LangChain & LangGraph](#langchain--langgraph)    | ✓     | ✓           |
+| Build a knowledge graph with LlamaIndex              | [LlamaIndex](#llamaindex)                         | ✓     | ✓           |
 | Sync an existing database (change data capture)      | [Debezium](#debezium)                             | ✓     | ✓           |
 | Search an Obsidian vault and give agents your notes  | [Obsidian](#obsidian)                             | ✓     | ✓           |
 | Query with PostgreSQL or Neo4j drivers, or gRPC      | [SQL and Cypher clients](./sql-and-cypher.mdx)    | —     | ✓           |
@@ -127,6 +128,21 @@ graph = builder.compile(checkpointer=RushDBSaver(client=client), store=RushDBSto
 ```
 
 [Set up LangChain & LangGraph →](./langchain.mdx)
+
+---
+
+## LlamaIndex
+
+`llama-index-graph-stores-rushdb` makes RushDB the graph store of a LlamaIndex `PropertyGraphIndex`: extracted entities keep their own labels, embeddings live in the same database, and text-to-Cypher prompts get the schema derived from your data:
+
+```python
+from llama_index.core import PropertyGraphIndex
+from llama_index.graph_stores.rushdb import RushDBPropertyGraphStore
+
+index = PropertyGraphIndex.from_documents(documents, property_graph_store=RushDBPropertyGraphStore(client))
+```
+
+[Set up LlamaIndex →](./llamaindex.mdx)
 
 ---
 
