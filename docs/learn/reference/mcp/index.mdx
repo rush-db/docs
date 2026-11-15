@@ -26,6 +26,10 @@ npx -y @rushdb/mcp-server
 
 with `RUSHDB_API_KEY` for RushDB Cloud, or `RUSHDB_MODE=direct`, `RUSHDB_ENGINE_URL` and `RUSHDB_ENGINE_TOKEN` for a self-hosted engine.
 
+## OAuth scopes
+
+The hosted endpoint uses OAuth. Read tools need `records:read`; write and destructive tools need `records:write`. A token granted `records:write` also carries `records:read`, so it reaches every tool. Each tool declares its scope in `securitySchemes`. See [Permissions](../../../connect/mcp.mdx#permissions).
+
 ## Start here
 
 The server exposes a discovery-first workflow:
@@ -39,7 +43,7 @@ The server exposes a discovery-first workflow:
 
 | Page                                                                       | Description                                                   |
 | -------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| [All MCP Tools](./tools.mdx)                                | Complete catalog of all 43 tools, grouped by task             |
+| [All MCP Tools](./tools.mdx)                                | Complete catalog of all 53 tools, grouped by task             |
 | [MCP Setup](../../../connect/mcp.mdx)                                                  | Hosted OAuth, local client configuration, and troubleshooting |
 | [Suggested Relationship Patterns](../../relationships/suggested-patterns.mdx) | Review and apply inferred relationship structures             |
 

@@ -45,6 +45,19 @@ https://mcp.rushdb.com/mcp
 Always include `/mcp`. The root domain does not serve the MCP protocol.
 :::
 
+### Permissions
+
+The consent screen asks which access to grant the client:
+
+| Choice | OAuth scope | Tools the client gets |
+| --- | --- | --- |
+| Read records | `records:read` | The read tools only: schema discovery, queries, search and export |
+| Read & write records | `records:write` | Every tool. A token granted `records:write` also carries `records:read` |
+
+Every tool call needs a token: the endpoint rejects a call without one, read tools included. Each tool declares the scope it needs in its `securitySchemes`, so clients that compare it with the token's scope show only the tools the token allows.
+
+Each tool also carries MCP annotations that tell the client whether it reads, writes or overwrites data. Clients that honor them may ask you to confirm a call first, including updates such as `updateRecord`, because an update overwrites values. See [Safety levels](../learn/reference/mcp/tools.mdx#safety-levels).
+
 ---
 
 ## Local MCP: RushDB Cloud API key {#local-mcp-api-key}
@@ -206,6 +219,8 @@ Each MCP tool publishes its input schema to the connected client. See [All MCP T
 | Symptom                                  | Check                                                                                                      |
 | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | Hosted connector cannot discover actions | Confirm the URL is `https://mcp.rushdb.com/mcp`, including `/mcp`, then remove and recreate the connector. |
+| Hosted connector lists only read tools   | The connector was granted **Read records**. Remove it, add it again and choose **Read & write records**.   |
+| The client asks to confirm every update  | Expected: update, replace and delete tools are marked destructive. The client's own settings decide when it asks. |
 | Local MCP reports a missing API key      | Set `RUSHDB_API_KEY` in the MCP client's `env` block and restart the client.                               |
 | Direct mode cannot reach the engine      | Check `RUSHDB_ENGINE_URL` with `curl $RUSHDB_ENGINE_URL/health`, and that the token matches the engine's.  |
 | A tool is missing in direct mode         | It needs RushDB Cloud; see the [tool catalog](../learn/reference/mcp/tools.mdx).                           |
