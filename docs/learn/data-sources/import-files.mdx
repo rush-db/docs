@@ -1,7 +1,7 @@
 ---
 title: Import files in the background
 sidebar_label: Import files
-description: Upload up to 50 CSV, TSV, JSON, NDJSON or Parquet files to RushDB Cloud, map labels, keys and links between files, and follow the background import run.
+description: Upload CSV, TSV, JSON, NDJSON or Parquet files to RushDB Cloud, map labels, nested records, merge keys and links, and follow the background import run.
 ---
 
 # Import files in the background
@@ -16,13 +16,15 @@ This capability is provided by RushDB Cloud. On a self-hosted engine, send rows 
 
 | Format | Extensions | Notes |
 |---|---|---|
-| CSV, TSV | `.csv`, `.tsv`, `.txt` | The first row holds the column names |
-| JSON | `.json` | An array of objects |
-| NDJSON | `.ndjson`, `.jsonl` | One object per line |
+| CSV, TSV | `.csv`, `.tsv`, `.txt` | One record per row. Cells that hold a JSON object or array become nested records |
+| JSON | `.json` | An array (one record per item) or one top-level object |
+| NDJSON | `.ndjson`, `.jsonl` | One document per line, nesting kept |
 | Parquet | `.parquet`, `.pq` | |
 | Any of the above, gzipped | `.gz` suffix | Decompressed while streaming |
 
 An import takes up to 50 files. Files are read as streams, so their size isn't limited by memory.
+
+A top-level JSON object is read as a container: each key gives the label of the records under it (see [Nested data](#nested-data)). If the object also has values of its own, or more than one nested key, it is kept as one record with the file's label and linked to them.
 
 ## Import from the dashboard
 
@@ -30,15 +32,92 @@ An import takes up to 50 files. Files are read as streams, so their size isn't l
 2. Wait for the uploads. They go straight to storage, so you can keep working in other tabs.
 3. Review each file in the mapping step:
    - **Label**: every row becomes a record with this label.
+   - **Nested objects**: **Linked records** (the default) or **Flatten into columns**. See [Nested data](#nested-data).
    - **Key column**: rows with the same key update one record, so importing the file again doesn't duplicate it. Without a key, every row is a new record.
    - **Column types**: detected from a sample of rows; change a type when the detection is wrong.
-   - **Import as**: keep, hash or skip each column. Columns that look personal are suggested for hashing or skipping.
+   - **Import as**: keep, hash or skip each column, and each field under **Fields of nested records**. See [Personal data](#personal-data).
+   - **Import options**: labels, types, merge behaviour and, for CSV, how the file is parsed. See [Import options](#import-options).
 4. Review **Links between files**. When a column of one file matches the key of another (an order's `customer_id` and a customer's `id`), the link is suggested with its evidence. Accept the right ones and rename the relationship type if you like.
 5. Choose **Start import**. You can close the tab: the run continues on the server, and its page shows progress per file.
+
+### Nested data
+
+With **Linked records**, each nested object, and each object in a list, becomes its own record, linked to its parent. This works the same for JSON, NDJSON and CSV cells that hold JSON. Such CSV columns get the type **JSON (nested)**; it is detected for you, and you can change it in the column types.
+
+With **Flatten into columns**, nested objects become columns named `parent_child` (`customer_email`), and lists of objects are kept as JSON text.
+
+The **Nested records** table lists every nested key with the label its records get. For each one you can:
+
+| Column | What it does |
+|---|---|
+| **Label** | Renames the label. By default it is the singular of the key, uppercased while **Capitalize labels** is on: `products` → `PRODUCT`, `categories` → `CATEGORY`, `people` → `PERSON`. Words without a safe singular, such as `news`, `series` or `status`, stay as they are |
+| **Key field** | The field that identifies these records across imports. See [Merge keys](#merge-keys) |
+| **Relationship type** | The type of the link from the parent. Empty uses the file's relationship type |
+| **Import as** | **Keep** imports the nested records; **Skip** leaves them out |
+
+Labels taken from file names follow the same rule: `movies.csv` gives `MOVIE`.
+
+### Labels
+
+**Capitalize labels** is on by default for file imports. It uppercases the file's label and every nested label (`Order` → `ORDER`). Turn it off in **Import options** to keep labels as written.
+
+:::note
+The API and SDK keep `capitalizeLabels: false` as their default, and pasted JSON keeps each nested key as its label. The same nested data imported from a file and through the API gets different labels unless you align these options.
+:::
+
+### Merge keys
+
+A key makes an import update records it has written before instead of adding duplicates:
+
+- The file's label uses its **Key column**.
+- Each nested label uses its **Key field** in the **Nested records** table.
+
+A keyed record gets a stable id made from the project, its label and the key values. Importing the same records again, from the same file or another one, updates them. **When a record matches** sets how: **Add and update properties** (append, the default) or **Replace its properties** (rewrite).
+
+:::warning
+Merge keys match only records that a file import with keys wrote. Records written by pasted JSON, the API or the SDK carry other ids and are not matched, even when the key values are equal.
+:::
+
+### Personal data
+
+Columns and fields of nested records that look personal are suggested for hashing or skipping. Nested fields are listed by path from the row, such as `customer.email`, `customer.address.email`, or `lines.email` for every item of a list. Emails, phone numbers and tax ids are suggested for hashing; other personal data for skipping.
+
+A hashed value can't be read, but it can still be joined: a nested field and the same field flattened into a column get the same hash. In **Flatten into columns** mode, lists of objects are kept as JSON text, so the fields inside them aren't reviewed one by one.
+
+### Import options
+
+**Import options** in the mapping step holds these settings per file:
+
+| Option | Default | What it does |
+|---|---|---|
+| Capitalize labels | On | Uppercases the file's label and its nested labels |
+| Suggest types | On | Types numbers, booleans and dates from text. Off keeps text as text; CSV cells that hold JSON are still read as JSON |
+| Convert numeric text to numbers | Off | With suggested types, text such as `"42"` becomes a number |
+| Skip empty values | Off | Empty text and empty lists write no property. `0` and `false` are kept |
+| Relationship type | Default | The type of links to nested records. Set it per nested label in the **Nested records** table |
+| When a record matches | Add and update properties | Or **Replace its properties**, for records matched by a key |
+| Nested path separator | `.` | How nested paths read on the screen: `customer.email`, `customer_email` or `customer/email`. Once you pick one, flattened columns are named with it too; otherwise they use `_` |
+
+For CSV and TSV files, the same panel has the parse settings:
+
+| Setting | Default | Choices |
+|---|---|---|
+| Delimiter | Detect | Comma, semicolon, tab or pipe |
+| First row holds column names | On | Off names the columns `column_1`, `column_2`, … |
+| Quote character | `"` | One character, around values that hold the delimiter |
+| Escape character | `"` | One character, before a quote inside a quoted value |
+| Line ending | Detect | LF, CRLF or CR |
+| Empty lines | Skip blank lines | Also skip rows of empty values, or keep them |
+| Trim spaces around values | Off | |
+| Encoding | UTF-8 | UTF-16 LE or Latin-1 (ISO-8859-1) |
 
 ## Import with the SDK
 
 `importFiles` creates the import, uploads every file, starts it and, with `wait`, follows it to the end.
+
+:::note
+File imports uppercase labels by default, so `label: 'Customer'` writes `CUSTOMER`. The SDK's mapping type doesn't include the import options on this page yet; set them in the dashboard.
+:::
 
 ```typescript
 import { createReadStream, statSync } from 'node:fs'

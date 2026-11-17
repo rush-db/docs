@@ -43,6 +43,10 @@ curl -X POST https://api.rushdb.com/api/v1/records \
 | `mergeBy`                       | —                               | Fields to match on for upsert                |
 | `mergeStrategy`                 | `append`                        | `append` or `rewrite`                        |
 
+:::note
+The dashboard's [file import](../../../data-sources/import-files.mdx) turns `capitalizeLabels` on by default. The API and SDK default stays `false`.
+:::
+
 ## Upsert (create or update)
 
 Supply `mergeBy` and/or `mergeStrategy` in `options` to trigger upsert behavior.
