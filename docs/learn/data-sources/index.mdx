@@ -19,7 +19,7 @@ File imports and connections are provided by RushDB Cloud. A self-hosted engine 
 | CSV, TSV, JSON, NDJSON or Parquet files, up to 50 per import, optionally gzipped | A file import | [Import files in the background](./import-files.mdx) |
 | Data in a SaaS tool (CRM, billing, accounting, support, project management) | A connection from the catalog | [Connections](./connections.mdx) |
 | A REST API that isn't in the catalog | A custom connector: generic REST, an OpenAPI import, or the AI connector builder | [Connections](./connections.mdx#custom-connectors) |
-| PostgreSQL, MySQL, MongoDB or ClickHouse inside your network | `rushdb-agent`, which runs next to the database and only pushes out | [Connections](./connections.mdx#on-prem-databases) |
+| PostgreSQL, MySQL, MongoDB or ClickHouse inside your network | RushDB Sync (`rushdb-sync`), which runs next to the database and only pushes out | [Connections](./connections.mdx#on-prem-databases) |
 | Zapier, Make, n8n or your own code sending events | A push connection with its own webhook URL | [Connections](./connections.mdx#modes) |
 | A few records from your application | The SDK's [store records](../records-and-queries/store-records.mdx) methods | — |
 

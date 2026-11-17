@@ -98,17 +98,21 @@ Custom connectors run with the same modes, field review and runs as built-in one
 
 ## On-prem databases
 
-`rushdb-agent` syncs PostgreSQL, MySQL and MariaDB, MongoDB and ClickHouse from inside your network. It reads with read-only credentials, applies the field policy locally, and only pushes out to RushDB, so RushDB never connects to your databases and never sees their credentials.
+RushDB Sync (`rushdb-sync`, in [`@rushdb/connectors`](https://github.com/rush-db/connectors)) syncs PostgreSQL, MySQL and MariaDB, MongoDB and ClickHouse from inside your network. It reads with read-only credentials, applies the field policy locally, and only pushes out to RushDB, so RushDB never connects to your databases and never sees their credentials.
 
-1. Create an agent connection in **Data sources → Connect a source → On-prem databases**, or with the SDK:
+1. Create a RushDB Sync connection in **Data sources → Connect a source → On-prem databases**, or with the SDK:
 
    ```typescript
    const { data } = await db.connections.create({ connectorId: 'agent', name: 'Warehouse', agent: { intervalMinutes: 15 } })
    console.log(data.agentToken) // shown once
    ```
 
-2. Run the agent next to the database with that token and a config that names the tables or collections to sync. The [agent guide](https://github.com/rush-db/connectors/blob/main/docs/agent.md) covers the config and the container image.
-3. The connection page shows what the agent last reported.
+2. Run `rushdb-sync` next to the database with that token and a `rushdb-sync.yaml` config that names the tables or collections to sync. Use the container image `ghcr.io/rush-db/rushdb-sync`, or install `@rushdb/connectors` from npm. The [RushDB Sync guide](https://github.com/rush-db/connectors/blob/main/docs/sync.md) covers the config and the container image.
+3. The connection page shows what RushDB Sync last reported.
+
+:::note
+RushDB Sync was called `rushdb-agent` before `@rushdb/connectors` 0.2.0, and the old names no longer work. To upgrade, switch the command to `rushdb-sync`, the image to `ghcr.io/rush-db/rushdb-sync`, the config file to `rushdb-sync.yaml` (mounted at `/etc/rushdb-sync.yaml` in the container) and `RUSHDB_AGENT_CONFIG` to `RUSHDB_SYNC_CONFIG`. The connector id `agent` in the API and SDK stays the same.
+:::
 
 ## For agents
 
