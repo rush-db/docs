@@ -60,6 +60,10 @@ curl -X POST https://api.rushdb.com/api/v1/records/import/json \
 | `mergeBy`                       | —                               | Property names to match on for upsert-by-property imports                                                                                                           |
 | `mergeStrategy`                 | `append`                        | `append` or `rewrite`. Providing either option enables upsert semantics                                                                                             |
 
+:::note
+The dashboard's [file import](../../../data-sources/import-files.mdx) turns `capitalizeLabels` on by default. The API and SDK default stays `false`.
+:::
+
 ## Import CSV
 
 `POST /api/v1/records/import/csv`
