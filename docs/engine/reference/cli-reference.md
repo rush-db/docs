@@ -15,7 +15,7 @@ image. Its commands:
 | Command | Purpose |
 |---|---|
 | `rushdb serve` | The database server. Also runs one-shot maintenance commands (init, export, restore, compaction, base backup, point-in-time restore, verification). |
-| `rushdb up` | `rushdb serve` for a local node: a persistent `./.rushdb` data directory by default and a startup summary. |
+| `rushdb up` | `rushdb serve` for a local node: a persistent `./.rushdb` data directory by default (`./.rushdb/data` when `./.rushdb` holds the binary) and a startup summary. |
 | `rushdb health` | Probe a running node. |
 
 `rushdb --help` (`-h`) and `rushdb --version` (`-V`) work on their own and
@@ -28,7 +28,7 @@ rushdb <COMMAND>
 
 Commands:
   serve   Run the database server. Without `--data-dir` the node is in memory
-  up      Run a persistent local node: `serve` with a `./.rushdb` data directory and a startup summary. Takes every `serve` option
+  up      Run a persistent local node: `serve` with a `./.rushdb` data directory (`./.rushdb/data` when `./.rushdb` holds this binary) and a startup summary. Takes every `serve` option
   health  Check that a node is up: exits 0 when `GET /health` answers 200
   help    Print this message or the help of the given subcommand(s)
 ```
@@ -42,7 +42,7 @@ option and environment variable; only one default differs:
 
 | Option | Environment | Default under `up` | Default under `serve` |
 |---|---|---|---|
-| `--data-dir <DATA_DIR>` | `RUSHDB_DATA_DIR` | `./.rushdb` | none: an in-memory node |
+| `--data-dir <DATA_DIR>` | `RUSHDB_DATA_DIR` | `./.rushdb`; `./.rushdb/data` when `./.rushdb` holds the `rushdb` binary (a store already in `./.rushdb` keeps opening there) | none: an in-memory node |
 
 ```bash
 RUSHDB_TOKEN=change-me rushdb up
@@ -108,11 +108,10 @@ rejects the run.
 | `--verify-base <BASE_DIR>` | — | Recompute every file's size and CRC32 and compare with the manifest. | `verify-base: OK at commit index N` |
 | `--restore-pitr <BASE_DIR>` | new `--data-dir` (must not exist), `--wal-archive-dir` | Verify the base, copy it into `--data-dir`, then replay archived WAL segments from the base's commit index up to `--to-lsn` (default: the newest archived commit). | `restore-pitr: replayed archived WAL to commit index N` |
 | `--to-lsn <LSN>` | `--restore-pitr` | Last commit index to replay. | — |
-| `--verify` | `--data-dir`, server stopped | Logical integrity check of every tenant. | `verify: no violations` |
 
 Only one command runs per invocation. If several are given, the first in
 this order runs: `--print-config`, `--init`, `--export`, `--restore`,
-`--compact`, `--backup-base`, `--restore-pitr`, `--verify`, `--verify-base`.
+`--compact`, `--backup-base`, `--restore-pitr`, `--verify-base`.
 
 ### Exit codes
 
@@ -120,7 +119,7 @@ this order runs: `--print-config`, `--init`, `--export`, `--restore`,
 |---|---|
 | `0` | Success (server shut down cleanly, or the command succeeded). |
 | `1` | Server bootstrap failed (for example the port could not be bound, or `config.yml` validation failed), shutdown was incomplete, or `--backup-base` could not register the base with the retention coordinator or the WAL archive. |
-| `2` | Invalid arguments (`--raft` without `--experimental-raft`, bad `--languages`, non-hex capability secret), or a one-shot command failed. `--verify` also exits 2 when it finds invariant violations. |
+| `2` | Invalid arguments (`--raft` without `--experimental-raft`, bad `--languages`, non-hex capability secret), or a one-shot command failed. |
 
 ## Examples
 

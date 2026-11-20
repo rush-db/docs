@@ -1,7 +1,7 @@
 ---
 format: "md"
 title: "Vector internals"
-sidebar_position: 8
+sidebar_position: 9
 custom_edit_url: "https://github.com/rush-db/rushdb/edit/main/docs/manual/architecture/vector-internals.md"
 ---
 
@@ -60,7 +60,13 @@ flowchart LR
   **slot** holds the vector and a hash of the source value at bind time.
   If the source property value changes, a binding that tracks it becomes
   **stale** and is excluded from search until a new vector is supplied.
-- A **slot** holds the raw `f32` vector bytes.
+- A **slot** holds the raw `f32` vector bytes (little-endian).
+
+A binding row's key names the space and the source; its value is 17 bytes:
+the slot (u64), the source hash (u64) and one byte of flags (status, and
+whether the binding tracks its source value). Releases up to 3.0.6 stored
+the binding as a JSON document; the first start of 3.0.7 rewrites those
+rows (see [Data migrations at start](../operations/storage-and-compaction.md#data-migrations-at-start)).
 
 Re-binding a source writes the new vector to a **fresh slot** rather than
 overwriting the old one, so a snapshot pinned before the re-bind can still
@@ -74,13 +80,39 @@ version equals the space's latest; a new commit can be absorbed
 incrementally when the cache sits exactly at the previous version. Writes
 to other spaces or tenants never invalidate it.
 
+## Scoring
+
+Every score — exact search, ANN rerank, the hot segment — comes from one
+kernel. The query is prepared once per search (its norm computed once), and a
+stored vector is scored straight from its bytes where the store holds them
+(the pinned page on disk, the live map in memory), without copying it out of
+the store or decoding it into a new buffer. The sums accumulate in `f64` over 8 independent lanes (component
+*i* into lane *i* mod 8), reduced by one fixed tree, then narrowed to `f32`.
+The lanes let the loop run on SIMD units: an AVX2 kernel is chosen at runtime
+when the CPU has it, a portable one otherwise. FMA is deliberately not used,
+so both kernels perform the same IEEE operations and return the same bits on
+every CPU. A stored vector with a non-finite component is reported as
+corruption (vectors are validated when bound).
+
+Compared with one strictly sequential sum, only the order of the `f64`
+additions differs: a relative difference around `dimensions × 2⁻⁵³`, far
+below half an `f32` ulp, so a narrowed score is the same or, when it falls
+next to an `f32` rounding boundary, one ulp away.
+
 ## Exact search
 
 Exact search is always available and is the reference result. It streams a
 space's bindings from the pinned view in batches (1 024 rows or 4 MiB),
-skips bindings that are not eligible or fail the request's filter, scores
-each vector against the query, and keeps the top *k*. Ties are broken by a
-total order on sources, so results are deterministic.
+skips bindings that are not eligible or fail the request's filter, and
+scores the rest in parts of 2 048 vectors, at most 65 536 bindings held at a
+time. An owner set (a predicate's matches) is read owner by owner in parts
+of 1 024 owners. Parts run on the server's shared thread budget (as many
+helper threads as it lends at that moment, none when it is spent), each with
+its own top *k*, merged in part order. Hits are ranked by a total order —
+score, then source — so the top *k* is one well-defined set: the result is
+identical whatever the number of threads, and ties are deterministic. An
+unfiltered search's label check runs only for a hit that would enter the
+top *k* at that point, not for every vector scored.
 
 Exact search is used for:
 
@@ -117,7 +149,17 @@ flowchart LR
 ```
 
 - The maintenance tick **freezes** a hot segment once it reaches 256
-  entries, building a `usearch` graph from it. If maintenance falls behind,
+  entries, building a `usearch` graph from it. A build reads and decodes
+  the vectors in parts of 1 024 on the shared thread budget, one chunk of
+  8 192 ahead. A build of fewer than 50 000 vectors inserts them into the
+  graph on one thread in key order, so every build of the same vectors is
+  the same graph. A larger one (a cold build, a large merge) inserts its
+  first chunk on one thread and the rest from as many threads as the budget
+  lends: about 4.6× faster for 200 000 vectors on 20 threads. Inserts from
+  several threads link a slightly different graph (recall@10 at `ef` 128 on
+  clustered 384-dimension data 0.996–0.999 against 1.000); candidates are
+  always reranked against their f32 vectors, so scores never change. If
+  maintenance falls behind,
   the write path itself freezes the hot segment at 1 024 entries as a
   backstop.
 - The tick then runs at most one **size-tiered merge** per space: when ten
@@ -167,8 +209,7 @@ sequenceDiagram
         alt not admitted to the budget
             E->>V: exact search (counted as a fallback)
         else cached / built / absorbed
-            E->>E: estimate filter selectivity from a sample
-            E->>C: gather candidates from every segment
+            E->>C: gather candidates from every segment, skipping filtered-out owners during the walk
             E->>E: keep each source's newest live entry
             E->>V: exact rerank from canonical vectors
             alt too few confident candidates
@@ -179,11 +220,31 @@ sequenceDiagram
     E-->>Q: top k, deterministic ties
 ```
 
-- **Filter-aware gathering.** A fixed-size gather wastes its candidates on
-  points the filter rejects. For filtered searches, the engine samples 256
-  entries to estimate the filter's selectivity and sizes one gather so the
-  allowed set is well represented, up to a cap. When even that cannot reach
-  enough allowed candidates, the search falls through to exact.
+- **Routing by cost.** The server resolves a predicate into a sorted owner
+  set before searching. While scoring the candidates costs less than the
+  filtered walk (`vector-exact-max-pool: auto`: `pool² × dims ≤ 26,000 × ef ×
+  ready vectors`; or a fixed pool) they are scored exactly, one owner-prefix
+  seek per candidate
+  (`emb_owner_bindings_prefix`), so the cost follows the candidate count, not
+  the space size; only an unfiltered exact search scans the whole space.
+- **Filtering during the walk.** Above that, each frozen segment searches its
+  graph with usearch's filtered search: a node is admitted to the results
+  only when it is its source's live entry and its owner is a candidate, and
+  the walk continues past rejected nodes until it has `max(ef, k)`
+  admitted ones. The hot segment checks the same condition before scoring.
+  A selective filter therefore does not empty the gather, and no
+  selectivity estimate is involved. When the walk still finds fewer than
+  `min(ef, k)` candidates, the search falls through to exact. The optional
+  turbovec provider has no filtered search; it post-filters a gather widened
+  by the exact selectivity (candidates over entries).
+- **Per-query breadth.** The walk keeps exactly `max(ef, k)` candidates:
+  segments are opened with the smallest search expansion `usearch` allows, and
+  `usearch` widens the walk to the number of results requested, so a query's
+  own `ef` sets it (no shared setting is mutated, so concurrent queries with
+  different `ef` never interfere). Every kept candidate is reranked. The
+  default `ef` (`vector-default-ef`, 128) walks as wide as segments always
+  did; a smaller `ef` visits fewer nodes and reranks fewer vectors at some
+  recall cost, a larger one the reverse.
 - **Exact rerank.** Candidates are rescored against their canonical vectors
   read at the request's snapshot, so scores are exact and consistent with
   the rest of the request, even though the ANN structure itself may have
@@ -214,11 +275,24 @@ caches of `logical-cache-bytes`:
 2. After the build, the reservation is resized to the structure's real
    measured size (for a file-backed segment, its entries and live map: the
    mapped file is page cache, not charged).
-3. Each tenant engine also caps its cached ANN bytes (256 MiB) and the
-   number of cached space generations (12), evicting least recently used
-   entries.
+3. Each tenant engine caps the number of cached space generations (12)
+   and their bytes together at the vector cache budget, evicting idle
+   generations first. A generation that still does not fit is not cached,
+   and the server logs a warning (`ANN generation not cached`): every
+   search of that space would otherwise reassemble it unnoticed.
 4. When the budget cannot admit a space's index, the search answers
    exactly and increments `rushdb_ann_exact_fallbacks_total`.
+5. **Resident vectors.** A space's vectors are also kept as `f32` rows by
+   storage slot (`dimensions × 4 + 32` bytes per vector), made in the
+   background after a space's first search and charged to the same
+   budget ([resident state](resident-state.md), layer `vector-arena`).
+   Exact search and ANN rerank score these rows instead of reading each
+   stored vector; bindings are still resolved through the search's
+   snapshot, and the score is bit for bit the score of the stored bytes.
+   The rows are used only while no commit has written the space since they
+   were made: a bind or unbind drops them, and the next searches read
+   storage until they are made again. When the budget cannot hold them,
+   searches read storage as before: nothing is refused.
 
 > **Note:** ANN requires a vector cache budget. With
 > `vector-cache-bytes: 0` there is nothing to bound ANN memory, so no

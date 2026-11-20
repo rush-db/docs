@@ -77,13 +77,12 @@ statistics, both derived from data the engine already maintains:
   values and the walk saw all of them, the range count is computed exactly
   instead of interpolated.
 
-The histogram cache is bounded and self-refreshing:
+A kept distribution is dropped as soon as a commit writes the property's
+values ([resident state](../architecture/resident-state.md)):
 
 | Setting (env) | Default | Effect |
 |---|---|---|
-| `RUSHDB_PLANNER_STATS_BYTES` | 32 MiB | Byte budget of the cache (part of the logical-cache budget). `0` disables caching: every estimate walks the dictionary. |
-| `RUSHDB_PLANNER_STATS_IDLE_SECONDS` | 600 | An entry unused this long is evicted. |
-| `RUSHDB_PLANNER_STATS_MAX_AGE_COMMITS` | 10,000 | An entry older than this many commits is recomputed. |
+| `RUSHDB_PLANNER_STATS_BYTES` | 32 MiB | Byte budget of the kept distributions (part of the logical-cache budget). `0` keeps none: every estimate walks the dictionary. |
 
 Statistics only change the **order** in which leaves are materialized and
 whether the planner falls back to a scan. They never change results.
@@ -131,7 +130,8 @@ page needs:
   matches without keeping them, so the total stays exact.
 - **With `order`**, it keeps the best `offset + limit` rows seen so far. It
   reads only the ordering properties of each match, not the whole record
-  (arrays and system fields are the exception).
+  (arrays and system fields other than `__id` are the exception), unless a
+  source already in that order reaches the page sooner (next section).
 - **Residual leaves** are evaluated on their own, reading only the properties
   they name, not the whole record.
 
@@ -141,6 +141,41 @@ predicate 7 ms; `status = "active" AND city = "Oslo"` on two ordered indexes
 2.2 s; adding an unindexed `age < 25` (65,078 matches) 22 s, because every
 one of the 667,819 candidates is checked. Declare an ordered index on a
 property you filter by to keep such reads short.
+
+## Ordered pages
+
+The planner costs two ways to read a page and takes the cheaper:
+
+- **predicate-first**: every candidate of the filter, each one's order
+  value read, the best `offset + limit` kept;
+- **order-first**: a source that already yields records in the requested
+  order, walked with the filter checked on each record, stopping once the
+  page is full.
+
+Order-first needs the number of matches before reading, so it can stop: a
+query without a filter (record counters), a filter the index plan answers
+exactly (its candidate bitmap), or a cursor's later pages. A filter left to
+check per record counts every match anyway; such a page is read
+predicate-first. Both costs come from exact counters, so the choice is
+arithmetic:
+
+| Source | Used for | Reads about |
+|---|---|---|
+| Creation order from the end | no `order`, `offset` past the middle of the matches | the rows from the end to the page |
+| Record id order | `"order": "asc"` / `"desc"` | `offset + limit` matches' worth of the tenant's records, either way (a deep `offset` from the far end) |
+| Missing records, then holders | `"order": {"<property>": …}` with one key | records missing the property sort first ascending and last descending, so a page of them is read from the labels' records without reading the property; the holders, which the counters number per label, are read and sorted |
+| An ordered index | the same, when every label holding the property has a ready ordered index on it and the property holds one type (integers, datetimes or strings) | the page's rows, from either end of the index |
+
+A walk that passes more records than reading every candidate would gives up,
+and the page is read predicate-first, so a wrong estimate costs at most
+twice the plain read. `describe.explain` reports the choice as `orderPath`.
+Not covered: an order on several keys, on a property stored as arrays, and a
+float or mixed-type property through an index (they are read and sorted).
+
+Example: on a tenant of 10M records where 150,000 records of one label hold
+`address`, `"order": {"address": "asc"}` across all labels is the first
+records missing `address`; `"desc"` reads the 150,000 holders, or walks the
+`address` index of that label from its end when one is declared.
 
 ## Inspect a plan with `describe.explain`
 
@@ -183,12 +218,14 @@ curl -s http://127.0.0.1:3000/protocol/v1/execute \
 
 | Field | Meaning |
 |---|---|
-| `accessPath` | `index:<name>` when a ready declared ordered index covers a predicate leaf for every requested label (several names are comma-separated, one per label); `property_walk:<property>` when an eligible leaf without an index narrows the candidates (see `unindexedWalk`); otherwise `label_scan` when `labels` is set, or `full_scan` when it is empty. |
+| `accessPath` | `index:<name>` when a ready declared ordered index covers a predicate leaf for every requested label (several names are comma-separated, one per label); `property_walk:<property>` when an eligible leaf without an index narrows the candidates (see `unindexedWalk`); `relation_expand` when a `$relation` block is answered by expanding from the records it matches (see `relationExpansion`); otherwise `label_scan` when `labels` is set, or `full_scan` when it is empty. |
+| `relationExpansion` | `targetEstimate`: an upper bound of the records the `$relation` block's labels and predicate match, which the expansion starts from. Present whenever the planner expands a block, also next to an `index:` or `property_walk:` path. Omitted otherwise ([performance notes](../query/relationships-and-traversal.md#performance-notes)). |
 | `unindexedWalk` | For a `property_walk`: `property`, `owners` (the records carrying the property under the requested labels, each visited with one point read) and `suggestedIndexes` (one `{label, property}` ordered index per walked label that would answer the leaf instead). Omitted otherwise. |
 | `labels` | The labels the query is constrained to. |
 | `predicate` | The predicate as submitted. |
 | `scanEstimate` | Exact number of records carrying the requested labels (from label counters). `0` when `labels` is empty. |
 | `estimatedCardinality` | Exact match count of the most selective equality / `$in` / `$id` leaf, counted under the requested labels (all labels when `labels` is empty). Omitted when no such leaf exists. Never an estimate. |
+| `orderPath` | How an ordered page is read when a source already in the requested order reaches it in fewer reads than reading every candidate (see [Ordered pages](#ordered-pages)): `source` (`storage`, `id`, `property` or `index`), `reverseWalk` (read from the far end and reversed), `estimatedReads`, and `predicateFirstReads` (reading every candidate). Omitted when every candidate is read. Explain plans it from counters and never reads the matches, so it is reported for pages without `where` or relationship filters; a filtered page's choice rests on its exact match count, known only by reading the matches, and is omitted. |
 | `rangeSelectivityEstimate` | Approximate fraction (`0.0`–`1.0`) of the property's values satisfying the first range leaf, from the histogram. Omitted when there is no range leaf or no numeric data. Always approximate. |
 | `limit`, `offset` | Paging as submitted. |
 

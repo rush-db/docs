@@ -1,7 +1,7 @@
 ---
 format: "md"
 title: "Replication"
-sidebar_position: 11
+sidebar_position: 12
 custom_edit_url: "https://github.com/rush-db/rushdb/edit/main/docs/manual/architecture/replication.md"
 ---
 

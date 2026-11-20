@@ -50,7 +50,7 @@ change `server.port` in `config.yml`.
 
 ### Store is locked / maintenance command fails
 
-One-shot commands (`--compact`, `--export`, `--backup-base`, `--verify`)
+One-shot commands (`--compact`, `--export`, `--backup-base`, `--verify-base`)
 open the store themselves and fail while the server is running. Stop the
 server first.
 
@@ -143,7 +143,9 @@ wait for `storage compaction complete`; to keep it from running again, lower
 
 | Message | Meaning | Fix |
 |---|---|---|
-| `query working set exceeded` | The query would materialize more than `query-memory-max`. | Add filters, indexes, or paging; or raise the limit. |
+| `query working set would exceed query-memory-max` | The query would hold more than `query-memory-max` while it runs. | Add filters, indexes, or paging; or raise `--query-memory-max`. |
+| `response would exceed the response size limit` | The returned rows would exceed `--body-limit`. | Request a smaller page or fewer fields; or raise `--body-limit`. |
+| `query working set exceeded` | An upsert key walk or SQL statement would materialize more than `query-memory-max`. | Add filters, indexes, or paging; or raise the limit. |
 | `resource exhausted: transaction operation limit` (not retryable) | Over `tx-max-operations`. | Split the transaction. |
 | `resource exhausted: transaction staging byte limit` (not retryable) | Over `tx-max-staged-bytes`. | Split the transaction, or raise the limit. |
 | `resource exhausted: active transaction limit` | `tx-max-active` transactions are open. | Commit or roll back promptly; retry. |

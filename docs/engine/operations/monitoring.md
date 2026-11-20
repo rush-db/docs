@@ -86,7 +86,7 @@ a subset.
 | Disk | `rushdb_storage_file_bytes`, `rushdb_wal_retained_bytes` | Growth; WAL held by a lagging consumer. |
 | Retention | `rushdb_retention_consumers`, `rushdb_retention_protected_floor`, `rushdb_retention_oldest_reader_commit` | A consumer or reader pinning history. |
 | Maintenance | `rushdb_gc_tick_seconds`, `rushdb_maintenance_step_seconds{step}`, `rushdb_storage_compactions_total` | Maintenance falling behind; a long tick's `step` names what held the writer (a slow `checkpoint` is a slow fsync). |
-| Writer | `rushdb_writer_hold_seconds{holder}` | Long writer holds stall every tenant's commits; `holder` names the work (`publish`, `history_gc`, `checkpoint`, `pause`). |
+| Writer | `rushdb_writer_hold_seconds{holder}` | Long writer holds delay materialization, and commits once the not-yet-materialized commits reach their bound; `holder` names the work (`materialize`, `history_gc`, `checkpoint`, `pause`). |
 | Search | `rushdb_text_pending`, `rushdb_ann_exact_fallbacks_total`, `rushdb_vector_searches_total{path,reason}` | Text index backlog; vector cache too small; vector searches answered exactly instead of by the ANN index. |
 | Tenants | `rushdb_tenants_resident`, `rushdb_tenant_resident_bytes` | Residency budget pressure. |
 
@@ -113,6 +113,9 @@ verbosity with `RUST_LOG`; the default is
 | `suppressing internal execution error detail` | warn / error | A client got `internal execution error`; this line has the real cause. |
 | `replication follower: ...` | warn / error | Follower progress problems; see [Replication](replication.md#monitoring-replication). |
 | `shutdown signal received; closing the store cleanly` | info | `SIGTERM`/`SIGINT` received. |
+| `the store is still in use at the close deadline; the next open repairs it` | error | Shutdown could not close redb cleanly; the next start repairs the file (slow on a large store). |
+| `storage file was not closed cleanly; checking all of it before opening` | warn | The store was killed at a point where redb must check the whole file before it opens (several full reads); `/health` reports `repairing-storage` with `progress` until it finishes. |
+| `storage check` / `storage check finished` | info | Progress of that check (`percent`), and its end. |
 | `raft replication is EXPERIMENTAL ...` | warn | The Raft Preview is enabled. |
 
 ## What to alert on

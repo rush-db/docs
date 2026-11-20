@@ -1,7 +1,7 @@
 ---
 format: "md"
 title: "Multitenancy"
-sidebar_position: 10
+sidebar_position: 11
 custom_edit_url: "https://github.com/rush-db/rushdb/edit/main/docs/manual/architecture/multitenancy.md"
 ---
 
