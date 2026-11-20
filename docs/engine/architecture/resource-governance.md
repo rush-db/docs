@@ -1,7 +1,7 @@
 ---
 format: "md"
 title: "Resource governance"
-sidebar_position: 12
+sidebar_position: 13
 custom_edit_url: "https://github.com/rush-db/rushdb/edit/main/docs/manual/architecture/resource-governance.md"
 ---
 
@@ -46,10 +46,13 @@ flowchart TD
     ROOT --> PH["query phases<br/>limit = managed-limit<br/>8 MiB per executing request"]
     ROOT --> LC["logical caches<br/>logical-cache-bytes · 128 MiB"]
     ROOT --> VEC["vector cache: ANN segments<br/>vector-cache-bytes · 256 MiB"]
+    ROOT --> GRAPH["graph cache: resident relationship graphs<br/>graph-cache-bytes · 128 MiB"]
+    ROOT --> COL["column cache: resident typed columns<br/>column-cache-bytes · 256 MiB"]
     PH --> SQL["sql (attribution)"]
     PH --> GR["graph (attribution)"]
     LC --> PS["planner statistics<br/>planner-stats-bytes · 32 MiB"]
-    LC --> MC["metadata + property caches,<br/>cursor state"]
+    LC --> OS["owner sets<br/>owner-set-cache-bytes · 64 MiB"]
+    LC --> MC["label catalog, property dictionary,<br/>tenant directory, cursor state"]
 ```
 
 | Pool | Setting | Default | What it governs |
@@ -58,9 +61,17 @@ flowchart TD
 | Page cache | `storage-cache` | 128 MiB | redb's page cache, reserved for the life of the store. |
 | Transaction staging | `transaction-pool` | 128 MiB | Staged writes of interactive transactions. |
 | Query phases | (= `managed-limit`) | — | A fixed 8 MiB token per executing request; this is the concurrency ceiling. |
-| Logical caches | `logical-cache-bytes` | 128 MiB | Text indexes, planner statistics, metadata and property caches, cursor state. `0` disables them. |
-| Vector cache | `vector-cache-bytes` | 256 MiB | Resident ANN indexes of vector spaces. `0` disables ANN: searches answer exactly. |
+| Logical caches | `logical-cache-bytes` | 128 MiB | Text indexes, planner statistics, owner sets, label catalog, property dictionary, tenant directory, cursor state. `0` disables them. |
+| Vector cache | `vector-cache-bytes` | 256 MiB | Resident ANN indexes of vector spaces, and their vectors as `f32` rows when they fit. `0` disables both: searches answer exactly from storage. |
+| Graph cache | `graph-cache-bytes` | 128 MiB | Resident relationship graphs (one per relationship type) for traversals. `0` keeps none: traversals read adjacency from storage. |
 | Planner statistics | `planner-stats-bytes` | 32 MiB | On-demand value distributions ([derived state](derived-state.md#planner-statistics-on-demand)). |
+| Owner sets | `owner-set-cache-bytes` | 64 MiB | Owners of indexed filter leaves, shared by readers until a commit writes their indexes. |
+
+Every in-memory layer that answers across requests (graphs, owner sets,
+catalogs, planner statistics, vector rows, the tenant directory) follows one
+rule: an entry is used only while nothing it reflects has been written since
+it was made. `resident-caches: off` keeps none of them and gives the same
+results ([resident state](resident-state.md)).
 
 Configuration is validated before anything is opened: `storage-cache` must
 be at least 64 KiB, and `storage-cache` plus `transaction-pool` must fit
@@ -147,10 +158,12 @@ does not shrink.
 ## Per-request budgets
 
 Inside the executor, each request carries a working byte budget equal to
-the body limit. DataFusion's memory pool, graph-language results and the page a
-native query or aggregate returns are charged against it; `query-memory-max`
-(default 256 MiB) bounds structured-query and aggregation working sets:
-match ordinals, the row being evaluated and the groups. The two never mix.
+the body limit. DataFusion's memory pool, graph-language results and the rows
+a native listing, projection or aggregate returns are charged against it,
+each row by its serialized size; `query-memory-max` (default 256 MiB) bounds
+structured-query and aggregation working sets: match ordinals, ordering rows,
+the row being evaluated and the groups. The two never mix, and a refusal
+names the one that tripped (`query-memory-max` or the response size limit).
 See [query execution](query-execution.md#budgets-deadlines-and-cancellation).
 
 ## Request bounds

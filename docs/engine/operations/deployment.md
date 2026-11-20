@@ -244,13 +244,20 @@ curl -fsS http://127.0.0.1:3000/ready
 
 ## Stopping the server
 
-Send `SIGTERM` (or `SIGINT`). The server stops accepting work, waits for
-in-flight HTTP requests (up to 30 s) and background maintenance (up to
-30 s), writes a final durability checkpoint, closes the store, and exits 0.
+Send `SIGTERM` (or `SIGINT`). The server stops accepting work and cancels
+running requests and maintenance at their next step, waits for in-flight HTTP
+requests (up to 30 s) and background maintenance (up to 30 s), closes
+PostgreSQL-wire, gRPC and Bolt sessions (idle pooled connections do not hold
+it up), writes a final durability checkpoint, closes the store, and exits 0.
+A store compaction already running finishes its current step first.
 
 > **Warning:** `SIGKILL` does not lose acknowledged commits under the default
 > `local` durability (the WAL is fsynced first), but the next start must
-> replay the WAL. Prefer a clean stop, and do not set a short stop timeout.
+> replay the WAL, and a kill during a store compaction step makes it check
+> the whole store file first (`repairing-storage`, several full reads of the
+> file). A clean stop can take up to about 65 s (30 s of HTTP requests,
+> 30 s of maintenance, the final checkpoint): prefer a clean stop and give
+> it that long (`stop_grace_period: 90s` above).
 
 ## 8 GB VPS profile
 

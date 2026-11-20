@@ -33,6 +33,14 @@ And beside it:
 |---|---|---|
 | `rushdb.redb.wal/` | Committed command log in 64 MiB segments | `rushdb_wal_retained_bytes` |
 
+A commit is durable, and visible to reads, once its WAL record is synced.
+Writing it into the store file happens afterwards on a background thread
+per store file; until then reads include it from memory. That backlog is
+bounded at a quarter of the managed budget, at most 256 MiB
+(`rushdb_storage_unmaterialized_bytes`): at the bound new commits wait for
+it. A checkpoint, a backup and a compaction first let the backlog drain,
+and after a crash it is replayed from the WAL.
+
 The byte categories inside the store are refreshed every 15 minutes; the
 file size and WAL size are live.
 
@@ -202,6 +210,28 @@ to disable the guard (not recommended).
 - **Measuring load times:** record `rushdb_storage_file_bytes` next to each
   measurement; a cold page cache and a large uncompacted file both slow the
   first pass.
+
+## Data migrations at start
+
+When a release changes how rows are stored, the node rewrites the rows an
+earlier release wrote during start-up, before it accepts any request (boot
+phase `migrations`). Each migration commits its rewrites through the
+write-ahead log like any write, in bounded batches. A tenant with nothing in
+the old form is recognized with one read and left untouched, so starting an
+up-to-date store writes nothing. While a tenant is being rewritten it holds
+a progress row, removed with the last batch: a start that stopped part way
+finds it and finishes the tenant. A replica
+does not migrate on its own: it receives the leader's rewrites. A row that
+is in neither the old nor the new form stops the start with an error that
+names its key, rather than serving data the engine cannot read. The log
+line `data migration applied` reports the tenants and rows rewritten.
+
+| Migration | Release | What it rewrites |
+|---|---|---|
+| `0001-binary-vector-bindings` | 3.0.7 | Vector binding rows from JSON documents to the 17-byte binding value. No re-indexing is needed; vectors, slots and ANN segments are unchanged. |
+
+Start time grows with the rows a migration rewrites (one batch of 4,096
+rows per commit), once.
 
 ## See also
 

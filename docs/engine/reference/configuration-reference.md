@@ -1,7 +1,7 @@
 ---
 format: "md"
 title: "Configuration reference"
-sidebar_position: 15
+sidebar_position: 16
 custom_edit_url: "https://github.com/rush-db/rushdb/edit/main/docs/manual/reference/configuration-reference.md"
 ---
 
@@ -76,10 +76,13 @@ interact and for common setups, see
 | `--deployment-limit` | `RUSHDB_DEPLOYMENT_LIMIT` | `resources.deployment-limit` | bytes | none | Optional declared memory cap of the host or container. When set, `managed-limit + memory-headroom` must fit inside it. Not detected automatically. |
 | `--memory-headroom` | `RUSHDB_MEMORY_HEADROOM` | `resources.memory-headroom` | bytes | `128MiB` | Untracked allowance reserved inside `deployment-limit`. Must be positive. |
 | `--logical-cache-bytes` | `RUSHDB_LOGICAL_CACHE_BYTES` | `resources.logical-cache-bytes` | bytes | `128MiB` | Byte-accounted caches: text indexes, planner statistics, metadata and property caches. `0` disables them. |
-| `--vector-cache-bytes` | `RUSHDB_VECTOR_CACHE_BYTES` | `resources.vector-cache-bytes` | bytes | `256MiB` | Resident ANN indexes of vector spaces (~150 B per vector of a 768-dimension space). `0` keeps none resident: vector searches answer exactly. |
-| `--planner-stats-bytes` | `RUSHDB_PLANNER_STATS_BYTES` | `resources.planner-stats-bytes` | bytes | `32MiB` | Evictable planner-statistics cache, charged to the logical cache. `0` disables caching. |
-| `--planner-stats-idle-seconds` | `RUSHDB_PLANNER_STATS_IDLE_SECONDS` | `resources.planner-stats-idle-seconds` | u64 | `600` | Seconds an unused planner-statistics entry stays cached. |
-| `--planner-stats-max-age-commits` | `RUSHDB_PLANNER_STATS_MAX_AGE_COMMITS` | `resources.planner-stats-max-age-commits` | u64 | `10000` | Commits after which a cached statistics entry is recomputed. |
+| `--vector-cache-bytes` | `RUSHDB_VECTOR_CACHE_BYTES` | `resources.vector-cache-bytes` | bytes | `256MiB` | Resident ANN indexes of vector spaces (~150 B per vector of a 768-dimension space), and the vectors themselves as `f32` rows when they fit (`dimensions × 4 + 32` B per vector; searches read storage otherwise). `0` keeps none resident: vector searches answer exactly. |
+| `--graph-cache-bytes` | `RUSHDB_GRAPH_CACHE_BYTES` | `resources.graph-cache-bytes` | bytes | `128MiB` | Resident relationship graphs for traversals: one relationship type (~32 B per relationship), built in the background once the adjacency rows traversals read since the tenant's relationships last changed would pay for it. `0` keeps none: traversals read adjacency from storage. |
+| `--planner-stats-bytes` | `RUSHDB_PLANNER_STATS_BYTES` | `resources.planner-stats-bytes` | bytes | `32MiB` | Resident planner statistics (value distributions), charged to the logical cache; an entry is dropped when a commit writes its property. `0` keeps none. |
+| `--owner-set-cache-bytes` | `RUSHDB_OWNER_SET_CACHE_BYTES` | `resources.owner-set-cache-bytes` | bytes | `64MiB` | Owners of indexed filter leaves kept across requests, charged to the logical cache; an entry is dropped when a commit writes its indexes. `0` keeps none. |
+| `--column-cache-bytes` | `RUSHDB_COLUMN_CACHE_BYTES` | `resources.column-cache-bytes` | bytes | `256MiB` | Resident typed columns (one stored property of one label, ~17 B per record plus distinct strings) read by grouped aggregates over one label (rows and filter), built in the background once the reads they replace would pay for one. `0` keeps none: aggregates read records. |
+| `--resident-caches` | `RUSHDB_RESIDENT_CACHES` | `resources.resident-caches` | `on` \| `off` | `on` | `off` keeps no [resident](../architecture/resident-state.md) entry in any layer (owner sets, graphs, columns, catalogs, planner statistics, vector rows, tenant directory): storage answers every request, with the same results. For diagnostics. |
+| `--resident-verify-rate` | `RUSHDB_RESIDENT_VERIFY_RATE` | `resources.resident-verify-rate` | 0–1 | `0` | Share of resident hits rebuilt from storage in the background and compared; a difference is counted in `rushdb_resident_verify_mismatch_total` and drops the entry. |
 | `--query-memory-max` | `RUSHDB_QUERY_MEMORY_MAX` | `resources.query-memory-max` | bytes | `256MiB` | Per-query working-set cap; a query that would materialize more fails with `resource_exhausted`. `0` = off. A request may set a smaller cap. |
 | `--unindexed-walk-max-owners` | `RUSHDB_UNINDEXED_WALK_MAX_OWNERS` | `resources.unindexed-walk-max-owners` | u64 | `0` | Largest record population a filter without a usable index may check. A larger one fails at planning with `invalid_request` (not retryable), naming the property; declare an ordered index on it. The population is read from counters before any work: the walked property's support, or every record of the labels when no condition can be walked. `0` (default) = no limit: the filter walks the records, as a PostgreSQL sequential scan does, bounded by `--request-timeout-ms` and `--query-memory-max`. A request may set a tighter limit ([request bounds](../architecture/resource-governance.md#request-bounds)). |
 | `--rss-max` | `RUSHDB_RSS_MAX` | `resources.rss-max` | bytes | `0` | Resident-memory watchdog threshold. Above it the server logs a warning and runs best-effort reclamation every 10 s. A policy signal, not an allocation cap. `0` = disabled. |
@@ -146,8 +149,8 @@ interact and for common setups, see
 | Flag | Environment | `config.yml` key | Type | Default | Description |
 |---|---|---|---|---|---|
 | `--require-vector-index-name` | `RUSHDB_REQUIRE_VECTOR_INDEX_NAME` | `resources.require-vector-index-name` | bool | `true` | Vector writes and searches must name their index explicitly. Turn it off with `--require-vector-index-name false` or `require-vector-index-name: false` in `config.yml`. |
-| `--vector-exact-max-pool` | `RUSHDB_VECTOR_EXACT_MAX_POOL` | `resources.vector-exact-max-pool` | integer | `5000` | Largest index (vectors) a vector search in `auto` mode scores exactly; above it, `auto` uses the ANN graph once resident and builds it in the background meanwhile. See [Vector search](../indexes-and-search/vector-search.md#exact-versus-approximate-ann). |
-| `--vector-default-ef` | `RUSHDB_VECTOR_DEFAULT_EF` | `resources.vector-default-ef` | integer | `64` | ANN gather breadth when a search does not set `ef`. |
+| `--vector-exact-max-pool` | `RUSHDB_VECTOR_EXACT_MAX_POOL` | `resources.vector-exact-max-pool` | `auto`, integer or `fixed:<integer>` | `auto` | Which vector searches are scored exactly. The pool is the records matching the search's `predicate` (at most the index's vectors), or the whole index without one. `auto` scores it exactly while that costs less than the ANN graph walk, from the pool, the index's vectors and dimensions and `ef`; a number is the largest pool scored exactly. Above it, `auto` mode uses the ANN graph once resident and builds it in the background meanwhile; a forced `ann` with a `predicate` below it is answered exactly (`fallback: smallCandidateSet`). `5000`, the value written into every `config.yml` before 3.0.13, reads as `auto`; `fixed:5000` keeps a pool of 5,000. See [Vector search](../indexes-and-search/vector-search.md#exact-versus-approximate-ann). |
+| `--vector-default-ef` | `RUSHDB_VECTOR_DEFAULT_EF` | `resources.vector-default-ef` | integer | `128` | ANN breadth when a search does not set `ef`: the candidates the graph walk keeps, all re-scored exactly. Lower trades recall for latency per query. |
 | `--introspection-value-max-chars` | `RUSHDB_INTROSPECTION_VALUE_MAX_CHARS` | `resources.introspection-value-max-chars` | integer | `64` | Longest text (characters) catalog introspection shows for a sample, listed value or bound (`describe` schema/properties, `schemaSummary`); longer text is cut and ends with `…`. Value queries and records are never cut. `0` = no cap. |
 
 ## Transactions
@@ -177,7 +180,6 @@ These flags perform a task and exit without starting the server. See
 | `--backup-base` | `PATH` | Offline physical base backup of `--data-dir`. |
 | `--restore-pitr` | `BASE_DIR` | Restore a base backup plus archived WAL into a new `--data-dir`. |
 | `--to-lsn` | `LSN` | Stop point for `--restore-pitr`. |
-| `--verify` | — | Logical integrity check of `--data-dir`. |
 | `--verify-base` | `BASE_DIR` | Check a base backup's manifest and file CRCs. |
 
 ## Startup validation rules

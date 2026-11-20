@@ -1,7 +1,7 @@
 ---
 format: "md"
 title: "Text internals"
-sidebar_position: 9
+sidebar_position: 10
 custom_edit_url: "https://github.com/rush-db/rushdb/edit/main/docs/manual/architecture/text-internals.md"
 ---
 

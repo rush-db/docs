@@ -129,12 +129,20 @@ someone named like "Alice":
 
 Traversal semantics:
 
-- The block's predicate is tested on records reached at a depth between
-  `min` and `max`; the block matches as soon as one such record satisfies it.
-- Every record along the path, not only the last one, must carry the block's
-  label. A chain that passes through a record with another label is not
-  followed.
-- A path never visits the same record twice.
+- A record matches when a path of `min` to `max` relationships leads from
+  it to a record that satisfies the block's predicate.
+- Paths are **trails**: a path never uses the same relationship twice, as
+  in Cypher variable-length patterns. It may pass through a record more
+  than once.
+- Every record along the path after the start, not only the last one, must
+  carry the block's label. A chain that passes through a record with
+  another label is not followed.
+- A record reaches itself only over a closed trail. With
+  `"direction": "both"`, going out over a relationship and back over the
+  same one is not a path, so the record a block anchors on (for example
+  `"node_id": 12345`) matches its own neighbourhood query only when it lies
+  on a cycle of at most `max` relationships (two parallel relationships
+  make a cycle of two).
 
 ## Nested blocks: multi-level paths
 
@@ -212,6 +220,52 @@ record's shortest cycle is shorter than `hops.min` does the engine search
 for a longer path, within a fixed amount of work; past it the query fails
 with `resource_exhausted` ("`$cycle` search exceeds its work budget") rather
 than running on. Narrow `hops` or add a filter.
+
+## Shortest path: `path`
+
+The `path` query returns a shortest path between two records, as the
+records on it in order, both ends included:
+
+```json
+{
+  "kind": "query",
+  "query": {
+    "kind": "path",
+    "query": {
+      "from": "0190f1d2-…",
+      "to": "0190f1d3-…",
+      "type": "KNOWS",
+      "direction": "both",
+      "maxHops": 6,
+      "labels": ["PERSON"]
+    }
+  }
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `from`, `to` | Record ids of the two ends. |
+| `type` | Relationship type followed; every type when absent. |
+| `direction` | `out`, `in` or `both` (the default), read from `from` towards `to`. |
+| `maxHops` | Most relationships on the path. |
+| `labels` | Labels every record on the path, the ends included, must carry; any label when absent. |
+
+The response is a `records` page: `records` holds the path's records and
+`total` their number, so a path has `total - 1` hops. No path within
+`maxHops` returns no records; a record is its own 0-hop path. When several
+paths are equally short, one of them is returned.
+
+The search is breadth-first from both ends at once over the type's
+adjacency (held in memory once traversals at the same snapshot have read
+enough of it). It stops with `resource_exhausted` once it has reached
+1,000,000 records, rather than running on: lower `maxHops` or name
+`labels`.
+
+Under an enforced policy the path never follows a denied relationship type
+(naming one, or naming none while the policy denies some, is refused) and
+never passes through a record whose label the policy hides; an end with a
+hidden label is refused as `record` is.
 
 ## Listing relationships
 
@@ -326,11 +380,44 @@ To turn matching pairs into relationships, use `linkRecords` with
 
 ## Performance notes
 
-Related-record blocks are evaluated per candidate record by walking its
-relationships, so their cost grows with the number of candidates times the
-neighborhood explored. Restrict the root with `labels` and selective
-property conditions, bound `hops.max`, and set `$relation.type` and
-`direction` whenever you know them.
+The planner answers a `$relation` block (outside `$or`/`$not`) in one of
+two ways, and `describe.explain` reports which:
+
+- **Expanding from the targets** (`accessPath: "relation_expand"`): the
+  records the block's labels and predicate match are resolved first (an
+  ordered index makes this a lookup), then the engine walks their
+  relationships backwards, breadth-first, up to `max` hops. The cost
+  follows those records' neighbourhood, not the size of the root label: a
+  neighbourhood query anchored on one record costs the same in a label of
+  a thousand records or of millions. The planner picks this when the
+  block's records are at most half as many as the root records it would
+  otherwise check (its most selective other condition, or its labels).
+- **Checking each candidate**: each root candidate walks its own
+  relationships forward until it finds a matching record. This is chosen
+  when the root's other conditions already leave few candidates, or the
+  block is broad (for example no predicate at all).
+
+To get the first plan for an anchored query, declare an ordered index on
+the anchor property (`node_id` above); without one, resolving the anchor
+reads every record of the label that has the property. Bound `hops.max`,
+and set `$relation.type` and `direction` whenever you know them.
+
+When traversals keep reading the same relationship type, the engine keeps
+that type's relationships in memory (a resident graph, budget
+`resources.graph-cache-bytes`, default 128 MiB). It builds one in the
+background once the adjacency rows traversals have read since the tenant's
+relationships last changed add up to the cost of building it, so a
+read-mostly graph pays at most twice the build, and a graph whose
+relationships change with every commit is never built. Commits that write
+no relationship, or that belong to another tenant, keep the graph; a commit
+that writes one of the tenant's relationships drops it. Results are always
+those of the reader's snapshot ([resident state](../architecture/resident-state.md)).
+
+A path search that breadth-first distances cannot settle (a matching
+record closer than `min` hops, or the start record checked against
+itself) searches trails depth-first within a fixed work budget and fails
+with `resource_exhausted` ("`$relation` hops search exceeds its work
+budget") instead of running on.
 
 ## See also
 

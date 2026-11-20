@@ -1,7 +1,7 @@
 ---
 format: "md"
 title: "Glossary"
-sidebar_position: 16
+sidebar_position: 17
 custom_edit_url: "https://github.com/rush-db/rushdb/edit/main/docs/manual/reference/glossary.md"
 ---
 
