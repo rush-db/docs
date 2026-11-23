@@ -19,8 +19,8 @@ The self-hosted RushDB is the engine: `rushdb`, one self-contained, Apache-2.0 b
 | --- | --- | --- |
 | Install script | `curl -fsSL https://raw.githubusercontent.com/rush-db/rushdb/main/install.sh \| sh` | Linux and macOS; verifies the SHA-256 checksum, and the Sigstore signature when `cosign` is installed |
 | Homebrew | `brew install rush-db/tap/rushdb` | `brew services start rushdb` runs it in the background |
-| Docker | `docker run rushdb/rushdb` (also `ghcr.io/rush-db/rushdb`) | `linux/amd64` and `linux/arm64`, non-root; tags `3.0.14`, `3.0`, `3`; signed, with SBOM and provenance |
-| Cargo | `cargo binstall rushdb-server` or `cargo install rushdb-server --locked` | `cargo install` needs a C/C++ compiler. 3.0.14 is not on crates.io, so Cargo installs 3.0.13; use another channel for 3.0.14 |
+| Docker | `docker run rushdb/rushdb` (also `ghcr.io/rush-db/rushdb`) | `linux/amd64` and `linux/arm64`, non-root; tags `3.0.15`, `3.0`, `3`; signed, with SBOM and provenance |
+| Cargo | `cargo binstall rushdb-server` or `cargo install rushdb-server --locked` | `cargo install` needs a C/C++ compiler. 3.0.14 and 3.0.15 are not on crates.io, so Cargo installs 3.0.13; use another channel for them |
 | Release archive | `rushdb-<target>.tar.gz` from GitHub releases | Linux x86-64/arm64 (glibc 2.28+), macOS 11+ Apple silicon/Intel; checksum, SPDX inventory and Sigstore bundles |
 | Source | `cargo build --release -p rushdb-server --bin rushdb` | Toolchain pinned in `rust-toolchain.toml` |
 
