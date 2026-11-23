@@ -1,7 +1,7 @@
 ---
 format: "md"
 title: "Facets"
-sidebar_position: 10
+sidebar_position: 11
 custom_edit_url: "https://github.com/rush-db/rushdb/edit/main/docs/manual/query/facets.md"
 ---
 
@@ -231,8 +231,8 @@ word in a question to the values actually stored:
 | `domainOnMiss` | (none) | When nothing matches and the property has at most this many distinct values in scope (capped at 1000), answer with all of them instead. |
 | `minSimilarity` | `0.6` | `similar` only: the least similarity, from 0 to 1. |
 
-Strings match as stored; numbers, booleans and datetimes match as the response
-renders them (`31`, `true`, `2020-01-02T03:04:05.000Z`); an array matches when any
+Strings match as stored; numbers, booleans and temporal values match as the
+response renders them (`31`, `true`, `2020-01-02T03:04:05Z`); an array matches when any
 element does. Every mode answers over the matching values: `distinctCount`
 counts matches, and `values` and `topK` list them by descending record count,
 ties by value. With no predicate in `query`, the search reads the per-label
