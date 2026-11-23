@@ -2,22 +2,26 @@
 sidebar_position: 1
 title: MCP tools reference
 sidebar_label: All tools
-description: All 43 RushDB MCP tools grouped by task, with safety levels and main inputs for discovery, records, relationships, search and Cloud-only features.
+description: All 53 RushDB MCP tools grouped by task, with safety levels, OAuth scopes and main inputs for discovery, records, relationships, search and Cloud-only features.
 ---
 
 # MCP tools
 
-RushDB MCP exposes 43 tools on RushDB Cloud; in direct mode against a self-hosted engine, the 6 Cloud-only tools are not listed. Names below use the exact lower camel case identifiers published in the MCP manifest.
+RushDB MCP exposes 53 tools on RushDB Cloud; in direct mode against a self-hosted engine, the 12 Cloud-only tools are not listed. Names below use the exact lower camel case identifiers published in the MCP manifest.
 
 The connected MCP client receives the full JSON schema for each tool. This page is the quick reference for choosing the correct tool and understanding its main inputs.
 
 ## Safety levels
 
-| Level       | Meaning                                                 |
-| ----------- | ------------------------------------------------------- |
-| Read        | Retrieves or computes data without changing the data |
-| Write       | Creates or updates project data                         |
-| Destructive | Deletes or replaces data; preview and confirm first     |
+| Level       | Meaning                                                                    | OAuth scope     |
+| ----------- | -------------------------------------------------------------------------- | --------------- |
+| Read        | Retrieves or computes data without changing the data                       | `records:read`  |
+| Write       | Adds data or changes state without overwriting existing values             | `records:write` |
+| Destructive | Deletes or overwrites existing data; preview and confirm first             | `records:write` |
+
+Every tool publishes a `title` and the MCP annotations `readOnlyHint`, `destructiveHint` and `openWorldHint`, plus `idempotentHint` where repeating a call has no further effect. The level above follows those annotations: Read tools have `readOnlyHint`, Destructive tools have `destructiveHint`. Updates count as destructive because they overwrite values, so clients that honor `destructiveHint` may ask you to confirm `updateRecord` or `updateRelation`, not only deletes. `syncConnection` is the only tool with `openWorldHint`, because it pulls data from an external source.
+
+Over the hosted OAuth endpoint, a token granted `records:read` sees only the Read tools; a token granted `records:write` also carries `records:read` and sees every tool. See [Permissions](../../../connect/mcp.mdx#permissions).
 
 An asterisk marks a required input.
 
@@ -30,6 +34,9 @@ An asterisk marks a required input.
 | `findLabels` | Read | `where?`, `limit?`, `skip?`, `orderBy?` | List or filter record labels and counts. |
 | `findProperties` | Read | `where?`, `limit?`, `skip?`, `orderBy?` | Discover property names, types, IDs, and record counts. |
 | `findPropertyById` | Read | `propertyId*` | Fetch metadata for one property. |
+| `getSchemaSummary` | Read | `labels?`, `fewValues?` | Every label's properties with types, distinct counts, ranges and the values of small fields, in one read. |
+| `searchValues` | Read | `text*`, `match?`, `labels?`, `limit?`, `minSimilarity?` | Find where a user-typed value is stored (label, property, exact spelling, count) across every property. |
+| `resolveNames` | Read | `text*`, `limit?` | Suggest the real label or property behind a name that is not in the schema. |
 | `propertyValues` | Read | `propertyId*`, `query?`, `orderBy?`, `limit?`, `skip?` | Return numeric or date ranges, or distinct string and boolean values. |
 | `deleteProperty` | Destructive | `propertyId*` | Permanently remove a property and its values from all records. |
 | `getSearchQuerySpec` | Read | none | Return the complete SearchQuery syntax reference. |
@@ -45,11 +52,11 @@ An asterisk marks a required input.
 | `getRecord` | Read | `recordId*` | Fetch one record by ID. |
 | `getRecordsByIds` | Read | `recordIds*` | Fetch multiple records by ID. |
 | `createRecord` | Write | `label*`, `data*`, `transactionId?`, `options?` | Insert or upsert one record. |
-| `updateRecord` | Write | `recordId*`, `label*`, `data*`, `transactionId?` | Partially update one record while preserving unspecified fields. |
+| `updateRecord` | Destructive | `recordId*`, `label*`, `data*`, `transactionId?` | Partially update one record while preserving unspecified fields. |
 | `setRecord` | Destructive | `recordId*`, `label*`, `data*`, `transactionId?` | Replace all fields on one record. |
 | `deleteRecord` | Destructive | `recordId*`, `transactionId?` | Delete one record by ID after previewing it with `findRecords`. |
 | `deleteRecordById` | Destructive | `recordId*`, `transactionId?` | Delete one record by ID after previewing it with `getRecord`. |
-| `bulkCreateRecords` | Write | `label*`, `data*`, `transactionId?`, `options?` | Insert or upsert multiple records with the same label. |
+| `bulkCreateRecords` | Write | `label*`, `data*`, `transactionId?`, `options?` | Insert or upsert multiple records with the same label; `options.mergeBy` and `options.mergeStrategy` control the upsert. |
 | `bulkDeleteRecords` | Destructive | `labels?`, `where*`, `transactionId?` | Delete all records matching a query. Preview with `findRecords` first. |
 | `exportRecords` | Read | `labels?`, `where?`, `limit?`, `orderBy?` | Export matching records as CSV. |
 
@@ -59,6 +66,7 @@ An asterisk marks a required input.
 | --- | --- | --- | --- |
 | `findRelationships` | Read | `where?`, `source?`, `target?`, `limit?`, `skip?`, `orderBy?` | Inspect edges. `where` filters edge type/properties; `source`/`target` filter endpoint records. |
 | `attachRelation` | Write | `sourceId*`, `targetId?`, `targetIds?`, `relationType?`, `direction?`, `properties?`, `transactionId?` | Create relationships between existing records. |
+| `updateRelation` | Destructive | `sourceId*`, `targetId?`, `targetIds?`, `relationType?`, `direction?`, `set?`, `unset?`, `types?` | Change or remove properties on existing relationships of one type. |
 | `detachRelation` | Destructive | `sourceId*`, `targetId?`, `targetIds?`, `relationType?`, `direction?` | Remove relationships between records: every type unless `relationType` is given, both ways unless `direction` is. |
 
 ## Vector, keyword and hybrid search
@@ -68,7 +76,7 @@ An asterisk marks a required input.
 | `findEmbeddingIndexes` | Read | none | List embedding indexes with their names and status. |
 | `createEmbeddingIndex` | Write | `name?`, `label*`, `propertyName*`, `sourceType?`, `similarityFunction?`, `dimensions?` | Create an embedding index. On a self-hosted engine, create an external one (`sourceType: "external"`, `dimensions`). |
 | `getEmbeddingIndexStats` | Read | `indexId*` | Check how many records an index covers and has vectors for. |
-| `upsertEmbeddingVectors` | Write | `indexId*`, `items*` | Write pre-computed vectors to an external index. |
+| `upsertEmbeddingVectors` | Destructive | `indexId*`, `items*` | Write pre-computed vectors to an external index. |
 | `deleteEmbeddingIndex` | Destructive | `indexId*` | Delete an embedding index and its stored vectors. |
 | `vectorSearch` | Read | `index?`, `propertyName?`, `query?`, `queryVector?`, `labels?`, `sourceType?`, `similarityFunction?`, `dimensions?`, `where?`, `mode?`, `ef?`, `scoreThreshold?`, `weight?`, `prefetchLimit?`, `fusion?`, `rrfK?`, `text?`, `limit?`, `skip?` | Rank records by vector similarity after exact filtering; add `text` for a hybrid search. On a self-hosted engine, pass `queryVector`. |
 | `semanticSearch` | Read | `propertyName*`, `query?`, `queryVector?`, `labels*`, `sourceType?`, `similarityFunction?`, `dimensions?`, `where?`, `mode?`, `ef?`, `scoreThreshold?`, `limit?`, `skip?` | Deprecated alias for `vectorSearch`. |
@@ -77,18 +85,31 @@ An asterisk marks a required input.
 | `deleteTextIndex` | Destructive | `name*` | Drop a text index by name. |
 | `textSearch` | Read | `query*`, `index?`, `property?`, `labels?`, `where?`, `allTerms?`, `phrase?`, `limit?`, `skip?` | Keyword (BM25) search over a text index, after exact filtering. |
 
-## RushDB Cloud: Smart search and relationship patterns
+## RushDB Cloud: Smart search, joins and relationship patterns
 
 These tools need RushDB Cloud. In direct mode against a self-hosted engine they are not listed, and a call is refused.
 
 | Tool | Level | Main inputs | Purpose |
 | --- | --- | --- | --- |
 | `smartSearch` | Read | `prompt*`, `currentQuery?` | Turn a natural-language request into a SearchQuery and run it. |
+| `getJoinCandidates` | Read | `labels?`, `minConfidence?` | Show which properties reference records of another label, with evidence, when the data has no relationships yet. |
 | `listRelationshipPatterns` | Read | none | List inferred patterns, schema relationship summaries, and analysis status. |
 | `analyzeRelationshipPatterns` | Write | none | Queue schema analysis with RushDB Cloud's language model. |
 | `approveRelationshipPattern` | Write | `id*` | Approve and apply a suggested pattern. |
 | `ignoreRelationshipPattern` | Write | `id*` | Ignore a suggested pattern without applying it. |
 | `deleteRelationshipPattern` | Destructive | `id*`, `deleteExisting?` | Delete a stored pattern and optionally its materialized relationships. |
+
+## RushDB Cloud: Connections and imports
+
+These tools need RushDB Cloud. In direct mode they are not listed, and a call is refused. See [Connections](../../data-sources/connections.mdx).
+
+| Tool | Level | Main inputs | Purpose |
+| --- | --- | --- | --- |
+| `listConnections` | Read | none | List the project's connections with their status, schedule, last error and per-stream record counts and freshness. |
+| `getConnection` | Read | `id*` | Fetch one connection: status, schedule, last run and per-stream record counts. Credentials are never returned. |
+| `syncConnection` | Destructive | `id*`, `streams?`, `full?` | Start a sync now, for every enabled stream or the streams named, and return the queued run. It pulls from the external source and writes to the project; `full: true` re-reads everything. |
+| `listImports` | Read | `kind?`, `connectionId?`, `limit?`, `skip?` | List file imports and connection syncs, newest first, with status, records written and errors. |
+| `getImport` | Read | `id*` | Fetch one import or sync run: status, progress per file or stream, and an error sample. |
 
 ## Utilities
 
